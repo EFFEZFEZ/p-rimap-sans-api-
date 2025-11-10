@@ -1,10 +1,7 @@
 /**
  * main.js
  * Point d'entrée principal de l'application
- * Orchestre tous les modules et gère l'interface utilisateur
- *
- * CORRECTION: Ne charge plus getWaitingBuses pour éviter la superposition
- * au terminus.
+ * Gère le tableau de bord, la vue carte et l'état du trafic.
  */
 
 import { DataManager } from './dataManager.js';
@@ -13,6 +10,7 @@ import { TripScheduler } from './tripScheduler.js';
 import { BusPositionCalculator } from './busPositionCalculator.js';
 import { MapRenderer } from './mapRenderer.js';
 
+// Modules
 let dataManager;
 let timeManager;
 let tripScheduler;
@@ -20,7 +18,22 @@ let busPositionCalculator;
 let mapRenderer;
 let visibleRoutes = new Set();
 
-// Catégories de lignes selon la structure officielle de Péribus
+// NOUVEL ÉTAT GLOBAL
+let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
+
+// NOUVEAUX ÉLÉMENTS DOM (Tableau de bord)
+let dashboardContainer;
+let infoTraficList;
+let infoTraficCount;
+let alertBanner, alertBannerContent, alertBannerClose;
+let btnAdminConsole;
+
+// ÉLÉMENTS DOM (Vue Carte)
+let mapContainer;
+let btnShowMap, btnBackToDashboard;
+let searchBar, searchResultsContainer; // Maintenant pour la carte Horaires
+
+// Catégories de lignes
 const LINE_CATEGORIES = {
     'majeures': {
         name: 'Lignes majeures',
@@ -59,6 +72,22 @@ function getCategoryForRoute(routeShortName) {
 }
 
 async function initializeApp() {
+    // Sélection des nouveaux éléments DOM
+    dashboardContainer = document.getElementById('dashboard-container');
+    mapContainer = document.getElementById('map-container');
+    btnShowMap = document.getElementById('btn-show-map');
+    btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
+    infoTraficList = document.getElementById('info-trafic-list');
+    infoTraficCount = document.getElementById('info-trafic-count');
+    alertBanner = document.getElementById('alert-banner');
+    alertBannerContent = document.getElementById('alert-banner-content');
+    alertBannerClose = document.getElementById('alert-banner-close');
+    btnAdminConsole = document.getElementById('btn-admin-console');
+
+    // Barre de recherche (maintenant dans la carte Horaires)
+    searchBar = document.getElementById('horaires-search-bar');
+    searchResultsContainer = document.getElementById('horaires-search-results');
+
     dataManager = new DataManager();
     
     try {
@@ -80,8 +109,12 @@ async function initializeApp() {
 
         mapRenderer.displayStops();
         
+        // Configure les écouteurs d'événements pour la vue carte ET le tableau de bord
         setupEventListeners();
         
+        // Configure le nouveau tableau de bord
+        setupDashboard();
+
         if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
             document.getElementById('instructions').classList.remove('hidden');
         }
@@ -99,33 +132,182 @@ async function initializeApp() {
 }
 
 /**
- * Configure et démarre le gestionnaire de temps.
+ * NOUVEAU: Configure le tableau de bord (état du trafic, admin)
  */
+function setupDashboard() {
+    // Initialise l'état de toutes les lignes
+    dataManager.routes.forEach(route => {
+        lineStatuses[route.route_id] = { status: 'normal', message: '' };
+    });
+
+    // Affiche la carte Info Trafic
+    renderInfoTraficCard();
+
+    // Configure la console admin
+    setupAdminConsole();
+
+    // Configure les boutons de basculement de vue
+    btnShowMap.addEventListener('click', showMapView);
+    btnBackToDashboard.addEventListener('click', showDashboardView);
+    alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
+}
+
+/**
+ * NOUVEAU: Logique de la console d'administration
+ */
+function setupAdminConsole() {
+    btnAdminConsole.addEventListener('click', () => {
+        console.log("--- CONSOLE ADMIN ACTIVÉE ---");
+        console.log('Utilisez setStatus("NOM_LIGNE", "STATUT", "MESSAGE")');
+        console.log('Ex: setStatus("A", "perturbation", "Manifestation centre-ville")');
+        console.log('Statuts valides: "normal", "perturbation", "retard", "annulation"');
+        alert('Console Admin activée. Voir la console (F12) pour les instructions.');
+    });
+
+    // Expose la fonction à la fenêtre globale
+    window.setStatus = (lineShortName, status, message = "") => {
+        const route = dataManager.routes.find(r => r.route_short_name === lineShortName);
+        if (!route) {
+            console.warn(`Ligne "${lineShortName}" non trouvée.`);
+            return;
+        }
+
+        if (!['normal', 'perturbation', 'retard', 'annulation'].includes(status)) {
+            console.warn(`Statut "${status}" invalide. Utilisez "normal", "perturbation", "retard", "annulation".`);
+            return;
+        }
+
+        console.log(`Mise à jour statut: Ligne ${lineShortName} -> ${status.toUpperCase()}`);
+        lineStatuses[route.route_id] = { status, message };
+
+        // Met à jour l'interface
+        renderInfoTraficCard();
+        renderAlertBanner();
+        // (La carte sera mise à jour au prochain 'tick' de updateData)
+    };
+}
+
+/**
+ * NOUVEAU: Affiche la carte "Info Trafic"
+ */
+function renderInfoTraficCard() {
+    infoTraficList.innerHTML = '';
+    let alertCount = 0;
+
+    dataManager.routes.forEach(route => {
+        const state = lineStatuses[route.route_id] || { status: 'normal', message: '' };
+        const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
+        const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
+
+        let icon, message;
+        switch (state.status) {
+            case 'perturbation':
+                icon = '⚠️';
+                message = state.message || 'Perturbation';
+                alertCount++;
+                break;
+            case 'retard':
+                icon = '🟡'; // Utilise un émoji simple pour l'horloge
+                message = state.message || 'Retard signalé';
+                alertCount++;
+                break;
+            case 'annulation':
+                icon = '🔴'; // Utilise un émoji simple pour la croix
+                message = state.message || 'Service annulé';
+                alertCount++;
+                break;
+            default:
+                icon = '✅';
+                message = 'Service normal';
+        }
+
+        const item = document.createElement('div');
+        item.className = `trafic-item status-${state.status}`;
+        item.innerHTML = `
+            <div class="trafic-info">
+                <span class="line-badge" style="background-color: ${routeColor}; color: ${textColor};">
+                    ${route.route_short_name}
+                </span>
+                <div class="trafic-details">
+                    <div class="trafic-details-line">${route.route_long_name}</div>
+                    <div class="trafic-details-msg">${message}</div>
+                </div>
+            </div>
+            <div class="status-icon">${icon}</div>
+        `;
+        infoTraficList.appendChild(item);
+    });
+
+    // Met à jour le compteur d'alertes
+    infoTraficCount.textContent = alertCount;
+    if (alertCount > 0) {
+        infoTraficCount.classList.remove('hidden');
+    } else {
+        infoTraficCount.classList.add('hidden');
+    }
+}
+
+/**
+ * NOUVEAU: Affiche le bandeau d'alerte en haut
+ */
+function renderAlertBanner() {
+    let alerts = [];
+    for (const route_id in lineStatuses) {
+        const state = lineStatuses[route_id];
+        if (state.status !== 'normal') {
+            const route = dataManager.getRoute(route_id);
+            alerts.push({
+                name: route.route_short_name,
+                status: state.status,
+                message: state.message
+            });
+        }
+    }
+
+    if (alerts.length === 0) {
+        alertBanner.classList.add('hidden');
+        return;
+    }
+
+    // Définit la couleur du bandeau (priorité : annulation > perturbation > retard)
+    if (alerts.some(a => a.status === 'annulation')) {
+        alertBanner.className = 'type-annulation';
+    } else if (alerts.some(a => a.status === 'perturbation')) {
+        alertBanner.className = 'type-perturbation';
+    } else {
+        alertBanner.className = 'type-retard';
+    }
+
+    // Construit le message
+    let alertText = alerts.map(a => 
+        `<strong>Ligne ${a.name}</strong> (${a.status})`
+    ).join(', ');
+    alertBannerContent.innerHTML = `<strong>Infos Trafic:</strong> ${alertText}`;
+    alertBanner.classList.remove('hidden');
+}
+
+
+/**
+ * NOUVEAU: Fonctions de basculement de vue
+ */
+function showMapView() {
+    dashboardContainer.classList.add('hidden');
+    mapContainer.classList.remove('hidden');
+    // Force la carte à se redessiner
+    mapRenderer.map.invalidateSize();
+}
+function showDashboardView() {
+    mapContainer.classList.add('hidden');
+    dashboardContainer.classList.remove('hidden');
+}
+
+
+// --- Fonctions de l'application existante (adaptées) ---
+
 function checkAndSetupTimeMode() {
-    // Activer le mode temps réel
     timeManager.setMode('real');
-    
-    // Mode SIMULATION (DÉSACTIVÉ) :
-    // timeManager.setMode('simulated');
-    // timeManager.setTime(14 * 3600); // Force l'heure à 14h00
-    
     timeManager.play();
     console.log('⏰ Mode TEMPS RÉEL activé.');
-}
-
-function showModeBanner(message) {
-    const banner = document.getElementById('mode-banner');
-    if (banner) {
-        banner.textContent = message;
-        banner.classList.remove('hidden');
-    }
-}
-
-function hideModeBanner() {
-    const banner = document.getElementById('mode-banner');
-    if (banner) {
-        banner.classList.add('hidden');
-    }
 }
 
 function initializeRouteFilter() {
@@ -332,19 +514,17 @@ function handleRouteFilterChange() {
 
 function setupEventListeners() {
     
+    // Écouteurs pour la VUE CARTE
     document.getElementById('close-instructions').addEventListener('click', () => {
         document.getElementById('instructions').classList.add('hidden');
         localStorage.setItem('gtfsInstructionsShown', 'true');
     });
-    
     document.getElementById('btn-toggle-filter').addEventListener('click', () => {
         document.getElementById('route-filter-panel').classList.toggle('hidden');
     });
-    
     document.getElementById('close-filter').addEventListener('click', () => {
         document.getElementById('route-filter-panel').classList.add('hidden');
     });
-    
     document.getElementById('select-all-routes').addEventListener('click', () => {
         dataManager.routes.forEach(route => {
             const checkbox = document.getElementById(`route-${route.route_id}`);
@@ -352,7 +532,6 @@ function setupEventListeners() {
         });
         handleRouteFilterChange();
     });
-    
     document.getElementById('deselect-all-routes').addEventListener('click', () => {
         dataManager.routes.forEach(route => {
             const checkbox = document.getElementById(`route-${route.route_id}`);
@@ -363,18 +542,16 @@ function setupEventListeners() {
     
     timeManager.addListener(updateData);
 
-    const searchBar = document.getElementById('search-bar');
-    const searchResultsContainer = document.getElementById('search-results');
-
+    // Écouteurs pour la VUE TABLEAU DE BORD (recherche horaires)
     searchBar.addEventListener('input', handleSearchInput);
     searchBar.addEventListener('focus', handleSearchInput); 
-    
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.search-container')) {
+        if (!e.target.closest('#horaires-search-container')) {
             searchResultsContainer.classList.add('hidden');
         }
     });
 
+    // Écouteurs pour la CARTE
     if (mapRenderer && mapRenderer.map) {
         mapRenderer.map.on('zoomend', () => {
             if (dataManager) {
@@ -426,9 +603,11 @@ function displaySearchResults(stops, query) {
 }
 
 function onSearchResultClick(stop) {
+    // Au clic sur un résultat, bascule vers la carte et zoome
+    showMapView(); 
     mapRenderer.zoomToStop(stop);
-    document.getElementById('search-bar').value = stop.stop_name;
-    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('horaires-search-bar').value = stop.stop_name;
+    document.getElementById('horaires-search-results').classList.add('hidden');
 }
 
 /**
@@ -446,15 +625,26 @@ function updateData(timeInfo) {
     
     /* La logique getWaitingBuses (terminus) est supprimée */
 
-    const busesWithPositions = busPositionCalculator.calculateAllPositions(activeBuses)
+    const allBusesWithPositions = busPositionCalculator.calculateAllPositions(activeBuses);
+
+    // MODIFICATION: Ajoute l'état du trafic à chaque bus
+    allBusesWithPositions.forEach(bus => {
+        if (bus && bus.route) {
+            const routeId = bus.route.route_id;
+            bus.currentStatus = (lineStatuses[routeId] && lineStatuses[routeId].status) 
+                                ? lineStatuses[routeId].status 
+                                : 'normal';
+        }
+    });
+    
+    const visibleBuses = allBusesWithPositions
         .filter(bus => bus !== null)
         .filter(bus => bus.route && visibleRoutes.has(bus.route.route_id)); 
     
-    mapRenderer.updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds);
+    mapRenderer.updateBusMarkers(visibleBuses, tripScheduler, currentSeconds);
     
-    const visibleBusCount = busesWithPositions.length;
-    const totalBusCount = visibleBusCount; // Le total est maintenant juste les bus actifs
-    updateBusCount(visibleBusCount, totalBusCount);
+    const visibleBusCount = visibleBuses.length;
+    updateBusCount(visibleBusCount, visibleBusCount); // Le total est maintenant juste les bus actifs
 }
 
 function updateClock(seconds) {
