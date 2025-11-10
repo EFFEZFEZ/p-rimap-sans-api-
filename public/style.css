@@ -1,10 +1,21 @@
 /* =========================================
- * VARIABLES ET RESET
+ * NOUVEAU THÈME & VARIABLES
  * ========================================= */
 :root {
+    /* Identité graphique (inspirée) */
+    --color-blue: #007bff;
+    --color-purple: #6f42c1;
+    --color-orange: #fd7e14;
+    --color-green: #28a745;
+    --color-red: #dc3545;
+    --color-yellow: #ffc107;
+    --color-green-check: #28a745;
+
+    /* Palette de base */
     --primary: #2563eb;
     --primary-dark: #1d4ed8;
     --secondary: #64748b;
+    --bg-light: #f8f9fa; /* Fond de page gris clair */
     --bg-main: #ffffff;
     --bg-secondary: #f8fafc;
     --text-primary: #0f172a;
@@ -21,6 +32,9 @@
     --radius-full: 9999px;
 }
 
+/* =========================================
+ * NOUVELLE STRUCTURE DE BASE
+ * ========================================= */
 * {
     margin: 0;
     padding: 0;
@@ -30,33 +44,440 @@
 html, body {
     height: 100%;
     width: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
+    background-color: var(--bg-light); /* Fond gris clair */
+}
+
+.hidden {
+    display: none !important;
 }
 
 /* =========================================
- * STRUCTURE GÉNÉRALE
+ * NOUVELLE EN-TÊTE
  * ========================================= */
-#app {
+#main-header {
+    background: var(--bg-main);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1050;
+    box-shadow: var(--shadow-sm);
+}
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.header-logo-icon {
+    color: var(--primary);
+}
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.btn-admin {
+    background: var(--color-orange);
+    color: white;
+    border-color: var(--color-orange);
+}
+.btn-admin:hover {
+    background: #d96d13;
+    border-color: #d96d13;
+}
+
+/* =========================================
+ * NOUVEAU BANDEAU D'ALERTE
+ * ========================================= */
+#alert-banner {
+    position: sticky;
+    top: 65px; /* Sous l'en-tête */
+    z-index: 1040;
+    background: var(--color-yellow);
+    color: #111;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+#alert-banner.type-perturbation { background: var(--color-orange); color: white; }
+#alert-banner.type-annulation { background: var(--color-red); color: white; }
+#alert-banner.type-retard { background: var(--color-yellow); color: #111; }
+
+#alert-banner-content strong {
+    margin-right: 8px;
+}
+#alert-banner-close {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.7;
+}
+#alert-banner-close:hover { opacity: 1; }
+
+/* =========================================
+ * NOUVEAU TABLEAU DE BORD
+ * ========================================= */
+#dashboard-main {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+#dashboard-main h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+.subtitle {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+/* 4 Boutons de Nav */
+.main-nav-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+.nav-button {
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: pointer;
+}
+.nav-button:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+.nav-button-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+/* Couleurs des boutons */
+.nav-button.blue { border-top: 4px solid var(--color-blue); }
+.nav-button.purple { border-top: 4px solid var(--color-purple); }
+.nav-button.orange { border-top: 4px solid var(--color-orange); }
+.nav-button.green { border-top: 4px solid var(--color-green); }
+
+.notification-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--color-red);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 4px;
+}
+
+/* Cartes de contenu */
+.content-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+.card {
+    background: var(--bg-main);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+.card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+.card-note {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 1rem;
+    font-style: italic;
+}
+
+/* Formulaires dans les cartes */
+.form-group {
+    margin-bottom: 1rem;
+}
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+.form-group input[type="text"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+.form-group input[type="text"]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    outline: none;
+}
+
+/* Carte Horaires (reprise de votre recherche) */
+#horaires-search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+#horaires-search-container svg {
+    position: absolute;
+    left: 14px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+#horaires-search-bar {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem; 
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+#horaires-search-bar:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    outline: none;
+}
+#horaires-search-results {
+    position: absolute;
+    top: calc(100% + 5px); 
+    left: 0;
+    width: 100%;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 2000;
+}
+#horaires-search-results.hidden { display: none; }
+/* Style de résultat réutilisé */
+.search-result-item {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: var(--bg-secondary); }
+.search-result-item strong { color: var(--primary); }
+
+
+/* Carte Info Trafic */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+}
+.tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+.tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+#info-trafic-list {
+    max-height: 350px;
+    overflow-y: auto;
+}
+.trafic-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0.25rem;
+    border-bottom: 1px solid var(--border);
+}
+.trafic-item:last-child { border-bottom: none; }
+.trafic-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    overflow: hidden;
+}
+/* Badge de ligne (similaire à .route-badge) */
+.line-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    padding: 0.375rem 0.625rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: white;
+    border-radius: var(--radius-md); 
+    flex-shrink: 0;
+}
+.trafic-details {
+    overflow: hidden;
+}
+.trafic-details-line {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.trafic-details-msg {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.status-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+/* Icônes de statut */
+.status-normal .status-icon { color: var(--color-green-check); }
+.status-perturbation .status-icon { color: var(--color-orange); }
+.status-retard .status-icon { color: var(--color-yellow); }
+.status-annulation .status-icon { color: var(--color-red); }
+.status-annulation .trafic-details-msg { color: var(--color-red); font-weight: 500; }
+.status-perturbation .trafic-details-msg { color: var(--color-orange); }
+.status-retard .trafic-details-msg { color: var(--color-yellow); }
+
+/* =========================================
+ * VUE CARTE (Ancienne App)
+ * ========================================= */
+#map-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 1100;
+    background: var(--bg-light);
+    /* `display: none` est géré par la classe .hidden */
+}
+#map-view { /* Ancien #app */
     display: flex;
     flex-direction: column;
     height: 100vh;
 }
-
 #map {
     flex: 1;
     position: relative;
     z-index: 1; 
-    background: #f0f0f0; /* Couleur de fond pendant le chargement */
+    background: #f0f0f0;
 }
 
 /* =========================================
- * DESIGN PC (Par Défaut)
+ * RESPONSIVITÉ
+ * ========================================= */
+@media (max-width: 1024px) {
+    /* Passe les cartes en 2 colonnes */
+    .content-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    /* La 3e carte prend toute la largeur */
+    .content-cards .card:last-child {
+        grid-column: 1 / -1;
+    }
+}
+@media (max-width: 768px) {
+    /* Passe les boutons de nav en 2 colonnes */
+    .main-nav-buttons {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    .nav-button {
+        padding: 1.25rem 1rem;
+    }
+    /* Passe les cartes en 1 colonne */
+    .content-cards {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 600px) {
+    #dashboard-main {
+        padding: 1.5rem 1rem;
+    }
+    #dashboard-main h2 {
+        font-size: 1.75rem;
+    }
+    .subtitle {
+        font-size: 1rem;
+    }
+    .logo span {
+        display: none; /* Cache "Mon Réseau" sur mobile */
+    }
+    #main-header {
+        padding: 0 1rem;
+    }
+}
+
+
+/* =========================================
+ * STYLES EXISTANTS (Nettoyés et conservés)
  * ========================================= */
 
-/* Barre de contrôle unifiée */
+/* Barre de contrôle unifiée (VUE CARTE) */
 #top-bar {
     background: var(--bg-main);
     border-bottom: 1px solid var(--border);
@@ -68,16 +489,13 @@ html, body {
     z-index: 10;
 }
 
-.header-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+/* Bouton Retour (VUE CARTE) */
+#btn-back-to-dashboard {
+    padding-left: 0.75rem;
+    padding-right: 1.25rem;
 }
-.header-title h1 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
+#btn-back-to-dashboard svg {
+    margin-right: 0.25rem;
 }
 
 #clock {
@@ -118,60 +536,11 @@ html, body {
 #data-status.loaded { color: #059669; }
 #data-status.error { color: #dc2626; }
 
-/* Barre de recherche (PC) */
-.search-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    flex-grow: 1; 
-    min-width: 250px; 
-    max-width: 500px;
-}
-.search-container svg {
-    position: absolute;
-    left: 10px;
-    color: var(--text-secondary);
-    opacity: 0.6;
-}
-#search-bar {
-    width: 100%;
-    padding: 0.5rem 1rem 0.5rem 2.25rem; 
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    font-size: 0.875rem;
-    font-family: inherit;
-    transition: all 0.15s ease;
-}
-#search-bar:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-    outline: none;
-}
-#search-results {
-    position: absolute;
-    top: calc(100% + 5px); 
-    left: 0;
-    width: 100%;
-    background: var(--bg-main);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    max-height: 300px;
-    overflow-y: auto;
-    z-index: 2000;
-}
-#search-results.hidden { display: none; }
-.search-result-item {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-    border-bottom: 1px solid var(--border);
-}
-.search-result-item:last-child { border-bottom: none; }
-.search-result-item:hover { background: var(--bg-secondary); }
-.search-result-item strong { color: var(--primary); }
+/* ANCIENNE Barre de recherche (Maintenant dans la carte #horaires) */
+/* Les styles .search-container, #search-bar, #search-results sont maintenant
+   remplacés par #horaires-search-container, etc. */
 
-/* Panneau de filtre (PC) */
+/* Panneau de filtre (styles existants conservés) */
 #route-filter-panel {
     position: fixed;
     top: 0;
@@ -194,60 +563,40 @@ html, body {
 .panel-handle { display: none; } 
 
 /* =========================================
- * DESIGN MOBILE (max-width: 768px)
+ * DESIGN MOBILE (VUE CARTE)
  * ========================================= */
 @media (max-width: 768px) {
     
-    /* La barre PC devient un conteneur virtuel pour les éléments flottants */
-    #top-bar {
+    #map-view #top-bar {
         background: none;
         border: none;
         padding: 0;
         height: 0; /* Ne prend pas de place */
     }
 
-    /* Le titre PC est masqué */
-    .header-title {
-        display: none;
+    #map-view #map {
+        height: 100vh;
     }
 
-    #map {
-        height: 100vh; /* La carte prend tout l'écran */
-    }
-
-    /* Barre de recherche (Mobile) */
-    .search-container {
+    /* Bouton Retour (Mobile) */
+    #btn-back-to-dashboard {
         position: fixed;
         top: 15px;
         left: 15px;
-        right: 15px;
         z-index: 1000;
-        min-width: unset;
-        max-width: unset;
-        background: var(--bg-main);
-        border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
-        border: 1px solid var(--border);
+        padding: 0.5rem 0.75rem;
     }
-    #search-bar {
-        padding-top: 0.8rem;
-        padding-bottom: 0.8rem;
-        padding-left: 2.5rem;
-        font-size: 1rem;
-        border: none;
-        border-radius: var(--radius-md);
-    }
-    .search-container svg {
-        left: 14px;
-        height: 18px;
-        width: 18px;
-    }
+    #btn-back-to-dashboard span { display: none; } /* Cache texte */
+    #btn-back-to-dashboard svg { margin-right: 0; }
+
 
     /* Horloge (Mobile) */
-    #clock {
+    #map-view #clock {
         position: fixed;
-        top: 75px; /* Sous la barre de recherche */
-        left: 15px;
+        top: 15px; 
+        left: 50%; /* Centré */
+        transform: translateX(-50%);
         z-index: 999;
         background: var(--bg-main);
         padding: 6px 10px;
@@ -255,22 +604,22 @@ html, body {
         box-shadow: var(--shadow-sm);
         border: 1px solid var(--border);
     }
-    #date-indicator { display: none; } /* Cache la date, trop gros */
+    #map-view #date-indicator { display: none; }
 
     /* Statut (Mobile) */
-    #status-info {
+    #map-view #status-info {
         position: fixed;
-        top: 75px; /* Sous la barre de recherche */
-        right: 15px; /* À droite */
+        top: 15px;
+        right: 15px;
         z-index: 999;
         background: var(--bg-main);
         padding: 6px 10px;
         border-radius: var(--radius-full);
         box-shadow: var(--shadow-sm);
         border: 1px solid var(--border);
-        margin-left: 0; /* Annule le margin-left: auto du PC */
+        margin-left: 0;
     }
-    #data-status { display: none; } /* Cache le statut texte */
+    #map-view #data-status { display: none; }
 
     /* Bouton Filtre (Mobile FAB) */
     #btn-toggle-filter {
@@ -278,8 +627,6 @@ html, body {
         bottom: 30px;
         right: 20px;
         z-index: 1000;
-        
-        /* Style FAB */
         width: 56px;
         height: 56px;
         border-radius: 50%;
@@ -287,15 +634,8 @@ html, body {
         padding: 0;
         justify-content: center;
     }
-    /* Cache le texte "Filtrer" du bouton */
-    #btn-toggle-filter span {
-        display: none;
-    }
-    #btn-toggle-filter svg {
-        margin: 0;
-        width: 20px;
-        height: 20px;
-    }
+    #btn-toggle-filter span { display: none; }
+    #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
 
     /* Panneau de filtre (Mobile "Bottom Sheet") */
     #route-filter-panel {
@@ -309,9 +649,7 @@ html, body {
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transform: translateY(0); 
     }
-    #route-filter-panel.hidden {
-        transform: translateY(100%); 
-    }
+    #route-filter-panel.hidden { transform: translateY(100%); }
     .panel-handle {
         display: block; 
         width: 40px;
@@ -324,7 +662,7 @@ html, body {
 }
 
 /* =========================================
- * STYLES COMMUNS
+ * STYLES COMMUNS (Conservés)
  * ========================================= */
 
 /* Boutons */
@@ -356,7 +694,7 @@ html, body {
     align-items: center;
     padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--border);
-    flex-shrink: 0; /* Empêche de rétrécir */
+    flex-shrink: 0;
 }
 .filter-header h3 { margin: 0; font-size: 1.125rem; font-weight: 600; }
 .btn-close {
@@ -468,7 +806,7 @@ html, body {
     line-height: 1.4;
 }
 
-/* Instructions */
+/* Instructions (styles existants conservés) */
 #instructions {
     position: fixed;
     top: 0;
@@ -505,7 +843,6 @@ html, body {
 .instruction-header svg { color: var(--primary); }
 .instruction-header h3 { margin: 0; color: var(--text-primary); font-size: 1.125rem; }
 #instructions ol { margin-left: 1.5rem; line-height: 1.8; color: var(--text-primary); }
-#instructions ul { margin: 0.5rem 0 0.5rem 1.5rem; font-size: 0.875rem; color: var(--text-secondary); }
 #instructions code {
     background: var(--bg-secondary);
     padding: 0.2rem 0.5rem;
@@ -534,7 +871,7 @@ html, body {
 #close-instructions:hover { background: var(--primary-dark); }
 
 /* =========================================
- * STYLES LEAFLET
+ * STYLES LEAFLET (Conservés)
  * ========================================= */
 .leaflet-popup-content-wrapper {
     border-radius: var(--radius-lg); 
@@ -542,51 +879,42 @@ html, body {
     border: 1px solid var(--border);
 }
 .leaflet-popup-content { 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
     margin: 0;
     min-width: 260px;
 }
 
-
 .bus-icon-rect div {
-    transition: transform 0.2s ease, opacity 0.3s ease;
+    transition: all 0.2s ease;
+    border: 2px solid white; /* Conservé de l'original */
 }
 .bus-icon-rect:hover div {
     transform: scale(1.15);
 }
-
-/* AJOUT: Style pour les bus en station */
 .bus-icon-waiting div {
     opacity: 0.6;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
 }
 
-
-#mode-banner {
-    position: fixed;
-    top: 90px; /* Ajusté pour la nouvelle UI PC */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9; 
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    padding: 0.75rem 1.5rem;
-    text-align: center;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: var(--radius-full);
-    box-shadow: var(--shadow-md);
+/* =========================================
+ * NOUVEAUX STYLES : Statut du bus sur la carte
+ * ========================================= */
+.bus-status-normal div {
+    /* (état par défaut) */
 }
-#mode-banner.hidden { display: none; }
-@media (max-width: 768px) {
-    #mode-banner {
-        top: 115px; /* Ajusté pour la nouvelle UI mobile */
-    }
-    .leaflet-popup-content {
-        min-width: 240px;
-    }
+.bus-status-perturbation div {
+    border: 3px solid var(--color-orange) !important;
+}
+.bus-status-retard div {
+    border: 3px solid var(--color-yellow) !important;
+}
+.bus-status-annulation div {
+    opacity: 0.3 !important;
+    border: 3px solid var(--color-red) !important;
 }
 
+
+/* (Styles de cluster conservés) */
 .marker-cluster-small { background-color: rgba(181, 226, 140, 0.6); }
 .marker-cluster-small div { background-color: rgba(110, 204, 57, 0.6); }
 .marker-cluster-medium { background-color: rgba(241, 211, 87, 0.6); }
@@ -598,26 +926,22 @@ html, body {
 .marker-cluster span { line-height: 30px; }
 
 
-/* Styles pour le marqueur d'arrêt "master stop" */
+/* (Styles d'arrêt conservés) */
 .stop-marker-icon {
-    background: var(--secondary); /* Couleur solide (gris-bleu du thème) */
-    border: 2px solid white;      /* Bordure blanche épaisse pour le contraste */
+    background: var(--secondary);
+    border: 2px solid white;
     border-radius: 50%;
-    box-shadow: var(--shadow-md); /* Ombre plus forte */
+    box-shadow: var(--shadow-md);
     transition: all 0.2s ease;
     cursor: pointer;
 }
 .leaflet-zoom-animated .stop-marker-icon {
-    /* S'assure qu'ils s'affichent/disparaissent proprement au zoom */
     transition: opacity 0.3s, transform 0.3s;
 }
 .stop-marker-icon:hover {
-    background: var(--primary); /* Devient bleu au survol */
-    transform: scale(1.3);      /* Grossit légèrement */
+    background: var(--primary);
+    transform: scale(1.3);
 }
-
-
-/* Styles pour le marqueur de recherche d'arrêt */
 .stop-search-marker div {
     background: var(--primary);
     border: 2px solid white;
@@ -627,13 +951,10 @@ html, body {
     height: 100%;
 }
 
-
-/* =========================================
- * STYLES UNIFIÉS POUR POPUPS (BUS + ARRÊTS)
- * ========================================= */
+/* (Styles de popup unifiés conservés) */
 .info-popup-content {
     width: 100%;
-    max-height: 250px; /* Limite la hauteur sur mobile */
+    max-height: 250px;
     overflow-y: auto;
 }
 .info-popup-header {
@@ -645,12 +966,10 @@ html, body {
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
-    /* Pour le popup de bus, la couleur est appliquée en ligne */
 }
 .info-popup-body {
     padding: 0.5rem;
 }
-/* Styles spécifiques aux détails du bus */
 .info-popup-body.bus-details {
     padding: 0 0.875rem 0.625rem;
 }
@@ -668,8 +987,6 @@ html, body {
     font-size: 0.75rem; 
     color: var(--text-secondary);
 }
-
-/* Styles spécifiques à la liste des départs (popup d'arrêt) */
 .departure-item {
     display: flex;
     justify-content: space-between;
