@@ -4,6 +4,10 @@
  *
  * NOTE (V6):
  * - Logique "block_id" (tripsByBlockId, findNextTripInBlock) SUPPRIMÉE
+ *
+ * CORRECTION (CHEMINS) :
+ * - Les chemins fetch() pointent désormais vers '/public/data/...' pour
+ * correspondre à la structure du serveur où /public est à la racine.
  */
 
 export class DataManager {
@@ -108,7 +112,9 @@ export class DataManager {
      * Charge un fichier GTFS (CSV)
      */
     async loadGTFSFile(filename) {
-        const response = await fetch(`./data/gtfs/${filename}`);
+        // *** CORRECTION ICI ***
+        // Le chemin commence par /public/ pour correspondre à la racine du serveur
+        const response = await fetch(`/public/data/gtfs/${filename}`);
         if (!response.ok) {
             throw new Error(`Impossible de charger ${filename}: ${response.statusText}`);
         }
@@ -128,7 +134,9 @@ export class DataManager {
      * Charge le fichier GeoJSON
      */
     async loadGeoJSON() {
-        const response = await fetch('./data/map.geojson');
+        // *** CORRECTION ICI ***
+        // Le chemin commence par /public/ pour correspondre à la racine du serveur
+        const response = await fetch('/public/data/map.geojson');
         if (!response.ok) {
             console.warn(`map.geojson non trouvé ou invalide: ${response.statusText}. Les tracés de route ne seront pas disponibles.`);
             return null; // N'est pas une erreur fatale
@@ -452,5 +460,23 @@ export class DataManager {
         }
 
         return nextActiveTime;
+    }
+
+    // *** CORRECTION: La fonction est déplacée ICI ***
+    /**
+     * Convertit un nombre de secondes en chaîne de caractères "X h Y min"
+     */
+    formatDuration(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        
+        let str = "";
+        if (hours > 0) {
+            str += `${hours} h `;
+        }
+        if (minutes > 0 || hours === 0) { // Affiche "0 min" si 0s
+            str += `${minutes} min`;
+        }
+        return str.trim();
     }
 }
