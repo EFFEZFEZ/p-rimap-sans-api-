@@ -10,6 +10,7 @@
     --color-red: #dc3545;
     --color-yellow: #ffc107;
     --color-green-check: #28a745;
+    --color-tab-active: #008080; /* Vert/Bleu canard pour les onglets */
 
     /* Palette de base */
     --primary: #2563eb;
@@ -182,16 +183,24 @@ html, body {
     border-color: var(--primary);
 }
 .nav-button-icon {
-    font-size: 2rem;
     display: block;
     margin-bottom: 0.75rem;
+    height: 32px;
+    line-height: 32px;
+}
+.nav-button-icon svg {
+    color: var(--text-primary);
 }
 
 /* Couleurs des boutons */
 .nav-button.blue { border-top: 4px solid var(--color-blue); }
+.nav-button.blue .nav-button-icon svg { color: var(--color-blue); }
 .nav-button.purple { border-top: 4px solid var(--color-purple); }
+.nav-button.purple .nav-button-icon svg { color: var(--color-purple); }
 .nav-button.orange { border-top: 4px solid var(--color-orange); }
+.nav-button.orange .nav-button-icon svg { color: var(--color-orange); }
 .nav-button.green { border-top: 4px solid var(--color-green); }
+.nav-button.green .nav-button-icon svg { color: var(--color-green); }
 
 .notification-badge {
     position: absolute;
@@ -261,7 +270,7 @@ html, body {
     outline: none;
 }
 
-/* Carte Horaires (reprise de votre recherche) */
+/* Carte Horaires */
 #horaires-search-container {
     position: relative;
     display: flex;
@@ -302,7 +311,6 @@ html, body {
     z-index: 2000;
 }
 #horaires-search-results.hidden { display: none; }
-/* Style de résultat réutilisé */
 .search-result-item {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
@@ -314,47 +322,76 @@ html, body {
 .search-result-item strong { color: var(--primary); }
 
 
-/* Carte Info Trafic */
+/* =========================================
+ * NOUVEAU DESIGN: Carte Info Trafic
+ * ========================================= */
 .tabs {
     display: flex;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 1rem;
+    border: 1px solid var(--color-tab-active);
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
 }
 .tab {
-    padding: 0.5rem 1rem;
+    flex: 1;
+    padding: 0.6rem 1rem;
     border: none;
-    background: none;
+    background: var(--bg-main);
     cursor: pointer;
     font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
+    font-weight: 600;
+    color: var(--color-tab-active);
+    transition: all 0.2s ease;
+    text-transform: capitalize;
 }
 .tab.active {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
+    background: var(--color-tab-active);
+    color: white;
 }
+.tab:not(.active):hover {
+    background: var(--bg-secondary);
+}
+.tab:first-child {
+    border-right: 1px solid var(--color-tab-active);
+}
+
+/* Grille Info Trafic */
 #info-trafic-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1.25rem;
     max-height: 350px;
     overflow-y: auto;
 }
-.trafic-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 0.25rem;
-    border-bottom: 1px solid var(--border);
-}
-.trafic-item:last-child { border-bottom: none; }
-.trafic-info {
+.trafic-item-grid {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    padding: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    flex: 1;
-    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
-/* Badge de ligne (similaire à .route-badge) */
+.trafic-item-grid:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Icône bus dans la grille */
+.icon-bus-small {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+.icon-bus-small svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Badge ligne dans la grille (réutilise .line-badge) */
 .line-badge {
     display: inline-flex;
     align-items: center;
@@ -367,40 +404,30 @@ html, body {
     border-radius: var(--radius-md); 
     flex-shrink: 0;
 }
-.trafic-details {
-    overflow: hidden;
-}
-.trafic-details-line {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.trafic-details-msg {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.status-icon {
-    width: 24px;
-    height: 24px;
-    font-size: 1.25rem;
+
+/* Indicateur de statut (le '!') */
+.status-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    margin-left: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid white;
 }
-/* Icônes de statut */
-.status-normal .status-icon { color: var(--color-green-check); }
-.status-perturbation .status-icon { color: var(--color-orange); }
-.status-retard .status-icon { color: var(--color-yellow); }
-.status-annulation .status-icon { color: var(--color-red); }
-.status-annulation .trafic-details-msg { color: var(--color-red); font-weight: 500; }
-.status-perturbation .trafic-details-msg { color: var(--color-orange); }
-.status-retard .trafic-details-msg { color: var(--color-yellow); }
+.status-indicator svg {
+    width: 16px;
+    height: 16px;
+    color: white;
+}
+.status-indicator.type-perturbation { background: var(--color-orange); }
+.status-indicator.type-retard { background: var(--color-orange); } /* Orange aussi, comme l'image */
+.status-indicator.type-annulation { background: var(--color-red); }
+
 
 /* =========================================
  * VUE CARTE (Ancienne App)
@@ -413,9 +440,8 @@ html, body {
     height: 100vh;
     z-index: 1100;
     background: var(--bg-light);
-    /* `display: none` est géré par la classe .hidden */
 }
-#map-view { /* Ancien #app */
+#map-view {
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -431,17 +457,14 @@ html, body {
  * RESPONSIVITÉ
  * ========================================= */
 @media (max-width: 1024px) {
-    /* Passe les cartes en 2 colonnes */
     .content-cards {
         grid-template-columns: repeat(2, 1fr);
     }
-    /* La 3e carte prend toute la largeur */
     .content-cards .card:last-child {
         grid-column: 1 / -1;
     }
 }
 @media (max-width: 768px) {
-    /* Passe les boutons de nav en 2 colonnes */
     .main-nav-buttons {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
@@ -449,9 +472,13 @@ html, body {
     .nav-button {
         padding: 1.25rem 1rem;
     }
-    /* Passe les cartes en 1 colonne */
     .content-cards {
         grid-template-columns: 1fr;
+    }
+    #info-trafic-list {
+        /* Plus de colonnes sur petit écran */
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.75rem;
     }
 }
 @media (max-width: 600px) {
@@ -536,10 +563,6 @@ html, body {
 #data-status.loaded { color: #059669; }
 #data-status.error { color: #dc2626; }
 
-/* ANCIENNE Barre de recherche (Maintenant dans la carte #horaires) */
-/* Les styles .search-container, #search-bar, #search-results sont maintenant
-   remplacés par #horaires-search-container, etc. */
-
 /* Panneau de filtre (styles existants conservés) */
 #route-filter-panel {
     position: fixed;
@@ -571,14 +594,13 @@ html, body {
         background: none;
         border: none;
         padding: 0;
-        height: 0; /* Ne prend pas de place */
+        height: 0;
     }
 
     #map-view #map {
         height: 100vh;
     }
 
-    /* Bouton Retour (Mobile) */
     #btn-back-to-dashboard {
         position: fixed;
         top: 15px;
@@ -587,15 +609,14 @@ html, body {
         box-shadow: var(--shadow-md);
         padding: 0.5rem 0.75rem;
     }
-    #btn-back-to-dashboard span { display: none; } /* Cache texte */
+    #btn-back-to-dashboard span { display: none; }
     #btn-back-to-dashboard svg { margin-right: 0; }
 
 
-    /* Horloge (Mobile) */
     #map-view #clock {
         position: fixed;
         top: 15px; 
-        left: 50%; /* Centré */
+        left: 50%;
         transform: translateX(-50%);
         z-index: 999;
         background: var(--bg-main);
@@ -606,7 +627,6 @@ html, body {
     }
     #map-view #date-indicator { display: none; }
 
-    /* Statut (Mobile) */
     #map-view #status-info {
         position: fixed;
         top: 15px;
@@ -621,7 +641,6 @@ html, body {
     }
     #map-view #data-status { display: none; }
 
-    /* Bouton Filtre (Mobile FAB) */
     #btn-toggle-filter {
         position: fixed;
         bottom: 30px;
@@ -637,14 +656,13 @@ html, body {
     #btn-toggle-filter span { display: none; }
     #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
 
-    /* Panneau de filtre (Mobile "Bottom Sheet") */
     #route-filter-panel {
         top: auto;
         bottom: 0;
         left: 0;
         right: 0;
         width: 100%;
-        max-height: 80vh; /* Limite la hauteur */
+        max-height: 80vh;
         border-left: none;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transform: translateY(0); 
@@ -886,7 +904,7 @@ html, body {
 
 .bus-icon-rect div {
     transition: all 0.2s ease;
-    border: 2px solid white; /* Conservé de l'original */
+    border: 2px solid white;
 }
 .bus-icon-rect:hover div {
     transform: scale(1.15);
