@@ -508,6 +508,7 @@ export class MapRenderer {
 
     /**
      * Zoome sur un arrêt
+     * MODIFIÉ : Ne crée plus le popup simple.
      */
     zoomToStop(stop) {
         const lat = parseFloat(stop.stop_lat);
@@ -524,7 +525,9 @@ export class MapRenderer {
             iconAnchor: [6, 6]
         });
         this.tempStopMarker = L.marker([lat, lon], { icon: stopIcon }).addTo(this.map);
-        this.tempStopMarker.bindPopup(`<b>${stop.stop_name}</b>`).openPopup();
+        
+        // *** LIGNE SUPPRIMÉE (CORRECTION DU BUG) ***
+        // this.tempStopMarker.bindPopup(`<b>${stop.stop_name}</b>`).openPopup();
     }
 
     /**
@@ -563,9 +566,6 @@ export class MapRenderer {
     }
 
     /**
-     * Appelé lorsqu'un marqueur d'arrêt est cliqué
-     */
-   /**
      * Appelé lorsqu'un marqueur d'arrêt est cliqué
      */
     onStopClick(masterStop) {
