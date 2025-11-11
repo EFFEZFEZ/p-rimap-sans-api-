@@ -37,6 +37,7 @@ const ICONS = {
 };
 
 // NOUVEAU: Mappage des noms de fichiers PDF (basé sur image_a01f3d.png)
+// CORRIGÉ: Ajout des lignes e et R
 const PDF_FILENAME_MAP = {
     'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
     'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
@@ -367,19 +368,21 @@ function buildFicheHoraireList() {
         });
         
         routes.forEach(route => {
-            // CORRECTION: Utilise le mappage de noms de fichiers
-            // (Note: j'utilise les noms de l'image 'image_a01f3d.png' comme base)
-            const pdfName = PDF_FILENAME_MAP[route.route_short_name];
+            // *** CORRECTION DE LA LOGIQUE ICI ***
+            let pdfName = PDF_FILENAME_MAP[route.route_short_name];
+            let pdfPath;
             
             if (!pdfName) {
                 // Si le fichier n'est pas dans la map, on tente de le deviner
-                // (au cas où vous ajouteriez 'e1.pdf' etc. plus tard)
-                console.warn(`Nom de fichier PDF non mappé pour ${route.route_short_name}. Tentative avec le nom simple.`);
-                // pdfName = `${route.route_short_name}.pdf`; // Décommentez pour activer le fallback
-                return; // Pour l'instant, on saute s'il n'est pas mappé
+                console.warn(`Nom de fichier PDF non mappé pour ${route.route_short_name}. Tentative avec la convention standard.`);
+                // On devine le nom basé sur la convention
+                pdfName = `grandperigueux_fiche_horaires_ligne_${route.route_short_name.toLowerCase()}_sept_2025.pdf`;
+                pdfPath = `/data/fichehoraire/${pdfName}`;
+                // On NE 'return' PAS, on affiche le lien quand même
+            } else {
+                pdfPath = `/data/fichehoraire/${pdfName}`;
             }
             
-            const pdfPath = `/data/fichehoraire/${pdfName}`;
             linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
                 ${route.route_long_name || `Ligne ${route.route_short_name}`}
             </a>`;
