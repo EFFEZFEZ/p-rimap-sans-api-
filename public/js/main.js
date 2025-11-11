@@ -9,6 +9,13 @@ import { TimeManager } from './timeManager.js';
 import { TripScheduler } from './tripScheduler.js';
 import { BusPositionCalculator } from './busPositionCalculator.js';
 import { MapRenderer } from './mapRenderer.js';
+// NOUVEL IMPORT
+import { ApiManager } from './apiManager.js';
+
+// *** ACTION REQUISE ***
+// Remplacez cette chaîne par votre clé d'API Google Cloud
+// (Vous devez activer "Places API" et "Routes API" pour cette clé)
+const GOOGLE_API_KEY = "VOTRE_CLE_API_GOOGLE_ICI";
 
 // Modules
 let dataManager;
@@ -16,76 +23,12 @@ let timeManager;
 let tripScheduler;
 let busPositionCalculator;
 let mapRenderer;
-let resultsMapRenderer; // NOUVEAU: Une 2e instance de carte pour les résultats
+let resultsMapRenderer; 
 let visibleRoutes = new Set();
+let apiManager; // Nouvelle instance
 
 // NOUVEL ÉTAT GLOBAL
-let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
-
-// NOUVELLES ICÔNES SVG
-const ICONS = {
-    // VECTEUR BUS CORRIGÉ
-    busSmall: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
-    statusTriangle: `<svg width="16" height="8" viewBox="0 0 16 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8 0L16 8H0L8 0Z" /></svg>`,
-    statusWarning: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
-    statusError: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
-    alertBanner: (type) => {
-        if (type === 'annulation') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
-        if (type === 'retard') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
-    }
-};
-
-// Mappage des noms de fichiers PDF
-const PDF_FILENAME_MAP = {
-    'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
-    'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
-    'C': 'grandperigueux_fiche_horaires_ligne_C_sept_2025.pdf',
-    'D': 'grandperigueux_fiche_horaires_ligne_D_sept_2025.pdf',
-    'e1': 'grandperigueux_fiche_horaires_ligne_e1_sept_2025.pdf',
-    'e2': 'grandperigueux_fiche_horaires_ligne_e2_sept_2025.pdf',
-    'e4': 'grandperigueux_fiche_horaires_ligne_e4_sept_2025.pdf',
-    'e5': 'grandperigueux_fiche_horaires_ligne_e5_sept_2025.pdf',
-    'e6': 'grandperigueux_fiche_horaires_ligne_e6_sept_2025.pdf',
-    'e7': 'grandperigueux_fiche_horaires_ligne_e7_sept_2025.pdf',
-    'K1A': 'grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf',
-    'K1B': 'grandperigueux_fiche_horaires_ligne_K1B_sept_2025.pdf',
-    'K2': 'grandperigueux_fiche_horaires_ligne_K2_sept_2025.pdf',
-    'K3A': 'grandperigueux_fiche_horaires_ligne_K3A_sept_2025.pdf',
-    'K3B': 'grandperigueux_fiche_horaires_ligne_K3B_sept_2025.pdf',
-    'K4A': 'grandperigueux_fiche_horaires_ligne_K4A_sept_2025.pdf',
-    'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
-    'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
-    'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
-    'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
-    'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
-};
-
-// Mappage des noms longs
-const ROUTE_LONG_NAME_MAP = {
-    'A': 'ZAE Marsac <> Centre Hospitalier',
-    'B': 'Les Tournesols <> Gare SNCF',
-    'C': 'ZAE Marsac <> P+R Aquacap',
-    'D': 'P+R Charrieras <> Tourny',
-    'e1': 'ZAE Marsac <> P+R Aquacap',
-    'e2': 'Talleyrand Périgord <> Fromarsac',
-    'e4': 'Charrieras <> La Feuilleraie <> Tourny',
-    'e5': 'Les Tournesols <> PEM',
-    'e6': 'Créavallée <> Trésorerie municipale',
-    'e7': 'Notre-Dame de Sanilhac poste <> Les Lilas hôpital',
-    'K1A': 'Maison Rouge <> Tourny / La Rudeille <> Tourny',
-    'K1B': 'Le Lac <> Pôle universitaire Grenadière <> Taillefer',
-    'K2': 'Champcevinel bourg <> Tourny',
-    'K3A': 'La Feuilleraie <> Place du 8 mai',
-    'K3B': 'Pépinière <> Place du 8 mai',
-    'K4A': 'Sarrazi <> Dojo départemental <> Tourny',
-    'K4B': 'Coulounieix bourg <> Tourny',
-    'K5': 'Halte ferroviaire Boulazac <> La Feuilleraie',
-    'K6': 'Halte ferroviaire Marsac sur l’Isle',
-    'N': 'Tourny <> PEM',
-    'N1': 'Gare SNCF <> 8 mai <> Tourny <> Gare SNCF',
-};
-
+let lineStatuses = {}; 
 
 // ÉLÉMENTS DOM (VUE 1: DASHBOARD)
 let dashboardContainer, dashboardHall, dashboardContentView, btnBackToHall;
@@ -95,13 +38,20 @@ let alertBanner, alertBannerContent, alertBannerClose;
 let btnAdminConsole;
 let ficheHoraireContainer;
 let searchBar, searchResultsContainer;
-let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
 
 // ÉLÉMENTS DOM (VUE 2: CARTE)
 let mapContainer, btnShowMap, btnBackToDashboardFromMap;
 
 // ÉLÉMENTS DOM (VUE 3: RÉSULTATS)
 let itineraryResultsContainer, btnBackToDashboardFromResults, resultsListContainer;
+
+// --- NOUVEAUX ÉLÉMENTS DOM (PLANIFICATEUR AVEC API) ---
+let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
+let fromInput, toInput;
+let fromSuggestions, toSuggestions;
+// Variables pour stocker les IDs de lieu Google
+let fromPlaceId = null;
+let toPlaceId = null;
 
 
 // Catégories de lignes
@@ -139,9 +89,6 @@ async function initializeApp() {
     ficheHoraireContainer = document.getElementById('fiche-horaire-container');
     searchBar = document.getElementById('horaires-search-bar');
     searchResultsContainer = document.getElementById('horaires-search-results');
-    plannerWhenBtn = document.getElementById('planner-when-btn');
-    plannerOptionsPopover = document.getElementById('planner-options-popover');
-    plannerSubmitBtn = document.getElementById('planner-submit-btn');
 
     mapContainer = document.getElementById('map-container');
     btnShowMap = document.getElementById('btn-show-map');
@@ -149,35 +96,39 @@ async function initializeApp() {
     
     itineraryResultsContainer = document.getElementById('itinerary-results-container');
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
-    // *** NOUVEL ÉLÉMENT SÉLECTIONNÉ ***
     resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
 
+    // NOUVELLES SÉLECTIONS DOM
+    plannerWhenBtn = document.getElementById('planner-when-btn');
+    plannerOptionsPopover = document.getElementById('planner-options-popover');
+    plannerSubmitBtn = document.getElementById('planner-submit-btn');
+    fromInput = document.getElementById('hall-planner-from');
+    toInput = document.getElementById('hall-planner-to');
+    fromSuggestions = document.getElementById('from-suggestions');
+    toSuggestions = document.getElementById('to-suggestions');
 
-    // --- 2. ATTACHER LES ÉCOUTEURS STATIQUES ---
+    // --- 2. INITIALISER LES MANAGERS ---
+    apiManager = new ApiManager(GOOGLE_API_KEY);
+    dataManager = new DataManager();
+
+    // --- 3. ATTACHER LES ÉCOUTEURS STATIQUES (y compris l'API Google) ---
     setupStaticEventListeners();
 
-    // --- 3. CHARGER LES DONNÉES ET INITIALISER LE RESTE ---
-    dataManager = new DataManager();
-    
+    // --- 4. CHARGER LES DONNÉES GTFS (pour la carte temps réel) ---
     try {
         await dataManager.loadAllData();
         
-        // --- 4. INITIALISER LES MODULES DÉPENDANTS DES DONNÉES ---
         timeManager = new TimeManager();
         
-        // Initialise la carte principale (plein écran)
         mapRenderer = new MapRenderer('map', dataManager, timeManager);
         mapRenderer.initializeMap();
 
-        // Initialise la 2e carte (celle des résultats)
         resultsMapRenderer = new MapRenderer('results-map', dataManager, timeManager);
-        resultsMapRenderer.initializeMap(false); // false = n'ajoute pas les bus/arrêts par défaut
-
+        resultsMapRenderer.initializeMap(false); 
         
         tripScheduler = new TripScheduler(dataManager);
         busPositionCalculator = new BusPositionCalculator(dataManager);
         
-        // --- 5. POPULER L'UI AVEC LES DONNÉES ---
         initializeRouteFilter();
         
         if (dataManager.geoJson) {
@@ -187,7 +138,6 @@ async function initializeApp() {
         mapRenderer.displayStops();
         setupDashboardContent(); 
 
-        // --- 6. ATTACHER LES ÉCOUTEURS DÉPENDANTS DES DONNÉES ---
         setupDataDependentEventListeners();
 
         if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
@@ -196,17 +146,14 @@ async function initializeApp() {
         
         updateDataStatus('Données chargées', 'loaded');
         checkAndSetupTimeMode();
-        updateData(); // Appel initial
+        updateData(); 
         
     } catch (error) {
-        console.error('Erreur lors de l\'initialisation:', error);
-        updateDataStatus('Erreur de chargement', 'error');
+        console.error('Erreur lors de l\'initialisation GTFS:', error);
+        updateDataStatus('Erreur de chargement GTFS', 'error');
     }
 }
 
-/**
- * Configure le *contenu* du tableau de bord (nécessite les données)
- */
 function setupDashboardContent() {
     dataManager.routes.forEach(route => {
         lineStatuses[route.route_id] = { status: 'normal', message: '' };
@@ -217,11 +164,16 @@ function setupDashboardContent() {
     setupAdminConsole();
 }
 
-/**
- * Attache les écouteurs pour les éléments HTML statiques
- */
 function setupStaticEventListeners() {
-    // --- Écouteurs de navigation du Dashboard ---
+    // Tente de charger l'API Google Maps dès que possible
+    try {
+        apiManager.loadGoogleMapsAPI();
+    } catch (error) {
+        console.error("Impossible de charger l'API Google:", error);
+        // On pourrait afficher une erreur à l'utilisateur ici
+    }
+
+    // --- Navigation principale ---
     document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
         button.addEventListener('click', (e) => {
             e.preventDefault();
@@ -230,28 +182,15 @@ function setupStaticEventListeners() {
         });
     });
 
-    // Bouton "Carte Interactive" -> Vue Carte Plein Écran
     btnShowMap.addEventListener('click', showMapView); 
     
-    // Bouton "Rechercher" -> Vue Résultats d'Itinéraire
-    plannerSubmitBtn.addEventListener('click', (e) => {
-        e.preventDefault(); 
-        if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
-            plannerOptionsPopover.classList.add('hidden');
-            plannerWhenBtn.classList.remove('popover-active');
-        }
-        console.log("Recherche lancée, transition vers la vue RÉSULTATS...");
-        showResultsView(); 
-    });
-
-    // Boutons de retour
+    // --- Boutons de retour ---
     btnBackToDashboardFromMap.addEventListener('click', showDashboardHall);
     btnBackToDashboardFromResults.addEventListener('click', showDashboardHall);
     btnBackToHall.addEventListener('click', showDashboardHall);
 
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
     
-    // Onglets (Info Trafic)
     document.querySelectorAll('.tabs .tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
@@ -263,7 +202,7 @@ function setupStaticEventListeners() {
         });
     });
 
-    // --- Panneau de filtre et instructions ---
+    // --- Filtres et Instructions (pour la carte temps réel) ---
     document.getElementById('close-instructions').addEventListener('click', () => {
         document.getElementById('instructions').classList.add('hidden');
         localStorage.setItem('gtfsInstructionsShown', 'true');
@@ -299,7 +238,7 @@ function setupStaticEventListeners() {
         }
     });
 
-    // --- Recherche d'horaires ---
+    // --- Recherche d'horaires (Système GTFS local) ---
     document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
         const horairesCard = document.getElementById('horaires');
         if (horairesCard) {
@@ -314,7 +253,63 @@ function setupStaticEventListeners() {
     searchBar.addEventListener('focus', handleSearchInput);
 
 
-    // --- Planificateur (popover "QUAND") ---
+    // --- NOUVEAU: ÉCOUTEURS DU PLANIFICATEUR (API GOOGLE) ---
+
+    // Bouton "Rechercher"
+    plannerSubmitBtn.addEventListener('click', async (e) => {
+        e.preventDefault(); 
+        if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
+            plannerOptionsPopover.classList.add('hidden');
+            plannerWhenBtn.classList.remove('popover-active');
+        }
+
+        // Valide que nous avons les Place IDs
+        if (!fromPlaceId || !toPlaceId) {
+            alert("Veuillez sélectionner un point de départ et d'arrivée depuis les suggestions.");
+            return;
+        }
+
+        console.log(`Recherche Google API lancée: DE ${fromPlaceId} À ${toPlaceId}`);
+        showResultsView(); // Affiche la vue des résultats (avec "Recherche en cours...")
+
+        try {
+            // Appelle l'API Routes
+            const results = await apiManager.fetchItinerary(fromPlaceId, toPlaceId);
+            
+            // TODO: Créer une fonction "renderItineraryResults(results)"
+            // Pour l'instant, on affiche le succès
+            console.log("Résultats de l'API Routes:", results);
+            if (resultsListContainer) {
+                // Remplace "Recherche..." par un message de succès (temporaire)
+                resultsListContainer.innerHTML = `<p class="results-message">Résultats trouvés ! (Voir console)</p>`; 
+            }
+            
+        } catch (error) {
+            console.error("Échec de la recherche d'itinéraire:", error);
+            if (resultsListContainer) {
+                // Affiche l'erreur à l'utilisateur
+                resultsListContainer.innerHTML = `<p class="results-message error">Impossible de calculer l'itinéraire. ${error.message}</p>`;
+            }
+        }
+    });
+
+    // Autocomplétion pour le champ "Départ"
+    fromInput.addEventListener('input', (e) => {
+        handleAutocomplete(e.target.value, fromSuggestions, (placeId) => {
+            fromPlaceId = placeId; // Stocke l'ID
+            fromInput.value = e.target.value; // Garde le texte
+        });
+    });
+
+    // Autocomplétion pour le champ "Arrivée"
+    toInput.addEventListener('input', (e) => {
+        handleAutocomplete(e.target.value, toSuggestions, (placeId) => {
+            toPlaceId = placeId; // Stocke l'ID
+            toInput.value = e.target.value; // Garde le texte
+        });
+    });
+
+    // Popover "QUAND"
     if (plannerWhenBtn && plannerOptionsPopover) { 
         plannerWhenBtn.addEventListener('click', (e) => {
             e.stopPropagation(); 
@@ -329,7 +324,7 @@ function setupStaticEventListeners() {
                 const popoverSubmitBtn = document.getElementById('popover-submit-btn');
                 if (e.currentTarget.dataset.tab === 'arriver') { 
                     mainBtnText.textContent = 'Arriver à...'; 
-                    popoverSubmitBtn.textContent = "Valider l'arrivée"; // Correction de l'apostrophe
+                    popoverSubmitBtn.textContent = "Valider l'arrivée";
                 } else {
                     mainBtnText.textContent = 'Partir maintenant';
                     popoverSubmitBtn.textContent = 'Partir maintenant';
@@ -343,24 +338,29 @@ function setupStaticEventListeners() {
         plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation()); 
     }
     
-    // --- Bouton SWAP ---
+    // Bouton SWAP
     const swapBtn = document.querySelector('.btn-swap-direction'); 
     if (swapBtn) {
         swapBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            const fromInput = document.getElementById('hall-planner-from');
-            const toInput = document.getElementById('hall-planner-to');
+            // Échange les valeurs textuelles
             const fromVal = fromInput.value;
             fromInput.value = toInput.value;
             toInput.value = fromVal;
+            // Échange les Place IDs stockés
+            const tempId = fromPlaceId;
+            fromPlaceId = toPlaceId;
+            toPlaceId = tempId;
         });
     }
 
-    // --- Écouteur global "Click Outside" ---
+    // Clic global "Click Outside"
     document.addEventListener('click', (e) => {
+        // Cache les résultats de la recherche GTFS
         if (searchResultsContainer && !e.target.closest('#horaires-search-container')) {
             searchResultsContainer.classList.add('hidden');
         }
+        // Cache le popover "QUAND"
         if (plannerOptionsPopover && !e.target.closest('.form-group-when')) {
             if (!plannerOptionsPopover.classList.contains('hidden')) {
                 plannerOptionsPopover.classList.add('hidden');
@@ -369,11 +369,16 @@ function setupStaticEventListeners() {
                 }
             }
         }
+        // NOUVEAU: Cache les suggestions d'autocomplétion
+        if (!e.target.closest('.form-group')) {
+            fromSuggestions.style.display = 'none';
+            toSuggestions.style.display = 'none';
+        }
     });
 }
 
 /**
- * Attache les écouteurs qui dépendent des modules chargés (map, time)
+ * Attache les écouteurs qui dépendent des modules GTFS chargés
  */
 function setupDataDependentEventListeners() {
     if (timeManager) {
@@ -388,10 +393,68 @@ function setupDataDependentEventListeners() {
     }
 }
 
+// --- NOUVELLES FONCTIONS POUR L'AUTOCOMPLÉTION ---
 
 /**
- * Logique de la console d'administration
+ * Gère l'autocomplétion pour un champ de saisie
+ * @param {string} query - Le texte de l'utilisateur
+ * @param {HTMLElement} container - Le div où afficher les résultats
+ * @param {function} onSelect - Callback à appeler avec le placeId
  */
+async function handleAutocomplete(query, container, onSelect) {
+    if (query.length < 3) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+        return;
+    }
+
+    try {
+        const suggestions = await apiManager.getPlaceAutocomplete(query);
+        renderSuggestions(suggestions, container, onSelect);
+    } catch (error) {
+        console.warn("Erreur d'autocomplétion:", error);
+        container.style.display = 'none';
+    }
+}
+
+/**
+ * Affiche les suggestions dans le conteneur
+ * @param {Array} suggestions - Liste de suggestions de l'API
+ * @param {HTMLElement} container - Le div où afficher les résultats
+ * @param {function} onSelect - Callback à appeler avec le placeId
+ */
+function renderSuggestions(suggestions, container, onSelect) {
+    container.innerHTML = '';
+    if (suggestions.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    suggestions.forEach(suggestion => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        
+        // Sépare le nom principal du reste de l'adresse
+        const mainText = suggestion.description.split(',')[0];
+        const secondaryText = suggestion.description.substring(mainText.length);
+        item.innerHTML = `<strong>${mainText}</strong>${secondaryText}`;
+        
+        item.addEventListener('click', () => {
+            const inputElement = container.previousElementSibling; // L'input est juste avant
+            inputElement.value = suggestion.description; // Met à jour le texte
+            onSelect(suggestion.placeId); // Stocke l'ID
+            container.innerHTML = ''; // Vide et cache la liste
+            container.style.display = 'none';
+        });
+        container.appendChild(item);
+    });
+
+    container.style.display = 'block';
+}
+
+
+// --- Fonctions de l'application (logique métier) ---
+
 function setupAdminConsole() {
     btnAdminConsole.addEventListener('click', () => {
         console.log("--- CONSOLE ADMIN ACTIVÉE ---");
@@ -422,9 +485,6 @@ function setupAdminConsole() {
     };
 }
 
-/**
- * Affiche la carte "Info Trafic"
- */
 function renderInfoTraficCard() {
     if (!dataManager || !infoTraficList) return;
     infoTraficList.innerHTML = '';
@@ -491,10 +551,6 @@ function renderInfoTraficCard() {
     infoTraficCount.classList.toggle('hidden', alertCount === 0);
 }
 
-
-/**
- * Construit l'accordéon des fiches horaires
- */
 function buildFicheHoraireList() {
     if (!dataManager || !ficheHoraireContainer) return;
     ficheHoraireContainer.innerHTML = '';
@@ -560,7 +616,6 @@ function buildFicheHoraireList() {
         }
     }
     
-    // Attache les écouteurs de l'accordéon APRÈS avoir créé les éléments
     const allDetails = document.querySelectorAll('#fiche-horaire-container details');
     allDetails.forEach(details => {
         details.addEventListener('toggle', (event) => {
@@ -575,10 +630,6 @@ function buildFicheHoraireList() {
     });
 }
 
-
-/**
- * Affiche le bandeau d'alerte en haut
- */
 function renderAlertBanner() {
     let alerts = [];
     let firstAlertStatus = 'normal';
@@ -592,7 +643,7 @@ function renderAlertBanner() {
         const state = lineStatuses[route_id];
         if (state.status !== 'normal') {
             const route = dataManager.getRoute(route_id);
-            if (route) { // Vérifie que la route existe
+            if (route) { 
                 alerts.push({
                     name: route.route_short_name,
                     status: state.status,
@@ -648,27 +699,20 @@ function showDashboardHall() {
     });
 }
 
-// *** FONCTION MODIFIÉE ***
 function showResultsView() {
     dashboardContainer.classList.add('hidden');
     itineraryResultsContainer.classList.remove('hidden');
     mapContainer.classList.add('hidden');
     document.body.classList.add('view-is-locked');
 
-    // Invalide la taille de la carte des résultats
     if (resultsMapRenderer && resultsMapRenderer.map) {
         resultsMapRenderer.map.invalidateSize();
     }
 
-    // Vide la liste des résultats et affiche un message de chargement
     if (resultsListContainer) {
         resultsListContainer.innerHTML = '<p class="results-message">Recherche d\'itinéraire en cours...</p>';
     }
-
-    // C'est ici qu'on lancera l'appel à l'API
-    // fetchItinerary(); 
 }
-// *** FIN DE LA MODIFICATION ***
 
 function showDashboardView(viewName) {
     dashboardHall.classList.remove('view-is-active');
@@ -692,7 +736,7 @@ function showDashboardView(viewName) {
 }
 
 
-// --- Fonctions de l'application (logique métier) ---
+// --- Fonctions de l'application (logique métier GTFS) ---
 
 function checkAndSetupTimeMode() {
     timeManager.setMode('real');
@@ -835,7 +879,7 @@ function onSearchResultClick(stop) {
 }
 
 /**
- * Fonction de mise à jour principale
+ * Fonction de mise à jour principale (pour la carte temps réel)
  */
 function updateData(timeInfo) {
     if (!timeManager || !tripScheduler || !busPositionCalculator || !mapRenderer) {
