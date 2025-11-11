@@ -185,7 +185,6 @@ body {
     box-shadow: var(--shadow-md);
 }
 
-/* *** MODIFICATION ICI *** */
 .hero-section .planner-block-wrapper {
     background: transparent;
     border: none;
@@ -193,10 +192,9 @@ body {
     padding: 0;
     margin: 0 auto; 
     max-width: 900px;
-    position: relative; /* Ajouté */
-    z-index: 2; /* Ajouté (plus élevé que les boutons) */
+    position: relative; 
+    z-index: 2; 
 }
-/* *** FIN DE LA MODIFICATION *** */
 
 .hero-section .planner-block {
     background: rgba(255, 255, 255, 0.85);
@@ -1624,6 +1622,15 @@ details[open] .accordion-content {
     padding: 1rem;
     flex: 1;
 }
+
+/* *** NOUVEAU STYLE POUR LE MESSAGE DE CHARGEMENT *** */
+.results-message {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
 .route-option-wrapper {
     margin-bottom: 1.5rem;
 }
