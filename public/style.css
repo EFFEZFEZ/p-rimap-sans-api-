@@ -52,7 +52,8 @@ html, body {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
-    /* CORRECTION (BUG SWIPE): Règle 'overscroll-behavior: none;' supprimée pour rétablir le scroll */
+    /* CORRECTION (BUG SWIPE): Empêche le rebond de scroll sur mobile */
+    overscroll-behavior: none;
 }
 
 /* Ajout pour s'assurer que le contenu pousse le bas de page */
@@ -574,7 +575,6 @@ body {
     z-index: 2000;
     /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
-    /* Empêche le scroll de "déborder" sur la page */
     overscroll-behavior: contain;
 }
 #horaires-search-results.hidden { display: none; }
