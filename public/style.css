@@ -151,34 +151,22 @@ html, body {
     margin: 0 auto;
     padding: 2rem 1.5rem;
 }
-#dashboard-main h2 {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 0.25rem;
-}
-.subtitle {
-    font-size: 1.125rem;
-    color: var(--text-secondary);
-    margin-bottom: 2rem;
-}
 
-/* * NOUVELLE STRUCTURE "HUB" 
- * (Remplace les anciens styles .planner-block-wrapper) 
- */
+/* NOUVELLE STRUCTURE "HUB" */
 
 /* NOUVEAU: Style "Hero" (Page d'accueil) */
 .hero-section {
     background-image: 
         /* Superposition sombre pour la lisibilité */
-        linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-        /* VOTRE FOND SYMPA */
-        url('https://images.pexels.com/photos/7990269/pexels-photo-7990269.jpeg');
+        linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
+        /* NOUVELLE IMAGE DE FOND */
+        url('https://www.vie-economique.com/wp-content/uploads/sites/13/2024/12/shutterstock_2365894285-scaled.jpg');
     
     background-size: cover;
     background-position: center;
     border-radius: var(--radius-lg);
-    padding: 2rem 1.5rem 2.5rem 1.5rem; /* Ajout padding bas */
-    margin-bottom: 2.5rem;
+    padding: 2.5rem 1.5rem; /* Espacement intérieur équilibré */
+    box-shadow: var(--shadow-md);
 }
 
 /* On modifie le planificateur pour qu'il s'intègre au "Hero" */
@@ -199,7 +187,7 @@ html, body {
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 /* On rend les titres plus visibles sur le nouveau fond */
@@ -239,11 +227,13 @@ html, body {
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     
-    /* NOUVELLE POZITION */
+    /* NOUVELLE POSITION : espacé et non superposé */
     margin-top: 2.5rem; /* Espace par rapport au planificateur */
     max-width: 900px; /* Aligné sur le planificateur */
     margin-left: auto;
     margin-right: auto;
+    position: relative; /* S'assure qu'il n'y a pas de z-index étrange */
+    z-index: auto;
 }
 .nav-button-condensed {
     background: var(--color-nav-condensed-bg);
@@ -310,6 +300,54 @@ html, body {
 
 /* Bouton 3: Carte Interactive (Bleu - Principal) */
 /* (Il garde le style par défaut --color-nav-condensed-bg) */
+
+
+/* NOUVEAU: Contenu du bas (pour combler le vide) */
+.bottom-content-wrapper {
+    margin-top: 2.5rem; /* Espace après le Hero */
+    max-width: 900px; /* Aligné sur le Hero */
+    margin-left: auto;
+    margin-right: auto;
+}
+.bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+.bottom-grid .card {
+    /* Le style .card est déjà défini, on le réutilise */
+    /* On peut ajouter des styles spécifiques ici si besoin */
+}
+.bottom-grid .card h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+.bottom-grid .card p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.bottom-grid .card p:last-of-type {
+    margin-top: 0.5rem;
+}
+.quick-links {
+    list-style: none;
+    padding: 0;
+    margin-top: 1rem;
+}
+.quick-links li {
+    margin-bottom: 0.5rem;
+}
+.quick-links a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.quick-links a:hover {
+    text-decoration: underline;
+}
 
 
 /* NOUVEAU: Conteneur de "Pièce" (Vue de contenu) */
@@ -629,78 +667,9 @@ html, body {
 
 
 /* =========================================
- * NOUVEAU: Pied de page (Footer)
+ * FOOTER SUPPRIMÉ
  * ========================================= */
-#main-footer {
-    background: #0f172a; /* Fond très sombre */
-    color: #cbd5e1; /* Texte gris clair */
-    margin-top: 4rem; /* Espace avant le footer */
-    border-top: 4px solid var(--primary); /* Ligne de couleur primaire */
-}
-.footer-content {
-    max-width: 1300px;
-    margin: 0 auto;
-    padding: 3rem 1.5rem;
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr; /* 4 colonnes */
-    gap: 2.5rem;
-}
-.footer-col .logo {
-    color: white;
-    margin-bottom: 1rem;
-}
-.footer-description {
-    font-size: 0.875rem;
-    line-height: 1.6;
-    max-width: 300px;
-    margin-bottom: 1.5rem;
-}
-.footer-socials {
-    display: flex;
-    gap: 1rem;
-}
-.footer-socials a {
-    color: #94a3b8; /* Gris moyen */
-    transition: all 0.2s ease;
-}
-.footer-socials a:hover {
-    color: white;
-    transform: translateY(-2px);
-}
-.footer-col h4 {
-    color: white;
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 1.25rem;
-}
-.footer-col ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-.footer-col ul a {
-    text-decoration: none;
-    color: #cbd5e1; /* Texte gris clair */
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-}
-.footer-col ul a:hover {
-    color: white;
-    text-decoration: underline;
-}
-.footer-bottom {
-    background: #020617; /* Encore plus sombre */
-    padding: 1.25rem 1.5rem;
-    text-align: center;
-}
-.footer-bottom p {
-    font-size: 0.8125rem;
-    color: #94a3b8;
-    margin: 0;
-}
+/* Tous les styles pour #main-footer, .footer-content, etc. ont été supprimés */
 
 
 /* =========================================
@@ -728,22 +697,16 @@ html, body {
         grid-template-columns: 1fr;
     }
 
-    /* Footer en 2 colonnes */
-    .footer-content {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 2rem;
+    /* Contenu du bas en 1 colonne */
+    .bottom-grid {
+        grid-template-columns: 1fr;
     }
 }
 @media (max-width: 600px) {
     #dashboard-main {
         padding: 1.5rem 1rem;
     }
-    #dashboard-main h2 {
-        font-size: 1.75rem;
-    }
-    .subtitle {
-        font-size: 1rem;
-    }
+
     .logo span {
         display: none; /* Cache "Mon Réseau" sur mobile */
     }
@@ -751,17 +714,11 @@ html, body {
         padding: 0 1rem;
     }
     
-    /* MODIFICATION: L'ancien .planner-block-wrapper n'existe plus de la même manière */
     .hero-section {
         padding: 1.5rem 1rem;
     }
     .hero-section .planner-block {
         padding: 1rem;
-    }
-
-    /* Footer en 1 colonne */
-    .footer-content {
-        grid-template-columns: 1fr;
     }
 }
 
