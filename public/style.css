@@ -52,8 +52,7 @@ html, body {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
-    /* CORRECTION (BUG SWIPE): Empêche le rebond de scroll sur mobile */
-    overscroll-behavior: none;
+    /* CORRECTION (BUG SWIPE): Règle 'overscroll-behavior: none;' supprimée pour rétablir le scroll */
 }
 
 /* Ajout pour s'assurer que le contenu pousse le bas de page */
@@ -575,6 +574,8 @@ body {
     z-index: 2000;
     /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
+    /* Empêche le scroll de "déborder" sur la page */
+    overscroll-behavior: contain;
 }
 #horaires-search-results.hidden { display: none; }
 .search-result-item {
@@ -734,8 +735,10 @@ details[open] .accordion-content {
 .tab-content {
     max-height: 450px;
     overflow-y: auto;
-    /* CORRECTION (BUG SWIPE) */
+    /* CORRECTION (BUG SWIPE): */
     overscroll-behavior: contain;
+    /* Activation du défilement fluide sur iOS */
+    -webkit-overflow-scrolling: touch;
 }
 
 /* NOUVEAU: Style Info Trafic (image_a08441.png) */
@@ -1408,6 +1411,7 @@ details[open] .accordion-content {
     overflow-y: auto;
     /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 .info-popup-header {
     background: var(--bg-secondary);
