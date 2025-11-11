@@ -573,7 +573,7 @@ body {
     overflow-y: auto;
     z-index: 2000;
     /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
-    -webkit-overflow-scrolling: touch; 
+    -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
 }
 #horaires-search-results.hidden { display: none; }
@@ -949,17 +949,22 @@ details[open] .accordion-content {
     .bottom-grid {
         grid-template-columns: 1fr;
     }
+    
+    /* --- CORRECTION: Bouton retour NON-flottant --- */
+    /* (Toutes les règles pour .dashboard-content-view.view-is-active ont été supprimées) */
 
-    /* --- VUE CARTE (LE FIX V4 - RÉTABLIT LES BOUTONS) --- */
+
+    /* --- VUE CARTE (CORRECTIF FINAL V5) --- */
     
     #map-view #top-bar {
-        /* 1. Cache la barre de fond, mais pas les enfants */
-        display: block;
-        position: relative;
-        height: 0;
+        /* 1. Cache la barre de fond sur mobile */
         background: none;
         border: none;
         padding: 0;
+        height: 0;
+        /* Assure que les enfants (même s'ils deviennent 'fixed') sont visibles */
+        display: block; 
+        position: relative;
     }
     
     /* 2. Cache TOUS les enfants directs par défaut */
