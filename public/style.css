@@ -11,6 +11,8 @@
     --color-yellow: #ffc107;
     --color-green-check: #28a745;
     --color-tab-active: #008080; /* Vert/Bleu canard pour les onglets */
+    --color-nav-condensed-bg: #005a9c; /* Bleu foncé (type Irigo) */
+    --color-nav-condensed-hover: #004a80;
 
     /* Palette de base */
     --primary: #2563eb;
@@ -50,7 +52,6 @@ html, body {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); /* Fond gris clair */
-    scroll-behavior: smooth; /* Active le défilement fluide */
 }
 
 .hidden {
@@ -143,7 +144,7 @@ html, body {
 #alert-banner-close:hover { opacity: 1; }
 
 /* =========================================
- * NOUVEAU TABLEAU DE BORD
+ * NOUVEAU TABLEAU DE BORD (HALL)
  * ========================================= */
 #dashboard-main {
     max-width: 1300px;
@@ -161,79 +162,122 @@ html, body {
     margin-bottom: 2rem;
 }
 
-/* 4 Boutons de Nav */
-.main-nav-buttons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
-}
-.nav-button {
+/* NOUVEAU: Style "Où allons-nous ?" */
+.planner-block-wrapper {
     background: var(--bg-main);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     padding: 1.5rem;
-    text-align: center;
+    margin: 1rem auto 2.5rem auto;
+    max-width: 900px;
+    box-shadow: var(--shadow-md);
+}
+.planner-block .planner-title-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+.planner-block .planner-title-bar svg {
+    color: var(--primary);
+    flex-shrink: 0;
+}
+.planner-block .planner-title-bar h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+.planner-form {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+.planner-inputs {
+    display: flex;
+    flex: 1;
+    gap: 1rem;
+}
+.planner-inputs .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+.planner-search-btn {
+    padding: 0.75rem 1.5rem;
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+/* NOUVEAU: 3 Boutons de Nav (style Irigo) */
+.main-nav-buttons-condensed {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+.nav-button-condensed {
+    background: var(--color-nav-condensed-bg);
+    border: 1px solid var(--color-nav-condensed-bg);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: white;
     text-decoration: none;
     box-shadow: var(--shadow-sm);
     transition: all 0.2s ease;
     position: relative;
     cursor: pointer;
-}
-.nav-button:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-md);
-    border-color: var(--primary);
-}
-.nav-button-icon {
-    display: block;
-    margin-bottom: 0.75rem;
-    height: 32px;
-    line-height: 32px;
-}
-.nav-button-icon svg {
-    color: var(--text-primary);
-}
-
-/* Couleurs des boutons */
-.nav-button.blue { border-top: 4px solid var(--color-blue); }
-.nav-button.blue .nav-button-icon svg { color: var(--color-blue); }
-.nav-button.purple { border-top: 4px solid var(--color-purple); }
-.nav-button.purple .nav-button-icon svg { color: var(--color-purple); }
-.nav-button.orange { border-top: 4px solid var(--color-orange); }
-.nav-button.orange .nav-button-icon svg { color: var(--color-orange); }
-.nav-button.green { border-top: 4px solid var(--color-green); }
-.nav-button.green .nav-button-icon svg { color: var(--color-green); }
-
-.notification-badge {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: var(--color-red);
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border-radius: var(--radius-full);
-    min-width: 24px;
-    height: 24px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    line-height: 1;
-    padding: 4px;
+    gap: 0.75rem;
+}
+.nav-button-condensed:hover {
+    background: var(--color-nav-condensed-hover);
+    border-color: var(--color-nav-condensed-hover);
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+.nav-button-condensed svg {
+    width: 28px;
+    height: 28px;
+}
+.nav-button-condensed .notification-badge {
+    top: 0.75rem;
+    right: 0.75rem;
 }
 
-/* Bouton de retour (n'existe plus dans cette version) */
-/* #btn-back-to-hall { ... } */
 
+/* NOUVEAU: Conteneur de "Pièce" (Vue de contenu) */
+#dashboard-content-view {
+    /* (masqué par .hidden par défaut) */
+}
+#btn-back-to-hall {
+    margin-bottom: 1.5rem;
+    background: var(--bg-secondary);
+    border-color: var(--border);
+    color: var(--text-primary);
+    font-weight: 600;
+    padding-left: 0.75rem;
+}
+#btn-back-to-hall:hover {
+    background: var(--border);
+    border-color: var(--secondary);
+}
+#btn-back-to-hall svg {
+    margin-right: 0.5rem;
+    color: var(--text-secondary);
+}
 
 /* Cartes de contenu */
 .content-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    /* Une seule colonne pour les vues de "pièce" */
+    grid-template-columns: 1fr;
+    max-width: 900px; /* Centre le contenu */
+    margin: 0 auto;
     gap: 1.5rem;
 }
 .card {
@@ -242,10 +286,14 @@ html, body {
     border: 1px solid var(--border);
     padding: 1.5rem;
     box-shadow: var(--shadow-sm);
-    /* NOUVEAU: Ajoute un scroll-margin pour le défilement */
-    scroll-margin-top: 80px; 
 }
-/* (La logique de masquage des cartes est supprimée) */
+/* NOUVEAU: Les cartes sont masquées par défaut dans la vue de contenu */
+#dashboard-content-view .card {
+    display: none; /* JS les affichera */
+}
+#dashboard-content-view .card.view-active {
+    display: block; /* Affiche la carte active */
+}
 
 /* Formulaires dans les cartes */
 .form-group {
@@ -435,7 +483,7 @@ html, body {
     border-right: 1px solid var(--color-tab-active);
 }
 .tab-content {
-    max-height: 350px;
+    max-height: 450px;
     overflow-y: auto;
 }
 
@@ -490,17 +538,8 @@ html, body {
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     margin-top: 5px;
+    /* La couleur est appliquée en ligne via JS */
 }
-.status-indicator-triangle.type-perturbation {
-    border-bottom: 8px solid var(--color-orange);
-}
-.status-indicator-triangle.type-retard {
-    border-bottom: 8px solid var(--color-yellow);
-}
-.status-indicator-triangle.type-annulation {
-    border-bottom: 8px solid var(--color-red);
-}
-
 
 /* =========================================
  * VUE CARTE (Ancienne App)
@@ -529,22 +568,24 @@ html, body {
 /* =========================================
  * RESPONSIVITÉ
  * ========================================= */
-@media (max-width: 1024px) {
-    .content-cards {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .content-cards .card:last-child {
-        grid-column: 1 / -1;
-    }
-}
 @media (max-width: 768px) {
-    .main-nav-buttons {
-        grid-template-columns: repeat(2, 1fr);
+    /* "Hall" en 1 colonne */
+    .planner-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .planner-inputs {
+        flex-direction: column;
+    }
+    .planner-search-btn {
+        padding: 0.875rem;
+    }
+    .main-nav-buttons-condensed {
+        grid-template-columns: 1fr;
         gap: 1rem;
     }
-    .nav-button {
-        padding: 1.25rem 1rem;
-    }
+
+    /* "Pièce" en 1 colonne */
     .content-cards {
         grid-template-columns: 1fr;
     }
@@ -564,6 +605,9 @@ html, body {
     }
     #main-header {
         padding: 0 1rem;
+    }
+    .planner-block-wrapper {
+        padding: 1rem;
     }
 }
 
