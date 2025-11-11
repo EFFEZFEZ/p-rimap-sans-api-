@@ -961,8 +961,14 @@ details[open] .accordion-content {
         gap: 1rem; /* Réduit l'espace entre les cartes */
     }
 
+    /* NOUVEAU (MOBILE): Affiche la liste complète des infos trafic sans scroll */
+    #info-trafic .tab-content {
+        max-height: none;
+        overflow-y: visible;
+    }
 
-    /* --- VUE CARTE (CORRECTIF FINAL V5) --- */
+
+    /* --- VUE CARTE (CORRECTIF FINAL V5 - STABILISÉ) --- */
     
     #map-view #top-bar {
         /* 1. Cache la barre de fond sur mobile */
@@ -975,16 +981,13 @@ details[open] .accordion-content {
         position: relative;
     }
     
-    /* 2. Cache TOUS les enfants directs par défaut */
-    #map-view #top-bar > * {
-        display: none;
-    }
+    /* 2. (Supprimé) La règle "display: none" globale est retirée pour éviter les conflits */
 
-    /* 3. Ré-affiche et repositionne les 4 éléments nécessaires */
-    #map-view #top-bar > #btn-back-to-dashboard,
-    #map-view #top-bar > #clock,
-    #map-view #top-bar > #status-info,
-    #map-view #top-bar > #btn-toggle-filter {
+    /* 3. Ré-affiche et repositionne les 4 éléments (SPÉCIFICITÉ ACCRUE) */
+    #map-container #map-view #top-bar > #btn-back-to-dashboard,
+    #map-container #map-view #top-bar > #clock,
+    #map-container #map-view #top-bar > #status-info,
+    #map-container #map-view #top-bar > #btn-toggle-filter {
         display: inline-flex; /* Affiche l'élément */
         position: fixed; /* Le sort du flux de la barre */
         z-index: 1000;
@@ -996,18 +999,18 @@ details[open] .accordion-content {
         box-shadow: var(--shadow-md);
     }
     
-    /* 4. Positionne [Retour] */
-    #map-view #top-bar > #btn-back-to-dashboard {
+    /* 4. Positionne [Retour] (SPÉCIFICITÉ ACCRUE) */
+    #map-container #map-view #top-bar > #btn-back-to-dashboard {
         top: 15px;
         left: 15px;
         padding: 0.5rem 0.75rem;
         color: var(--primary); /* Garde la couleur de l'icône */
     }
-    #map-view #top-bar > #btn-back-to-dashboard span { display: none; }
-    #map-view #top-bar > #btn-back-to-dashboard svg { margin-right: 0; }
+    #map-container #map-view #top-bar > #btn-back-to-dashboard span { display: none; }
+    #map-container #map-view #top-bar > #btn-back-to-dashboard svg { margin-right: 0; }
     
-    /* 5. Positionne [Horloge] */
-    #map-view #top-bar > #clock {
+    /* 5. Positionne [Horloge] (SPÉCIFICITÉ ACCRUE) */
+    #map-container #map-view #top-bar > #clock {
         display: flex; /* (override pour flex) */
         top: 15px; 
         left: 50%;
@@ -1016,10 +1019,10 @@ details[open] .accordion-content {
         border-radius: var(--radius-full);
         z-index: 999; 
     }
-    #map-view #top-bar > #clock #date-indicator { display: none; }
+    #map-container #map-view #top-bar > #clock #date-indicator { display: none; }
     
-    /* 6. Positionne [Statut Bus] */
-    #map-view #top-bar > #status-info {
+    /* 6. Positionne [Statut Bus] (SPÉCIFICITÉ ACCRUE) */
+    #map-container #map-view #top-bar > #status-info {
         display: flex; /* (override pour flex) */
         top: 15px;
         right: 15px;
@@ -1028,10 +1031,10 @@ details[open] .accordion-content {
         border-radius: var(--radius-full);
         z-index: 999;
     }
-    #map-view #top-bar > #status-info #data-status { display: none; }
+    #map-container #map-view #top-bar > #status-info #data-status { display: none; }
     
-    /* 7. Positionne [Filtre] */
-    #map-view #top-bar > #btn-toggle-filter {
+    /* 7. Positionne [Filtre] (SPÉCIFICITÉ ACCRUE) */
+    #map-container #map-view #top-bar > #btn-toggle-filter {
         top: auto;
         left: auto;
         bottom: 30px;
@@ -1043,8 +1046,8 @@ details[open] .accordion-content {
         justify-content: center;
         color: var(--text-primary);
     }
-    #map-view #top-bar > #btn-toggle-filter span { display: none; }
-    #map-view #top-bar > #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
+    #map-container #map-view #top-bar > #btn-toggle-filter span { display: none; }
+    #map-container #map-view #top-bar > #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
     
 
     /* --- Panneau de filtre mobile (inchangé) --- */
