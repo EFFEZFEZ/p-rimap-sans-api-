@@ -391,8 +391,12 @@ function buildFicheHoraireList() {
                     pdfPath = `/data/fichehoraire/${pdfName}`;
                 }
                 
+                // MODIFICATION (REQ 3) : Formate le nom du lien
+                const longName = route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '';
+                const displayName = `Ligne ${route.route_short_name} ${longName}`.trim();
+
                 linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
-                    ${route.route_long_name || `Ligne ${route.route_short_name}`}
+                    ${displayName}
                 </a>`;
             });
         }
@@ -640,6 +644,21 @@ function setupEventListeners() {
     });
     
     timeManager.addListener(updateData);
+
+    // NOUVEAU (REQ 2): Bouton raccourci recherche
+    document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
+        // Fait défiler la carte "Horaires" en haut
+        const horairesCard = document.getElementById('horaires');
+        if (horairesCard) {
+            // Fait défiler le conteneur principal (dashboard-main)
+            const mainDashboard = document.getElementById('dashboard-main');
+            if (mainDashboard) {
+                 mainDashboard.scrollTo({ top: horairesCard.offsetTop - 80, behavior: 'smooth' });
+            }
+        }
+        // Met le focus sur la barre de recherche
+        searchBar.focus();
+    });
 
     // Écouteurs pour la VUE TABLEAU DE BORD (recherche horaires)
     searchBar.addEventListener('input', handleSearchInput);
