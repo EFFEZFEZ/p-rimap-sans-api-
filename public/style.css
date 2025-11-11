@@ -54,6 +54,17 @@ html, body {
     background-color: var(--bg-light); /* Fond gris clair */
 }
 
+/* Ajout pour s'assurer que le contenu pousse le bas de page (s'il y en a un) */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+#dashboard-container {
+    flex: 1 0 auto; /* Permet au conteneur de grandir */
+}
+
+
 .hidden {
     display: none !important;
 }
@@ -69,6 +80,7 @@ html, body {
     top: 0;
     z-index: 1050;
     box-shadow: var(--shadow-sm);
+    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
 }
 .header-content {
     display: flex;
@@ -119,6 +131,7 @@ html, body {
     align-items: center;
     font-size: 0.9rem;
     font-weight: 500;
+    flex-shrink: 0; /* Empêche le bandeau de rétrécir */
 }
 #alert-banner.type-perturbation { background: var(--color-orange); color: white; }
 #alert-banner.type-annulation { background: var(--color-red); color: white; }
@@ -182,7 +195,7 @@ html, body {
 
 .hero-section .planner-block {
     /* On ajoute un fond semi-transparent pour le formulaire */
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95); /* Un peu plus opaque */
     backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: var(--radius-lg);
@@ -305,6 +318,7 @@ html, body {
 /* NOUVEAU: Contenu du bas (pour combler le vide) */
 .bottom-content-wrapper {
     margin-top: 2.5rem; /* Espace après le Hero */
+    margin-bottom: 2rem; /* Espace avant la fin de la page */
     max-width: 900px; /* Aligné sur le Hero */
     margin-left: auto;
     margin-right: auto;
@@ -316,7 +330,8 @@ html, body {
 }
 .bottom-grid .card {
     /* Le style .card est déjà défini, on le réutilise */
-    /* On peut ajouter des styles spécifiques ici si besoin */
+    display: flex; /* Permet d'aligner le bouton en bas */
+    flex-direction: column;
 }
 .bottom-grid .card h4 {
     font-size: 1.125rem;
@@ -327,26 +342,54 @@ html, body {
     font-size: 0.875rem;
     color: var(--text-secondary);
     line-height: 1.6;
+    flex: 1 0 auto; /* Pousse le bouton en bas */
 }
-.bottom-grid .card p:last-of-type {
-    margin-top: 0.5rem;
+
+/* NOUVEAU: Style Chiffres Clés */
+.key-figures-card p {
+    margin-bottom: 1.5rem;
 }
-.quick-links {
-    list-style: none;
-    padding: 0;
-    margin-top: 1rem;
+.key-figures-grid {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+    gap: 1rem;
 }
-.quick-links li {
-    margin-bottom: 0.5rem;
+.key-figure-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
-.quick-links a {
+.key-figure-number {
+    font-size: 2.25rem;
+    font-weight: 800;
     color: var(--primary);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
+    line-height: 1.1;
 }
-.quick-links a:hover {
-    text-decoration: underline;
+.key-figure-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+
+/* NOUVEAU: Style Bouton lien-bloc */
+.btn-block-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 1.5rem; /* Espace par rapport au texte */
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+}
+.btn-block-link svg {
+    transition: transform 0.2s ease;
+}
+.btn-block-link:hover svg {
+    transform: translateY(3px);
 }
 
 
