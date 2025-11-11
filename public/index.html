@@ -53,85 +53,85 @@
             <div id="dashboard-hall" class="view-is-active">
                 
                 <div class="hero-section">
+                    </div>
+                
+                <div class="planner-block-wrapper">
+                    <div class="planner-title-bar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <h3>Où allons-nous ?</h3>
+                    </div>
                     
-                    <div class="planner-block-wrapper" style="max-width: 900px; margin: 0 auto;">
-                        <div class="planner-title-bar">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                            <h3>Où allons-nous ?</h3>
+                    <div class="planner-form">
+                        <div class="form-group planner-input-group planner-input-depart">
+                            <label for="hall-planner-from">DÉPART <span class="label-optional">(obligatoire)</span></label>
+                            <input type="text" id="hall-planner-from" placeholder="Gare, station, arrêt ou lieu">
+                        </div>
+
+                        <button type="button" id="planner-invert-btn" class="btn-icon" aria-label="Inverser le départ et l'arrivée">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 4 16 8 12 12"></polyline><line x1="12" y1="8" x2="4" y2="8"></line><polyline points="12 20 8 16 12 12"></polyline><line x1="12" y1="16" x2="20" y2="16"></line></svg>
+                        </button>
+
+                        <div class="form-group planner-input-group planner-input-arrivee">
+                            <label for="hall-planner-to">ARRIVÉE <span class="label-optional">(obligatoire)</span></label>
+                            <input type="text" id="hall-planner-to" placeholder="Gare, station, arrêt ou lieu">
+                        </div>
+
+                        <div class="form-group planner-input-group planner-input-quand">
+                            <label for="planner-time-btn">QUAND</label>
+                            <div class="planner-time-selector-wrapper">
+                                <button type="button" id="planner-time-btn" class="btn btn-secondary planner-time-btn">
+                                    Partir maintenant
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                
+                                <div id="planner-time-panel" class="planner-time-panel hidden">
+                                    <div class="time-panel-tabs">
+                                        <button class="time-tab active" data-type="depart">Partir</a</button>
+                                        <button class="time-tab" data-type="arrivee">Arriver</button>
+                                    </div>
+                                    
+                                    <div class="time-panel-body">
+                                        <div class="form-group date-select">
+                                            <label for="date-select-input">DATE DU TRAJET</label>
+                                            <input type="date" id="date-select-input" value="2025-11-11">
+                                        </div>
+                                        
+                                        <div class="time-inputs-group">
+                                            <div class="form-group time-select">
+                                                <label for="hour-select-input">HEURE</label>
+                                                <input type="number" id="hour-select-input" min="0" max="23" value="12">
+                                            </div>
+                                            <div class="form-group minutes-select">
+                                                <label for="minutes-select-input">MINUTES</label>
+                                                <input type="number" id="minutes-select-input" min="0" max="59" value="00">
+                                            </div>
+                                        </div>
+                                        
+                                        <button id="time-panel-confirm-btn" class="btn btn-primary">Partir maintenant</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="planner-form">
-                            <div class="form-group planner-input-group planner-input-depart">
-                                <label for="hall-planner-from">DÉPART <span class="label-optional">(obligatoire)</span></label>
-                                <input type="text" id="hall-planner-from" placeholder="Gare, station, arrêt ou lieu">
-                            </div>
-
-                            <button type="button" id="planner-invert-btn" class="btn-icon" aria-label="Inverser le départ et l'arrivée">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 4 16 8 12 12"></polyline><line x1="12" y1="8" x2="4" y2="8"></line><polyline points="12 20 8 16 12 12"></polyline><line x1="12" y1="16" x2="20" y2="16"></line></svg>
-                            </button>
-
-                            <div class="form-group planner-input-group planner-input-arrivee">
-                                <label for="hall-planner-to">ARRIVÉE <span class="label-optional">(obligatoire)</span></label>
-                                <input type="text" id="hall-planner-to" placeholder="Gare, station, arrêt ou lieu">
-                            </div>
-
-                            <div class="form-group planner-input-group planner-input-quand">
-    <label for="hall-planner-date">QUAND</label>
-    <div class="planner-time-selector-wrapper">
-        <button type="button" id="planner-time-btn" class="btn btn-secondary planner-time-btn">
-            Partir maintenant
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        
-        <div id="planner-time-panel" class="planner-time-panel hidden">
-            <div class="time-panel-tabs">
-                <button class="time-tab active" data-type="depart">Partir</button>
-                <button class="time-tab" data-type="arrivee">Arriver</button>
-            </div>
-            
-            <div class="time-panel-body">
-                <div class="form-group date-select">
-                    <label for="date-select-input">DATE DU TRAJET</label>
-                    <input type="date" id="date-select-input" value="2025-11-11">
-                </div>
-                
-                <div class="time-inputs-group">
-                    <div class="form-group time-select">
-                        <label for="hour-select-input">HEURE</label>
-                        <input type="number" id="hour-select-input" min="0" max="23" value="12"> h
-                    </div>
-                    <div class="form-group minutes-select">
-                        <label for="minutes-select-input">MINUTES</label>
-                        <input type="number" id="minutes-select-input" min="0" max="59" value="00"> min
+                        <button type="button" id="planner-search-btn" class="btn btn-primary planner-search-btn">Rechercher</button>
+                        
                     </div>
                 </div>
                 
-                <button id="time-panel-confirm-btn" class="btn btn-primary">Partir maintenant</button>
-            </div>
-        </div>
-    </div>
-</div>
-                            
-                            <button type="button" id="planner-search-btn" class="btn btn-primary planner-search-btn">Rechercher</button>
-                            
-                        </div>
-                    </div>
-                    <div class="main-nav-buttons-condensed">
-                        <button class="nav-button-condensed" data-view="horaires">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                            <span>Horaires & Lignes</span>
-                        </button>
-                        <button class="nav-button-condensed" data-view="info-trafic">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                            <span>État du Réseau</span>
-                            <span id="info-trafic-count" class="notification-badge hidden">0</span>
-                        </button>
-                        <button id="btn-show-map" class="nav-button-condensed">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-                            <span>Carte Interactive</span>
-                        </button>
-                    </div>
-
+                <div class="main-nav-buttons-condensed">
+                    <button class="nav-button-condensed" data-view="horaires">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        <span>Horaires & Lignes</span>
+                    </button>
+                    <button class="nav-button-condensed" data-view="info-trafic">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <span>État du Réseau</span>
+                        <span id="info-trafic-count" class="notification-badge hidden">0</span>
+                    </button>
+                    <button id="btn-show-map" class="nav-button-condensed">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                        <span>Carte Interactive</span>
+                    </button>
                 </div>
                 
                 <div class="bottom-content-wrapper">
