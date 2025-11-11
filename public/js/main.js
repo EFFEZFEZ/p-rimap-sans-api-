@@ -514,7 +514,8 @@ function showDashboardView(viewName) {
     // *** CORRECTION (REQ 4) : Scrolle en haut de la vue ***
     const mainDashboard = document.getElementById('dashboard-main');
     if (mainDashboard) {
-        mainDashboard.scrollTo(0, 0);
+        // Utilise 'auto' au lieu de 'smooth' pour un repositionnement instantané
+        mainDashboard.scrollTo({ top: 0, behavior: 'auto' });
     }
     // ******************************************************
 
