@@ -112,7 +112,7 @@
                                 
                                 <button id="planner-submit-btn" class="btn btn-primary planner-search-btn">Rechercher</button>
                             </div>
-                            </div>
+                        </div>
                     </div>
                     
                     <div class="main-nav-buttons-condensed">
@@ -122,7 +122,6 @@
                         </button>
                         <button class="nav-button-condensed" data-view="info-trafic">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-... (rest of the file is unchanged) ...
                             <span>État du Réseau</span>
                             <span id="info-trafic-count" class="notification-badge hidden">0</span>
                         </button>
@@ -131,8 +130,7 @@
                             <span>Carte Interactive</span>
                         </button>
                     </div>
-
-                </div>
+                    </div>
                 
                 <div class="bottom-content-wrapper">
                     <div class="bottom-grid">
@@ -219,7 +217,7 @@
         
         <div id="map-view"> 
             <div id="top-bar">
-                <button id="btn-back-to-dashboard" class="btn btn-primary">
+                <button id="btn-back-to-dashboard-from-map" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                     Retour
                 </button>
@@ -285,29 +283,74 @@
 
     </div> 
 
-    <div id="itinerary-results-view">
+    <div id="itinerary-results-container" class="hidden">
         
-        <div id="itinerary-left-panel">
-            <div id="itinerary-header">
-                <button id="btn-back-to-planner" class="btn btn-secondary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                    Retour
-                </button>
-                <h3>Votre trajet</h3>
+        <header class="results-header">
+            <button id="btn-back-to-dashboard-from-results" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <span>Retour</span>
+            </button>
+            <div class="results-header-title">
+                <strong>Mon Itinéraire</strong>
             </div>
-            <div id="itinerary-summary">
-                <div id="itinerary-summary-from">Gare Montparnasse</div>
-                <div id="itinerary-summary-to">Gare de Sarcelles</div>
+            <button id="btn-modify-search" class="btn">Modifier</button>
+        </header>
+
+        <div class="results-body">
+            
+            <div id="results-panel">
+                <div class="results-panel-header">
+                    <div class="results-update-time">Mis à jour à 21h13</div>
+                    <div class="results-modes">
+                        <button class="mode-icon active">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                        </button>
+                        <button class="mode-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16v-2.2c0-.4-.1-.8-.4-1.1l-1.9-2.8c-.8-1.1-2.2-1.8-3.7-1.8H5v8h2v-3h2.3c1 0 1.8.8 1.8 1.8V16H16z"/><path d="M5 18v2h4v-2H5z"/><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/></svg>
+                        </button>
+                        <button class="mode-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" Cy="12" r="1"/><circle cx="12" Cy="5" r="1"/><circle cx="12" Cy="19" r="1"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="results-list">
+                    <div class="route-option-wrapper">
+                        <p class="route-option-title">Suggéré</p>
+                        <div class="route-option">
+                            <div class="route-option-left">
+                                <div class="route-line-badge" style="background-color: #9f268b; color: white;">24</div>
+                                <div class="route-line-badge" style="background-color: #e3001b; color: white;">A</div>
+                            </div>
+                            <div class="route-option-right">
+                                <span class="route-time">20:26 > 21:23</span>
+                                <span class="route-duration">58 min</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="route-option-wrapper">
+                        <div class="route-option">
+                            <div class="route-option-left">
+                                <div class="route-line-badge" style="background-color: #007852; color: white;">13</div>
+                                <div class="route-line-badge" style="background-color: #f3d300; color: black;">D</div>
+                            </div>
+                            <div class="route-option-right">
+                                <span class="route-time">20:25 > 21:23</span>
+                                <span class="route-duration">58 min</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-            <div id="itinerary-suggestions">
+
+            <div id="results-map">
                 </div>
         </div>
 
-        <div id="itinerary-map-panel">
-            <div id="itinerary-map"></div>
-        </div>
-
     </div>
+
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
