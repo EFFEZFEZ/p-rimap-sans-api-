@@ -42,6 +42,14 @@ const PDF_FILENAME_MAP = {
     'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
     'C': 'grandperigueux_fiche_horaires_ligne_C_sept_2025.pdf',
     'D': 'grandperigueux_fiche_horaires_ligne_D_sept_2025.pdf',
+    
+    'e1': 'grandperigueux_fiche_horaires_ligne_e1_sept_2025.pdf',
+    'e2': 'grandperigueux_fiche_horaires_ligne_e2_sept_2025.pdf',
+    'e4': 'grandperigueux_fiche_horaires_ligne_e4_sept_2025.pdf',
+    'e5': 'grandperigueux_fiche_horaires_ligne_e5_sept_2025.pdf',
+    'e6': 'grandperigueux_fiche_horaires_ligne_e6_sept_2025.pdf',
+    'e7': 'grandperigueux_fiche_horaires_ligne_e7_sept_2025.pdf',
+
     'K1A': 'grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf',
     'K1B': 'grandperigueux_fiche_horaires_ligne_K1B_sept_2025.pdf',
     'K2': 'grandperigueux_fiche_horaires_ligne_K2_sept_2025.pdf',
@@ -51,11 +59,25 @@ const PDF_FILENAME_MAP = {
     'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
     'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
     'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
+    
     'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
-    // Ajoutez les autres (e, R, N1) ici au fur et à mesure
-    // 'e1': 'nom_fichier_e1.pdf',
-    // 'N1': 'nom_fichier_N1.pdf',
-    // 'R1': 'nom_fichier_R1.pdf',
+    'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
+    
+    'R1': 'grandperigueux_fiche_horaires_ligne_R1_sept_2025.pdf',
+    'R2': 'grandperigueux_fiche_horaires_ligne_R2_sept_2025.pdf',
+    'R3': 'grandperigueux_fiche_horaires_ligne_R3_sept_2025.pdf',
+    'R4': 'grandperigueux_fiche_horaires_ligne_R4_sept_2025.pdf',
+    'R5': 'grandperigueux_fiche_horaires_ligne_R5_sept_2025.pdf',
+    'R6': 'grandperigueux_fiche_horaires_ligne_R6_sept_2025.pdf',
+    'R7': 'grandperigueux_fiche_horaires_ligne_R7_sept_2025.pdf',
+    'R8': 'grandperigueux_fiche_horaires_ligne_R8_sept_2025.pdf',
+    'R9': 'grandperigueux_fiche_horaires_ligne_R9_sept_2025.pdf',
+    'R10': 'grandperigueux_fiche_horaires_ligne_R10_sept_2025.pdf',
+    'R11': 'grandperigueux_fiche_horaires_ligne_R11_sept_2025.pdf',
+    'R12': 'grandperigueux_fiche_horaires_ligne_R12_sept_2025.pdf',
+    'R13': 'grandperigueux_fiche_horaires_ligne_R13_sept_2025.pdf',
+    'R14': 'grandperigueux_fiche_horaires_ligne_R14_sept_2025.pdf',
+    'R15': 'grandperigueux_fiche_horaires_ligne_R15_sept_2025.pdf',
 };
 
 // ÉLÉMENTS DOM (Tableau de bord)
