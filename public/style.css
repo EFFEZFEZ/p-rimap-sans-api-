@@ -252,9 +252,7 @@ body {
 }
 
 /* Inputs (restent blancs) */
-.hero-section .form-group input[type="text"],
-.hero-section .form-group input[type="date"],
-.hero-section .form-group input[type="time"] {
+.hero-section .form-group input[type="text"] {
     background: var(--bg-main);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -276,6 +274,7 @@ body {
 .hero-section .planner-input-quand { 
     flex-grow: 1.5;
     min-width: 210px; 
+    position: relative; /* AJOUT CRUCIAL pour le panneau flottant */
 }
 
 /* Bouton Rechercher */
@@ -301,7 +300,6 @@ body {
     cursor: pointer;
     flex-shrink: 0;
     transition: all 0.2s ease;
-    /* Aligné parfaitement au centre verticalement entre les inputs */
     margin-bottom: 0; 
 }
 .hero-section .btn-icon:hover {
@@ -309,38 +307,16 @@ body {
     border-color: var(--secondary);
 }
 .hero-section .btn-icon svg {
-    color: var(--primary); /* Couleur bleue */
+    color: var(--primary); 
     width: 1.25rem;
     height: 1.25rem;
-    transform: none; /* Pas de rotation sur PC */
+    transform: none; 
 }
 
-/* Wrapper pour les inputs Date et Heure */
-.hero-section .planner-time-inputs {
-    display: flex;
-    gap: 0.5rem;
-    height: 44px;
-}
-
-/* Style des inputs Date et Heure (MODERNISÉ) */
-.hero-section .form-group input[type="date"],
-.hero-section .form-group input[type="time"] {
-    padding: 0 0.5rem; 
-    line-height: 1.5; 
-    font-size: 0.95rem; 
-    text-align: center;
-}
-.hero-section .form-group input[type="date"] {
-    flex: 2; /* Date prend plus de place */
-    min-width: 120px;
-}
-.hero-section .form-group input[type="time"] {
-    flex: 1; /* Heure prend moins de place */
-    min-width: 70px;
-}
 
 /* * ====================================
  * FIN MISE À JOUR PLANIFICATEUR
+ * (Le style du SÉLECTEUR DE TEMPS est défini juste après ce bloc)
  * ====================================
  */
 
