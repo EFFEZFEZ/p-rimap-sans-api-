@@ -52,6 +52,8 @@ html, body {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
+    /* CORRECTION (BUG SWIPE): Empêche le "rebond" de la page sur mobile */
+    overscroll-behavior-y: contain;
 }
 
 /* Ajout pour s'assurer que le contenu pousse le bas de page */
@@ -571,6 +573,8 @@ body {
     max-height: 300px;
     overflow-y: auto;
     z-index: 2000;
+    /* CORRECTION (BUG SWIPE) */
+    overscroll-behavior: contain;
 }
 #horaires-search-results.hidden { display: none; }
 .search-result-item {
@@ -914,11 +918,11 @@ details[open] .accordion-content {
 } 
 
 /* =========================================
- * DESIGN MOBILE (VUE CARTE) - ENTIÈREMENT RÉÉCRIT
+ * DESIGN MOBILE (VUE CARTE) - CORRECTION FINALE
  * ========================================= */
 @media (max-width: 768px) {
     
-    /* --- Dashboard Hall --- */
+    /* --- Dashboard Hall (styles inchangés) --- */
     .planner-form {
         flex-direction: column;
         align-items: stretch;
@@ -940,116 +944,92 @@ details[open] .accordion-content {
         grid-template-columns: 1fr;
     }
 
-    /* --- VUE CARTE (LE FIX) --- */
+    /* --- VUE CARTE (LE FIX V3) --- */
     
     #map-view #top-bar {
-        /* 1. Cache la barre de fond, mais pas les enfants */
+        /* 1. Doit être 'block' pour que les enfants 'fixed' 
+           aient un point d'ancrage, mais vide. */
+        display: block;
+        position: relative;
+        height: 0;
         background: none;
         border: none;
         padding: 0;
-        height: 0;
-        /* Assure que les enfants (même s'ils deviennent 'fixed') sont visibles */
-        display: block; 
-        position: relative;
+    }
+    
+    /* 2. Cache TOUS les enfants directs par défaut */
+    #map-view #top-bar > * {
+        display: none;
     }
 
-    #map-view #map {
-        /* 2. Supprime 100vh instable, flexbox s'en charge */
-        /* height: 100vh; -- SUPPRIMÉ */
-    }
-
-    /* 3. Repositionne le bouton RETOUR */
-    #map-view #top-bar > #btn-back-to-dashboard {
-        display: inline-flex; 
-        position: fixed;
-        top: 15px;
-        left: 15px;
+    /* 3. Ré-affiche et repositionne les 4 éléments nécessaires */
+    #map-view #top-bar > #btn-back-to-dashboard,
+    #map-view #top-bar > #clock,
+    #map-view #top-bar > #status-info,
+    #map-view #top-bar > #btn-toggle-filter {
+        display: inline-flex; /* Affiche l'élément */
+        position: fixed; /* Le sort du flux de la barre */
         z-index: 1000;
-        box-shadow: var(--shadow-md);
-        padding: 0.5rem 0.75rem;
-        /* Styles "liquid glass" */
+        /* Style "verre dépoli" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
         border: 1px solid var(--border);
-        /* Réinitialise les styles 'btn-primary' pour le fond */
-        color: var(--primary); 
-        background-color: rgba(255, 255, 255, 0.85);
-        border-color: var(--border);
+        box-shadow: var(--shadow-md);
     }
-    #map-view #top-bar > #btn-back-to-dashboard:hover {
-        background-color: rgba(240, 240, 240, 0.9);
+    
+    /* 4. Positionne [Retour] */
+    #map-view #top-bar > #btn-back-to-dashboard {
+        top: 15px;
+        left: 15px;
+        padding: 0.5rem 0.75rem;
+        color: var(--primary); /* Garde la couleur de l'icône */
     }
     #map-view #top-bar > #btn-back-to-dashboard span { display: none; }
     #map-view #top-bar > #btn-back-to-dashboard svg { margin-right: 0; }
-
-    /* 4. Repositionne l'HORLOGE */
+    
+    /* 5. Positionne [Horloge] */
     #map-view #top-bar > #clock {
-        display: flex; 
-        position: fixed;
-        top: 15px; 
+        display: flex; /* (override pour flex) */
+        top: 15px;
         left: 50%;
         transform: translateX(-50%);
-        z-index: 999;
-        /* Styles "liquid glass" */
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
         padding: 6px 10px;
         border-radius: var(--radius-full);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border);
+        z-index: 999; 
     }
     #map-view #top-bar > #clock #date-indicator { display: none; }
-
-    /* 5. Repositionne le STATUT (compteur bus) */
+    
+    /* 6. Positionne [Statut Bus] */
     #map-view #top-bar > #status-info {
-        display: flex; 
-        position: fixed;
+        display: flex; /* (override pour flex) */
         top: 15px;
         right: 15px;
-        z-index: 999;
-        /* Styles "liquid glass" */
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
+        margin-left: 0;
         padding: 6px 10px;
         border-radius: var(--radius-full);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border);
-        margin-left: 0;
+        z-index: 999;
     }
     #map-view #top-bar > #status-info #data-status { display: none; }
-
-    /* 6. Repositionne le bouton FILTRE */
+    
+    /* 7. Positionne [Filtre] */
     #map-view #top-bar > #btn-toggle-filter {
-        display: inline-flex; 
-        position: fixed;
         top: auto;
         left: auto;
         bottom: 30px;
         right: 20px;
-        z-index: 1000;
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        box-shadow: var(--shadow-lg);
         padding: 0;
         justify-content: center;
-        /* Styles "liquid glass" */
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
-        border: 1px solid var(--border);
-        color: var(--text-primary); 
-    }
-    #map-view #top-bar > #btn-toggle-filter:hover {
-        background-color: rgba(240, 240, 240, 0.9);
+        color: var(--text-primary);
     }
     #map-view #top-bar > #btn-toggle-filter span { display: none; }
     #map-view #top-bar > #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
+    
 
-    /* --- Panneau de filtre mobile --- */
+    /* --- Panneau de filtre mobile (inchangé) --- */
     #route-filter-panel {
         top: auto;
         bottom: 0;
@@ -1071,7 +1051,6 @@ details[open] .accordion-content {
         background: var(--border);
         border-radius: var(--radius-full);
         margin: 8px auto;
-        /* cursor: grab; -- (changé en 'pointer' plus haut) */
     }
 }
 
