@@ -36,7 +36,7 @@
 }
 
 /* =========================================
- * STRUCTURE DE BASE & FIX DE SCROLL
+ * NOUVELLE STRUCTURE DE BASE
  * ========================================= */
 * {
     margin: 0;
@@ -52,19 +52,20 @@ html, body {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
+    /* CORRECTION (BUG SWIPE): Règle 'overscroll-behavior: none;' SUPPRIMÉE pour réparer le scroll */
 }
 
-/* Verrouille le scroll quand la carte est active */
+/* NOUVEAU (FIX 2): Verrouille le scroll quand la carte est active */
 body.map-is-active {
     overflow: hidden;
     overscroll-behavior: none; 
 }
 
-/* CORRECTION BUG SCROLL BLANC */
+/* Ajout pour s'assurer que le contenu pousse le bas de page */
 body {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-: 100vh;
 }
 #dashboard-container {
     flex: 1 0 auto; /* Permet au conteneur de grandir */
@@ -76,29 +77,26 @@ body {
 }
 
 /* =========================================
- * EN-TÊTE
+ * NOUVELLE EN-TÊTE (Effet "Liquid Glass")
  * ========================================= */
 #main-header {
+    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Pour Safari */
     
     border-bottom: 1px solid var(--border);
     padding: 0 1.5rem;
     position: sticky;
     top: 0;
     z-index: 1050;
-    flex-shrink: 0; 
+    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
 }
-#main-header.hidden {
-    display: none;
-}
-
 .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 64px;
+    : 64px;
     max-width: 1300px;
     margin: 0 auto;
 }
@@ -113,14 +111,23 @@ body {
 .header-logo-icon {
     color: var(--primary);
 }
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 .btn-admin {
     background: var(--color-orange);
     color: white;
     border-color: var(--color-orange);
 }
+.btn-admin:hover {
+    background: #d96d13;
+    border-color: #d96d13;
+}
 
 /* =========================================
- * BANDEAU D'ALERTE
+ * NOUVEAU BANDEAU D'ALERTE
  * ========================================= */
 #alert-banner {
     position: sticky;
@@ -153,7 +160,7 @@ body {
     border: none;
     color: inherit;
     font-size: 1.5rem;
-    line-height: 1;
+    line-: 1;
     cursor: pointer;
     opacity: 0.7;
 }
@@ -166,374 +173,106 @@ body {
     max-width: 1300px;
     margin: 0 auto;
     padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
 }
 
-/* Style "Hero" */
+/* NOUVELLE STRUCTURE "HUB" */
+
+/* NOUVEAU: Style "Hero" (Page d'accueil) */
 .hero-section {
     background-image: 
+        /* Superposition sombre pour la lisibilité */
         linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
+        /* NOUVELLE IMAGE DE FOND */
         url('https://www.vie-economique.com/wp-content/uploads/sites/13/2024/12/shutterstock_2365894285-scaled.jpg');
     
     background-size: cover;
     background-position: center;
     border-radius: var(--radius-lg);
-    padding: 2.5rem 1.5rem; 
+    padding: 2.5rem 1.5rem; /* Espacement intérieur équilibré */
     box-shadow: var(--shadow-md);
 }
 
-/*
- * ====================================
- * PLANIFICATEUR D'ITINÉRAIRE (SUR HERO)
- * ====================================
- */
+/* On modifie le planificateur pour qu'il s'intègre au "Hero" */
+.hero-section .planner-block-wrapper {
+    /* On retire les styles de carte blanche */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0 auto; /* Centré */
+    max-width: 900px;
+}
 
-/* Titre */
-.hero-section .planner-title-bar {
+/* MODIFIÉ: Effet "Liquid Glass" */
+.hero-section .planner-block {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* On rend les titres plus visibles sur le nouveau fond */
+.hero-section .planner-block .planner-title-bar h3 {
+    font-size: 1.5rem; /* Plus grand */
+    color: var(--text-primary);
+}
+.hero-section .planner-block .planner-title-bar svg {
+    color: var(--primary);
+}
+.planner-block .planner-title-bar {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
 }
-.hero-section .planner-title-bar h3 {
-    font-size: 1.5rem;
-    color: white; 
-    text-shadow: 0 1px 2px rgba(0,0,0,0.4); 
-}
-.hero-section .planner-title-bar svg {
-    color: white; 
+.planner-block .planner-title-bar svg {
+    color: var(--primary);
     flex-shrink: 0;
 }
 
-/* Formulaire */
-.hero-section .planner-form {
+.planner-form {
     display: flex;
-    flex-wrap: nowrap; 
     gap: 1rem;
-    align-items: flex-end; 
-    max-width: 900px;
-    margin: 0 auto;
+    align-items: flex-end;
 }
-
-/* Groupes d'input */
-.hero-section .planner-input-group {
-    flex: 1 1 auto; 
+.planner-inputs {
+    display: flex;
+    flex: 1;
+    gap: 1rem;
+}
+.planner-inputs .form-group {
+    flex: 1;
     margin-bottom: 0;
 }
-
-/* Labels */
-.hero-section .form-group label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: white; 
-    text-shadow: 0 1px 2px rgba(0,0,0,0.4); 
-}
-.hero-section .label-optional {
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.7); 
-    font-size: 0.8em;
-}
-
-/* Inputs Texte (Départ/Arrivée) */
-.hero-section .form-group input[type="text"] {
-    background: var(--bg-main);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 0.75rem 1rem;
-    width: 100%;
-    font-size: 0.9rem;
-    height: 44px; 
-}
-.hero-section .form-group input[type="text"]:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-    outline: none;
-}
-
-
-/* Tailles spécifiques pour les groupes */
-.hero-section .planner-input-depart { flex-grow: 2.5; }
-.hero-section .planner-input-arrivee { flex-grow: 2.5; }
-.hero-section .planner-input-quand { 
-    flex-grow: 1.5;
-    min-width: 210px; 
-    position: relative; /* ANCRE le panneau flottant */
-}
-
-/* Bouton Rechercher */
-.hero-section .planner-search-btn {
+.planner-search-btn {
     padding: 0.75rem 1.5rem;
     font-size: 1rem;
     font-weight: 600;
     border-radius: var(--radius-md);
     flex-shrink: 0;
-    height: 44px; 
 }
 
-/* Bouton Inverser (btn-icon) */
-.hero-section .btn-icon {
-    background: var(--bg-main);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    width: 44px;  
-    height: 44px; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-    margin-bottom: 0; 
-}
-.hero-section .btn-icon:hover {
-    background: var(--bg-secondary);
-    border-color: var(--secondary);
-}
-.hero-section .btn-icon svg {
-    color: var(--primary); 
-    width: 1.25rem;
-    height: 1.25rem;
-    transform: none; 
-}
-
-
-/* * ====================================
- * SÉLECTEUR DE TEMPS (BOUTON + PANNEAU)
- * ====================================
- */
-
-/* 1. Bouton "Partir maintenant" (le bouton principal du formulaire) */
-.planner-time-selector-wrapper {
-    position: relative;
-    width: 100%;
-}
-.planner-time-btn {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    height: 44px;
-    border-radius: var(--radius-md);
-    justify-content: space-between;
-    font-size: 0.95rem;
-    font-weight: 500;
-}
-.planner-time-btn:hover {
-    background: var(--bg-main);
-}
-.planner-time-btn svg {
-    margin: 0;
-    color: var(--primary);
-    transition: transform 0.2s;
-}
-.planner-time-btn[aria-expanded="true"] svg {
-    transform: rotate(180deg);
-}
-
-/* 2. Panneau Flottant (Contenu déroulant) */
-.planner-time-panel {
-    position: absolute;
-    top: calc(100% + 10px); 
-    left: 0;
-    width: 320px; 
-    z-index: 2000; 
-    background: var(--bg-main);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    backdrop-filter: none; 
-    -webkit-backdrop-filter: none;
-}
-
-/* 3. Onglets Partir/Arriver (IDFM Style) */
-.time-panel-tabs {
-    display: flex;
-    padding: 0.5rem;
-}
-.time-tab {
-    flex: 1;
-    padding: 0.5rem;
-    border: 1px solid var(--primary); 
-    background: transparent;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--primary);
-    transition: all 0.15s ease;
-}
-.time-tab:first-child {
-    border-right: none;
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-}
-.time-tab:last-child {
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-}
-.time-tab.active {
-    color: white;
-    background: var(--primary);
-}
-
-/* 4. Contenu du Panneau */
-.time-panel-body {
-    padding: 1rem;
-}
-
-/* Labels noirs à l'intérieur du panneau blanc */
-.time-panel-body .form-group label {
-    color: var(--text-primary); 
-    text-shadow: none;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase; 
-}
-
-/* Champ de Date */
-.time-panel-body .date-select input[type="date"] {
-    width: 100%;
-    height: 44px;
-    padding: 0 1rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-main);
-    font-size: 0.95rem;
-    text-align: left;
-    
-    /* Icône calendrier */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' r='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    appearance: none;
-    -webkit-appearance: none;
-}
-
-/* Champs Heure et Minutes */
-.time-inputs-group {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    align-items: flex-start; 
-}
-.time-inputs-group .form-group {
-    flex: 1;
-}
-
-/* 1. Wrapper pour simuler le SELECT */
-.custom-select-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.custom-select-wrapper input[type="text"] {
-    width: 100%;
-    height: 44px;
-    padding: 0 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-main);
-    font-size: 1.125rem;
-    font-weight: 600;
-    text-align: center; 
-    cursor: pointer;
-    line-height: 44px; 
-    outline: none; 
-    box-shadow: none;
-}
-.custom-select-wrapper input[type="text"]:hover {
-    border-color: var(--secondary);
-}
-
-/* 2. Les Flèches du sélecteur (indicateur visuel) */
-.select-arrows {
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    width: 30px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: transparent; 
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
-    pointer-events: none; 
-}
-/* NOUVEAU: Ajout de l'icône de dropdown unique (style IDFM) */
-.custom-select-wrapper::after {
-    content: '';
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    position: absolute;
-    right: 5px;
-    top: 0;
-    height: 100%;
-    width: 25px;
-    pointer-events: none;
-}
-
-
-/* 3. Styles des listes déroulantes flottantes (qui seront activées en JS) */
-.dropdown-list {
-    position: absolute;
-    top: calc(100% + 5px);
-    left: 0;
-    width: 100%;
-    max-height: 200px;
-    overflow-y: auto;
-    background: var(--bg-main);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-md);
-    z-index: 1010;
-}
-.dropdown-list div {
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    text-align: center; 
-}
-.dropdown-list div:hover {
-    background: var(--bg-secondary);
-    color: var(--primary);
-}
-
-
-/* Bouton de confirmation au bas du panneau */
-#time-panel-confirm-btn {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    font-weight: 600;
-}
-
-/* * ====================================
- * FIN SÉLECTEUR DE TEMPS
- * ====================================
- */
-
-
-/* Ajustement du centrage des boutons de nav sur PC */
+/* NOUVEAU: 3 Boutons de Nav (MODIFIÉS pour être dans le "Hub") */
 .main-nav-buttons-condensed {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     
-    margin-top: 2.5rem; 
-    max-width: 900px; 
+    /* CORRIGÉ: Positionnement propre, sans marge négative */
+    margin-top: 2.5rem; /* Espace par rapport au planificateur */
+    max-width: 900px; /* Aligné sur le planificateur */
     margin-left: auto;
     margin-right: auto;
-    position: relative; 
-    z-index: 1; 
+    position: relative; /* S'assure qu'il n'y a pas de z-index étrange */
+    z-index: 1; /* S'assure qu'il est au-dessus du fond, mais pas de superposition */
 }
 
-/* Boutons de Nav (styles "Liquid Glass"
+/* MODIFIÉ: Boutons "Liquid Glass" */
 .nav-button-condensed {
-    background: rgba(0, 90, 156, 0.75); 
+    background: rgba(0, 90, 156, 0.75); /* Bleu verre par défaut */
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -554,19 +293,50 @@ body {
     justify-content: center;
     gap: 0.75rem;
 }
+
 .nav-button-condensed:hover {
-    background: rgba(0, 74, 128, 0.9); 
+    background: rgba(0, 74, 128, 0.9); /* Bleu verre plus sombre */
     border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-5px);
     box-shadow: 0 10px 15px -3px rgba(0, 90, 156, 0.3); 
-} */
-/* ... (Les styles spécifiques aux couleurs de boutons restent inchangés) ... */
+}
 
-/* Ajustement des marges du contenu du bas */
+.nav-button-condensed svg {
+    width: 28px;
+    : 28px;
+}
+.nav-button-condensed .notification-badge {
+    top: 0.75rem;
+    right: 0.75rem;
+}
+
+/* MODIFIÉ: Boutons "Liquid Glass" (Couleurs) */
+.nav-button-condensed[data-view="horaires"] {
+    background: rgba(40, 167, 69, 0.75); /* Vert verre */
+    border-color: rgba(255, 255, 255, 0.2);
+}
+.nav-button-condensed[data-view="horaires"]:hover {
+    background: rgba(35, 139, 58, 0.9); /* Vert verre plus sombre */
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(40, 167, 69, 0.4); 
+}
+
+.nav-button-condensed[data-view="info-trafic"] {
+    background: rgba(253, 126, 20, 0.75); /* Orange verre */
+    border-color: rgba(255, 255, 255, 0.2);
+}
+.nav-button-condensed[data-view="info-trafic"]:hover {
+    background: rgba(228, 113, 18, 0.9); /* Orange verre plus sombre */
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(253, 126, 20, 0.4); 
+}
+
+
+/* NOUVEAU: Contenu du bas (Chiffres clés) */
 .bottom-content-wrapper {
-    margin-top: 3.5rem; 
-    margin-bottom: 2rem; 
-    max-width: 900px; 
+    margin-top: 2.5rem; /* Espace après le Hero */
+    margin-bottom: 2rem; /* Espace avant la fin de la page */
+    max-width: 900px; /* Aligné sur le Hero */
     margin-left: auto;
     margin-right: auto;
 }
@@ -576,7 +346,8 @@ body {
     gap: 1.5rem;
 }
 .bottom-grid .card {
-    display: flex; 
+    /* Le style .card est déjà défini, on le réutilise */
+    display: flex; /* Permet d'aligner le bouton en bas */
     flex-direction: column;
 }
 .bottom-grid .card h4 {
@@ -587,11 +358,11 @@ body {
 .bottom-grid .card p {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    line-height: 1.6;
+    line-: 1.6;
     flex: 1 0 auto; /* Pousse le bouton en bas */
 }
 
-/* Style Chiffres Clés */
+/* NOUVEAU: Style Chiffres Clés */
 .key-figures-card p {
     margin-bottom: 1.5rem;
 }
@@ -610,7 +381,7 @@ body {
     font-size: 2.25rem;
     font-weight: 800;
     color: var(--primary);
-    line-height: 1.1;
+    line-: 1.1;
 }
 .key-figure-label {
     font-size: 0.875rem;
@@ -619,7 +390,7 @@ body {
     margin-top: 0.25rem;
 }
 
-/* Style Bouton lien-bloc */
+/* NOUVEAU: Style Bouton lien-bloc */
 .btn-block-link {
     display: flex;
     justify-content: space-between;
@@ -643,7 +414,7 @@ body {
  * VUES INTERNES & TRANSITIONS
  * ========================================= */
 
-/* Styles de transition pour le Hall et les Vues */
+/* NOUVEAU: Styles de transition pour le Hall et les Vues */
 #dashboard-hall {
     opacity: 1;
     transform: translateY(0);
@@ -655,8 +426,9 @@ body {
     opacity: 0;
     transform: translateY(15px);
     pointer-events: none;
-    max-height: 0;
+    max-: 0;
     overflow: hidden;
+    /* Correction: Retrait de padding/margin pour un "collapse" complet */
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     margin-top: 0 !important;
@@ -668,7 +440,7 @@ body {
     transform: translateY(15px);
     transition: opacity 0.3s ease-out, transform 0.3s ease-out;
     pointer-events: none;
-    max-height: 0;
+    max-: 0;
     overflow: hidden;
 }
 /* État visible pour les Vues Internes */
@@ -676,7 +448,7 @@ body {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
-    max-height: 5000px; /* Assez grand pour tout contenir */
+    max-: 5000px; /* Assez grand pour tout contenir */
 }
 
 #btn-back-to-hall {
@@ -704,21 +476,22 @@ body {
     gap: 1.5rem;
 }
 
-/* Style de carte "Liquid Glass" et transition */
+/* MODIFIÉ: Style de carte "Liquid Glass" et transition */
 .card {
-    /* Style carte standard */
-    background: var(--bg-main);
-    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     
     border-radius: var(--radius-md);
     padding: 1.5rem;
     box-shadow: var(--shadow-sm);
     
-    /* Styles pour la transition des cartes internes */
+    /* NOUVEAU: Styles pour la transition des cartes internes */
     opacity: 0;
     transform: scale(0.98);
     transition: all 0.25s ease-in-out;
-    max-height: 0;
+    max-: 0;
     overflow: hidden;
     padding: 0 1.5rem; /* Garde le padding horizontal pendant la transition */
 }
@@ -726,7 +499,7 @@ body {
 #dashboard-hall .card {
     opacity: 1;
     transform: scale(1);
-    max-height: 2000px;
+    max-: 2000px;
     padding: 1.5rem;
 }
 #dashboard-content-view .card.view-active {
@@ -740,9 +513,13 @@ body {
 .form-group {
     margin-bottom: 1rem;
 }
-/* La règle .form-group label est déjà définie en haut */
-
-.form-group input[type="text"]:not(#hall-planner-from):not(#hall-planner-to) {
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+.form-group input[type="text"] {
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid var(--border);
@@ -750,16 +527,16 @@ body {
     font-size: 0.9rem;
     font-family: inherit;
     transition: all 0.15s ease;
-    background: var(--bg-main); 
+    background: var(--bg-main); /* Fond solide pour les inputs */
 }
-.form-group input[type="text"]:not(#hall-planner-from):not(#hall-planner-to):focus {
+.form-group input[type="text"]:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     outline: none;
 }
 
 /* =========================================
- * Carte Horaires
+ * NOUVEAU DESIGN: Carte Horaires
  * ========================================= */
 #horaires-search-container {
     position: relative;
@@ -801,6 +578,7 @@ body {
     max-height: 300px;
     overflow-y: auto;
     z-index: 2000;
+    /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
 }
@@ -865,6 +643,7 @@ body {
     font-size: 1.5rem;
     font-weight: 300;
     color: var(--text-secondary);
+    /* MODIFIÉ (REQ 2): Ajout de la transition */
     transition: transform 0.3s ease-in-out;
 }
 .accordion-group details[open] summary {
@@ -874,24 +653,27 @@ body {
     transform: rotate(45deg);
 }
 
-/* Animation de l'accordéon */
+/* MODIFIÉ (REQ 2): Animation de l'accordéon */
 .accordion-content {
     background: var(--bg-main);
+    /* padding: 1rem 1.25rem; -- ANCIEN */
     padding: 0 1.25rem; /* Garde le padding horizontal */
     overflow: hidden;
     max-height: 0;
     transition: max-height 0.35s ease-in-out;
+    /* CORRECTION (BUG SWIPE): */
     overscroll-behavior: contain;
+    /* Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
 }
 details[open] .accordion-content {
     max-height: 1000px; /* Assez grand pour tout contenu */
 }
-/* Wrapper interne pour le padding vertical */
+/* NOUVEAU (REQ 2): Wrapper interne pour le padding vertical */
 .accordion-content-inner {
     padding: 1rem 0;
 }
-/* Cible les liens dans le wrapper interne */
+/* MODIFIÉ (REQ 2): Cible les liens dans le wrapper interne */
 .accordion-content-inner a {
     display: block;
     padding: 0.75rem 0;
@@ -907,7 +689,7 @@ details[open] .accordion-content {
     text-decoration: underline;
 }
 
-/* Raccourci recherche horaires */
+/* NOUVEAU (REQ 2): Raccourci recherche horaires */
 #horaires-search-shortcut {
     margin-top: 2rem;
     padding-top: 1.5rem;
@@ -927,7 +709,7 @@ details[open] .accordion-content {
 
 
 /* =========================================
- * Carte Info Trafic
+ * NOUVEAU DESIGN: Carte Info Trafic
  * ========================================= */
 .tabs {
     display: flex;
@@ -941,7 +723,7 @@ details[open] .accordion-content {
     flex: 1;
     padding: 0.6rem 1rem;
     border: none;
-    background: transparent; 
+    background: transparent; /* Changé */
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 600;
@@ -954,7 +736,7 @@ details[open] .accordion-content {
     color: white;
 }
 .tab:not(.active):hover {
-    background: rgba(0, 128, 128, 0.1); 
+    background: rgba(0, 128, 128, 0.1); /* Léger fond au survol */
 }
 .tab:first-child {
     border-right: 1px solid var(--color-tab-active);
@@ -962,11 +744,13 @@ details[open] .accordion-content {
 .tab-content {
     max-height: 450px;
     overflow-y: auto;
+    /* CORRECTION (BUG SWIPE): */
     overscroll-behavior: contain;
+    /* Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
 }
 
-/* Style Info Trafic */
+/* NOUVEAU: Style Info Trafic (image_a08441.png) */
 .trafic-group {
     margin-bottom: 1.5rem;
 }
@@ -990,6 +774,7 @@ details[open] .accordion-content {
     cursor: pointer;
     min-width: 45px;
 }
+/* Le badge réutilise .line-badge */
 .line-badge {
     display: inline-flex;
     align-items: center;
@@ -1009,7 +794,7 @@ details[open] .accordion-content {
     box-shadow: var(--shadow-md);
 }
 
-/* Triangle de statut */
+/* NOUVEAU: Triangle de statut */
 .status-indicator-triangle {
     width: 0; 
     height: 0; 
@@ -1018,78 +803,6 @@ details[open] .accordion-content {
     margin-top: 5px;
     /* La couleur est appliquée en ligne via JS */
 }
-
-/* =========================================
- * VUE RÉSULTATS PLANIFICATEUR
- * ========================================= */
-#planner-results-view {
-    /* Masqué/Affiché par JS */
-    
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    /* Annule le padding de dashboard-main */
-    margin: -2rem -1.5rem;
-}
-
-.planner-results-header {
-    display: flex;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-main);
-    flex-shrink: 0;
-}
-.planner-results-header #btn-back-to-hall-from-results {
-    font-weight: 600;
-    padding: 0.6rem 1rem;
-    border-radius: var(--radius-md);
-}
-
-
-.planner-results-content {
-    display: flex;
-    flex: 1 1 auto;
-    overflow: hidden; /* Important pour le scroll interne */
-    background: var(--bg-light); /* Fond gris clair pour la séparation */
-}
-
-.results-left-panel {
-    width: 400px;
-    background: var(--bg-main);
-    border-right: 1px solid var(--border);
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-}
-.results-left-panel h3 {
-    padding: 1.25rem 1.5rem;
-    font-size: 1.125rem;
-    border-bottom: 1px solid var(--border);
-}
-#planner-results-list {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 1.5rem;
-}
-
-.results-map-container {
-    flex: 1 1 auto;
-    position: relative;
-}
-#planner-results-map {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #f0f0f0; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-}
-
 
 /* =========================================
  * VUE CARTE (Ancienne App)
@@ -1113,6 +826,7 @@ details[open] .accordion-content {
     position: relative;
     z-index: 1; 
     background: #f0f0f0;
+    /* CORRECTION (BUG SWIPE): Laisse Leaflet gérer le tactile */
     touch-action: none;
 }
 
@@ -1122,6 +836,7 @@ details[open] .accordion-content {
 
 /* Barre de contrôle unifiée (VUE CARTE) */
 #top-bar {
+    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1131,6 +846,7 @@ details[open] .accordion-content {
     display: flex;
     align-items: center;
     gap: 1.25rem;
+    /* MODIFICATION: Empêche le retour à la ligne sur PC */
     flex-wrap: nowrap; 
     z-index: 10;
 }
@@ -1182,7 +898,7 @@ details[open] .accordion-content {
 #data-status.loaded { color: #059669; }
 #data-status.error { color: #dc2626; }
 
-/* Panneau de filtre */
+/* Panneau de filtre (styles existants conservés) */
 #route-filter-panel {
     position: fixed;
     top: 0;
@@ -1191,6 +907,7 @@ details[open] .accordion-content {
     width: 340px;
     max-height: 100vh;
     
+    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1208,6 +925,7 @@ details[open] .accordion-content {
 }
 .panel-handle { 
     display: none; 
+    /* CORRECTION (BUG SWIPE): Change le curseur pour indiquer l'action */
     cursor: pointer;
 } 
 
@@ -1216,33 +934,17 @@ details[open] .accordion-content {
  * ========================================= */
 @media (max-width: 768px) {
     
-    /* --- Dashboard Hall --- */
-    
-    /* MODIFICATION PLANIFICATEUR MOBILE */
-    .hero-section .planner-form {
+    /* --- Dashboard Hall (styles inchangés) --- */
+    .planner-form {
         flex-direction: column;
         align-items: stretch;
     }
-    .hero-section .btn-icon {
-        order: 2; /* Ordre d'affichage */
-        margin: 0.5rem auto; /* Centré */
-        transform: rotate(90deg); /* Rotation pour le mobile */
+    .planner-inputs {
+        flex-direction: column;
     }
-    .hero-section .planner-input-depart { order: 1; }
-    .hero-section .planner-input-arrivee { order: 3; }
-    .hero-section .planner-input-quand { order: 4; }
-    .hero-section .planner-search-btn { 
-        order: 5;
+    .planner-search-btn {
         padding: 0.875rem;
     }
-    
-    /* NOUVEAU: Panneau de temps mobile */
-    .planner-time-panel {
-        width: 100%; /* Pleine largeur */
-    }
-
-    /* FIN MODIFICATION PLANIFICATEUR */
-
     .main-nav-buttons-condensed {
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -1254,55 +956,49 @@ details[open] .accordion-content {
         grid-template-columns: 1fr;
     }
     
-    /* --- Ajustements de marges --- */
+    /* --- CORRECTION (REQ 5): Rapproche le contenu du haut --- */
     #dashboard-content-view.view-is-active {
-        padding-top: 0; 
+        padding-top: 0; /* Annule l'ancien padding pour le bouton flottant */
     }
     #btn-back-to-hall {
-        margin-bottom: 1rem; 
+        margin-bottom: 1rem; /* Réduit l'espace sous le bouton retour */
     }
     .content-cards {
-        gap: 1rem; 
+        gap: 1rem; /* Réduit l'espace entre les cartes */
     }
 
-    /* Info Trafic Mobile */
+    /* NOUVEAU (MOBILE): Affiche la liste complète des infos trafic sans scroll */
     #info-trafic .tab-content {
         max-height: none;
         overflow-y: visible;
     }
 
-    /* NOUVEAU: Vue Résultats Mobile */
-    .planner-results-content {
-        flex-direction: column;
-    }
-    .results-left-panel {
-        width: 100%;
-        height: 50vh; /* Panneau de résultats à mi-hauteur */
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-    }
-    .results-map-container {
-        height: 50vh; /* Carte à mi-hauteur */
-    }
 
-
-    /* --- VUE CARTE (Fixes pour Flottants) --- */
+    /* --- VUE CARTE (CORRECTIF FINAL V6 - Z-INDEX ET STABILITÉ) --- */
+    
     #map-view #top-bar {
+        /* 1. Cache la barre de fond sur mobile */
         background: none;
         border: none;
         padding: 0;
+        /* Assure que les enfants (même s'ils deviennent 'fixed') sont visibles */
         display: contents; 
         position: relative;
     }
     
+    /* 2. (Supprimé) La règle "display: none" globale est retirée pour éviter les conflits */
+
+    /* 3. Ré-affiche et repositionne les 4 éléments (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #btn-back-to-dashboard,
     #map-container #map-view #top-bar > #clock,
     #map-container #map-view #top-bar > #status-info,
     #map-container #map-view #top-bar > #btn-toggle-filter {
-        display: inline-flex !important; 
-        position: fixed !important; 
+        /* MODIFIÉ (V6): Ajout de !important pour stabiliser la position */
+        display: inline-flex !important; /* Affiche l'élément (FORCÉ) */
+        position: fixed !important; /* Le sort du flux de la barre (FORCÉ) */
         
         z-index: 1000;
+        /* Style "verre dépoli" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
@@ -1310,17 +1006,20 @@ details[open] .accordion-content {
         box-shadow: var(--shadow-md);
     }
     
+    /* 4. Positionne [Retour] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #btn-back-to-dashboard {
         top: 15px;
         left: 15px;
         padding: 0.5rem 0.75rem;
-        color: var(--primary); 
+        color: var(--primary); /* Garde la couleur de l'icône */
     }
     #map-container #map-view #top-bar > #btn-back-to-dashboard span { display: none; }
     #map-container #map-view #top-bar > #btn-back-to-dashboard svg { margin-right: 0; }
     
+    /* 5. Positionne [Horloge] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #clock {
-        display: flex !important; 
+        /* MODIFIÉ (V6): Ajout de !important */
+        display: flex !important; /* (override pour flex - FORCÉ) */
         top: 15px; 
         left: 50%;
         transform: translateX(-50%);
@@ -1330,8 +1029,10 @@ details[open] .accordion-content {
     }
     #map-container #map-view #top-bar > #clock #date-indicator { display: none; }
     
+    /* 6. Positionne [Statut Bus] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #status-info {
-        display: flex !important; 
+        /* MODIFIÉ (V6): Ajout de !important */
+        display: flex !important; /* (override pour flex - FORCÉ) */
         top: 15px;
         right: 15px;
         margin-left: 0;
@@ -1341,6 +1042,7 @@ details[open] .accordion-content {
     }
     #map-container #map-view #top-bar > #status-info #data-status { display: none; }
     
+    /* 7. Positionne [Filtre] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #btn-toggle-filter {
         top: auto;
         left: auto;
@@ -1352,13 +1054,15 @@ details[open] .accordion-content {
         padding: 0;
         justify-content: center;
         color: var(--text-primary);
+        
+        /* MODIFIÉ (V6): Z-index supérieur au panneau de filtre (1500) */
         z-index: 1501; 
     }
     #map-container #map-view #top-bar > #btn-toggle-filter span { display: none; }
     #map-container #map-view #top-bar > #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
     
 
-    /* --- Panneau de filtre mobile --- */
+    /* --- Panneau de filtre mobile (inchangé) --- */
     #route-filter-panel {
         top: auto;
         bottom: 0;
@@ -1472,7 +1176,9 @@ details[open] .accordion-content {
     overflow-y: auto;
     flex: 1;
     background: transparent;
+    /* CORRECTION (BUG SWIPE): */
     overscroll-behavior: contain;
+    /* Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
 }
 .category-header {
@@ -1547,7 +1253,7 @@ details[open] .accordion-content {
     line-height: 1.4;
 }
 
-/* Instructions */
+/* Instructions (styles existants conservés) */
 #instructions {
     position: fixed;
     top: 0;
@@ -1568,6 +1274,7 @@ details[open] .accordion-content {
     pointer-events: none;
 }
 .instruction-content {
+    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1615,12 +1322,13 @@ details[open] .accordion-content {
 #close-instructions:hover { background: var(--primary-dark); }
 
 /* =========================================
- * STYLES LEAFLET ET POPUPS
+ * STYLES LEAFLET (Conservés)
  * ========================================= */
 .leaflet-popup-content-wrapper {
     border-radius: var(--radius-lg); 
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border);
+    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
@@ -1629,7 +1337,7 @@ details[open] .accordion-content {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
     margin: 0;
     min-width: 260px;
-    background: transparent; 
+    background: transparent; /* Le fond est sur le wrapper */
 }
 
 .bus-icon-rect div {
@@ -1644,7 +1352,9 @@ details[open] .accordion-content {
     box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
 }
 
-/* Statut du bus sur la carte */
+/* =========================================
+ * NOUVEAUX STYLES : Statut du bus sur la carte
+ * ========================================= */
 .bus-status-normal div {
     /* (état par défaut) */
 }
@@ -1660,7 +1370,7 @@ details[open] .accordion-content {
 }
 
 
-/* Styles de cluster conservés */
+/* (Styles de cluster conservés) */
 .marker-cluster-small { background-color: rgba(181, 226, 140, 0.6); }
 .marker-cluster-small div { background-color: rgba(110, 204, 57, 0.6); }
 .marker-cluster-medium { background-color: rgba(241, 211, 87, 0.6); }
@@ -1672,7 +1382,7 @@ details[open] .accordion-content {
 .marker-cluster span { line-height: 30px; }
 
 
-/* Styles d'arrêt conservés */
+/* (Styles d'arrêt conservés) */
 .stop-marker-icon {
     background: var(--secondary);
     border: 2px solid white;
@@ -1697,11 +1407,12 @@ details[open] .accordion-content {
     height: 100%;
 }
 
-/* Styles de popup unifiés conservés */
+/* (Styles de popup unifiés conservés) */
 .info-popup-content {
     width: 100%;
     max-height: 250px;
     overflow-y: auto;
+    /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
 }
