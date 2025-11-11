@@ -17,7 +17,7 @@
             crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.1/dist/leaflet.markercluster.js"></script>
     
-    <script src="https://maps.googleapis.com/maps/api/js?key=VOTRE_CLE_API&libraries=places,directions&callback=initApp" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=VOTRE_CLE_API&libraries=places,directions&callback=googleMapsApiLoaded" async defer></script>
     
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,7 +103,7 @@
                                                         <input type="text" id="hour-select-input" value="12 h" readonly>
                                                         <div class="select-arrows">
                                                             <svg class="arrow-up" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-                                                            <svg class="arrow-down" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                                            <svg class="arrow-down" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></polyline></svg>
                                                         </div>
                                                         <div id="hour-dropdown" class="dropdown-list hidden"></div>
                                                     </div>
@@ -114,7 +114,7 @@
                                                         <input type="text" id="minutes-select-input" value="00 min" readonly>
                                                         <div class="select-arrows">
                                                             <svg class="arrow-up" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-                                                            <svg class="arrow-down" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                                            <svg class="arrow-down" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></polyline></svg>
                                                         </div>
                                                         <div id="minutes-dropdown" class="dropdown-list hidden"></div>
                                                     </div>
@@ -322,5 +322,12 @@
     </div> 
 
     <script src="js/main.js"></script>
+    
+    <script src="js/dataManager.js"></script>
+    <script src="js/timeManager.js"></script>
+    <script src="js/tripScheduler.js"></script>
+    <script src="js/busPositionCalculator.js"></script>
+    <script src="js/mapRenderer.js"></script>
+    
 </body>
 </html>
