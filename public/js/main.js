@@ -757,10 +757,12 @@ function displaySearchResults(stops, query) {
 
 /**
  * Clic sur résultat (corrigée)
+ * MODIFIÉ : Appelle zoomToStop PUIS onStopClick
  */
 function onSearchResultClick(stop) {
     showMapView(); 
     mapRenderer.zoomToStop(stop);
+    mapRenderer.onStopClick(stop); // <<< CORRECTION DU BUG
     searchBar.value = stop.stop_name;
     searchResultsContainer.classList.add('hidden');
 }
