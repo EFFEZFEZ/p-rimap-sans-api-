@@ -950,11 +950,21 @@ details[open] .accordion-content {
         grid-template-columns: 1fr;
     }
     
-    /* --- CORRECTION: Bouton retour NON-flottant --- */
+    /* --- CORRECTION: Bouton retour non-flottant --- */
     /* (Toutes les règles pour .dashboard-content-view.view-is-active ont été supprimées) */
+    /* CORRECTION (REQ 5): Réduction des marges pour remonter le contenu */
+    #dashboard-content-view.view-is-active {
+        padding-top: 0; /* Supprime le padding pour le bouton flottant */
+    }
+    #btn-back-to-hall {
+        margin-bottom: 1rem; /* Réduit l'espace sous le bouton retour */
+    }
+    .content-cards {
+        gap: 1rem; /* Réduit l'espace entre les cartes */
+    }
 
 
-    /* --- VUE CARTE (CORRECTIF FINAL V5) --- */
+    /* --- VUE CARTE (LE FIX V4) --- */
     
     #map-view #top-bar {
         /* 1. Cache la barre de fond sur mobile */
