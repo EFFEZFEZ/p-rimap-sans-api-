@@ -266,18 +266,24 @@ function setupStaticEventListeners() {
         });
     }
     document.getElementById('select-all-routes').addEventListener('click', () => {
-        dataManager.routes.forEach(route => {
-            const checkbox = document.getElementById(`route-${route.route_id}`);
-            if (checkbox) checkbox.checked = true;
-        });
-        handleRouteFilterChange();
+        // Vérifie si dataManager existe avant d'essayer de l'utiliser
+        if (dataManager) {
+            dataManager.routes.forEach(route => {
+                const checkbox = document.getElementById(`route-${route.route_id}`);
+                if (checkbox) checkbox.checked = true;
+            });
+            handleRouteFilterChange();
+        }
     });
     document.getElementById('deselect-all-routes').addEventListener('click', () => {
-        dataManager.routes.forEach(route => {
-            const checkbox = document.getElementById(`route-${route.route_id}`);
-            if (checkbox) checkbox.checked = false;
-        });
-        handleRouteFilterChange();
+        // Vérifie si dataManager existe
+        if (dataManager) {
+            dataManager.routes.forEach(route => {
+                const checkbox = document.getElementById(`route-${route.route_id}`);
+                if (checkbox) checkbox.checked = false;
+            });
+            handleRouteFilterChange();
+        }
     });
 
     // --- Écouteurs de la recherche d'horaires ---
@@ -295,6 +301,7 @@ function setupStaticEventListeners() {
     searchBar.addEventListener('focus', handleSearchInput);
 
     // --- Écouteurs de l'accordéon ---
+    // Note: Cela ne fonctionnera que si le contenu est déjà là, ce qui est le cas.
     const allDetails = document.querySelectorAll('#fiche-horaire-container details');
     allDetails.forEach(details => {
         details.addEventListener('toggle', (event) => {
@@ -311,7 +318,7 @@ function setupStaticEventListeners() {
     // --- Écouteurs du NOUVEAU PLANIFICATEUR ---
     if (plannerSubmitBtn) {
         plannerSubmitBtn.addEventListener('click', (e) => {
-            e.preventDefault();
+            e.preventDefault(); 
             if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
                 plannerOptionsPopover.classList.add('hidden');
                 plannerWhenBtn.classList.remove('popover-active');
@@ -320,20 +327,20 @@ function setupStaticEventListeners() {
             showMapView();
         });
     }
-    if (plannerWhenBtn && plannerOptionsPopover) {
+    if (plannerWhenBtn && plannerOptionsPopover) { 
         plannerWhenBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); 
             plannerOptionsPopover.classList.toggle('hidden');
             plannerWhenBtn.classList.toggle('popover-active');
         });
-        document.querySelectorAll('.popover-tab').forEach(tab => {
+        document.querySelectorAll('.popover-tab').forEach(tab => { 
             tab.addEventListener('click', (e) => {
                 document.querySelectorAll('.popover-tab').forEach(t => t.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 const mainBtnText = document.querySelector('#planner-when-btn span');
                 const popoverSubmitBtn = document.getElementById('popover-submit-btn');
-                if (e.currentTarget.dataset.tab === 'arriver') {
-                    mainBtnText.textContent = 'Arriver à...';
+                if (e.currentTarget.dataset.tab === 'arriver') { 
+                    mainBtnText.textContent = 'Arriver à...'; 
                     popoverSubmitBtn.textContent = 'Valider l'arrivée';
                 } else {
                     mainBtnText.textContent = 'Partir maintenant';
@@ -341,14 +348,14 @@ function setupStaticEventListeners() {
                 }
             });
         });
-        document.getElementById('popover-submit-btn').addEventListener('click', () => {
+        document.getElementById('popover-submit-btn').addEventListener('click', () => { 
              plannerOptionsPopover.classList.add('hidden');
              plannerWhenBtn.classList.remove('popover-active');
         });
-        plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation());
+        plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation()); 
     }
-    // --- Écouteur pour le bouton SWAP (MANQUANT) ---
-    const swapBtn = document.querySelector('.btn-swap-direction');
+    // --- Écouteur pour le bouton SWAP ---
+    const swapBtn = document.querySelector('.btn-swap-direction'); 
     if (swapBtn) {
         swapBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -410,6 +417,11 @@ function setupAdminConsole() {
     });
 
     window.setStatus = (lineShortName, status, message = "") => {
+        // S'assure que dataManager est chargé
+        if (!dataManager) {
+            console.warn("DataManager n'est pas encore chargé.");
+            return;
+        }
         const route = dataManager.routes.find(r => r.route_short_name === lineShortName);
         if (!route) {
             console.warn(`Ligne "${lineShortName}" non trouvée.`);
@@ -442,6 +454,9 @@ function renderInfoTraficCard() {
     };
     
     const allowedCategories = ['majeures', 'express', 'quartier', 'navettes'];
+
+    // S'assure que dataManager est chargé
+    if (!dataManager) return;
 
     dataManager.routes.forEach(route => {
         const category = getCategoryForRoute(route.route_short_name);
@@ -517,6 +532,9 @@ function buildFicheHoraireList() {
         'Lignes N': [],
         'Lignes R': [],
     };
+
+    // S'assure que dataManager est chargé
+    if (!dataManager) return;
 
     dataManager.routes.forEach(route => {
         const name = route.route_short_name;
@@ -602,6 +620,20 @@ function buildFicheHoraireList() {
             ficheHoraireContainer.appendChild(accordionGroup);
         }
     }
+    
+    // Attache les écouteurs de l'accordéon APRÈS avoir créé les éléments
+    const allDetails = document.querySelectorAll('#fiche-horaire-container details');
+    allDetails.forEach(details => {
+        details.addEventListener('toggle', (event) => {
+            if (event.target.open) {
+                allDetails.forEach(d => {
+                    if (d !== event.target && d.open) {
+                        d.open = false;
+                    }
+                });
+            }
+        });
+    });
 }
 
 
@@ -611,6 +643,12 @@ function buildFicheHoraireList() {
 function renderAlertBanner() {
     let alerts = [];
     let firstAlertStatus = 'normal';
+    
+    // lineStatuses peut être vide si dataManager n'a pas chargé
+    if (Object.keys(lineStatuses).length === 0) {
+        alertBanner.classList.add('hidden');
+        return;
+    }
     
     for (const route_id in lineStatuses) {
         const state = lineStatuses[route_id];
