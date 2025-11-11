@@ -65,7 +65,7 @@ body.map-is-active {
 body {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-: 100vh;
 }
 #dashboard-container {
     flex: 1 0 auto; /* Permet au conteneur de grandir */
@@ -96,7 +96,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 64px;
+    : 64px;
     max-width: 1300px;
     margin: 0 auto;
 }
@@ -160,7 +160,7 @@ body {
     border: none;
     color: inherit;
     font-size: 1.5rem;
-    line-height: 1;
+    line-: 1;
     cursor: pointer;
     opacity: 0.7;
 }
@@ -303,7 +303,7 @@ body {
 
 .nav-button-condensed svg {
     width: 28px;
-    height: 28px;
+    : 28px;
 }
 .nav-button-condensed .notification-badge {
     top: 0.75rem;
@@ -358,7 +358,7 @@ body {
 .bottom-grid .card p {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    line-height: 1.6;
+    line-: 1.6;
     flex: 1 0 auto; /* Pousse le bouton en bas */
 }
 
@@ -381,7 +381,7 @@ body {
     font-size: 2.25rem;
     font-weight: 800;
     color: var(--primary);
-    line-height: 1.1;
+    line-: 1.1;
 }
 .key-figure-label {
     font-size: 0.875rem;
@@ -426,7 +426,7 @@ body {
     opacity: 0;
     transform: translateY(15px);
     pointer-events: none;
-    max-height: 0;
+    max-: 0;
     overflow: hidden;
     /* Correction: Retrait de padding/margin pour un "collapse" complet */
     padding-top: 0 !important;
@@ -440,7 +440,7 @@ body {
     transform: translateY(15px);
     transition: opacity 0.3s ease-out, transform 0.3s ease-out;
     pointer-events: none;
-    max-height: 0;
+    max-: 0;
     overflow: hidden;
 }
 /* État visible pour les Vues Internes */
@@ -448,7 +448,7 @@ body {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
-    max-height: 5000px; /* Assez grand pour tout contenir */
+    max-: 5000px; /* Assez grand pour tout contenir */
 }
 
 #btn-back-to-hall {
@@ -491,7 +491,7 @@ body {
     opacity: 0;
     transform: scale(0.98);
     transition: all 0.25s ease-in-out;
-    max-height: 0;
+    max-: 0;
     overflow: hidden;
     padding: 0 1.5rem; /* Garde le padding horizontal pendant la transition */
 }
@@ -499,7 +499,7 @@ body {
 #dashboard-hall .card {
     opacity: 1;
     transform: scale(1);
-    max-height: 2000px;
+    max-: 2000px;
     padding: 1.5rem;
 }
 #dashboard-content-view .card.view-active {
@@ -982,7 +982,7 @@ details[open] .accordion-content {
         border: none;
         padding: 0;
         /* Assure que les enfants (même s'ils deviennent 'fixed') sont visibles */
-        display: block; 
+        display: contents; 
         position: relative;
     }
     
