@@ -17,9 +17,12 @@ let tripScheduler;
 let busPositionCalculator;
 let mapRenderer;
 let visibleRoutes = new Set();
-
-// NOUVEL ÉTAT GLOBAL
 let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
+
+// NOUVEAU: ÉLÉMENTS DOM DU PLANIFICATEUR
+let plannerFromInput, plannerToInput, plannerInvertBtn, plannerDateInput, plannerTimeInput, plannerSearchBtn;
+let plannerResultsView, btnBackFromResults, plannerResultsMapEl;
+let resultsMap = null; // Carte Leaflet pour les résultats
 
 // NOUVELLES ICÔNES SVG
 const ICONS = {
@@ -143,6 +146,17 @@ async function initializeApp() {
     searchBar = document.getElementById('horaires-search-bar');
     searchResultsContainer = document.getElementById('horaires-search-results');
 
+    // NOUVEAU: Sélection des éléments du planificateur
+    plannerFromInput = document.getElementById('hall-planner-from');
+    plannerToInput = document.getElementById('hall-planner-to');
+    plannerInvertBtn = document.getElementById('planner-invert-btn');
+    plannerDateInput = document.getElementById('hall-planner-date');
+    plannerTimeInput = document.getElementById('hall-planner-time');
+    plannerSearchBtn = document.getElementById('planner-search-btn');
+    plannerResultsView = document.getElementById('planner-results-view');
+    btnBackFromResults = document.getElementById('btn-back-to-hall-from-results');
+    plannerResultsMapEl = document.getElementById('planner-results-map');
+
     dataManager = new DataManager();
     
     try {
@@ -191,6 +205,8 @@ function setupDashboard() {
     renderInfoTraficCard();
     buildFicheHoraireList();
     setupAdminConsole();
+    
+    initPlanner(); // NOUVEL APPEL POUR ACTIVER LE PLANIFICATEUR
 
     // Attache les écouteurs aux 3 boutons du "Hall"
     document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
@@ -219,15 +235,6 @@ function setupDashboard() {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.toggle('hidden', content.dataset.content !== tabContent);
             });
-        });
-    });
-
-    // NOUVEAU: Écouteurs pour les "quick links"
-    document.querySelectorAll('.quick-links a[data-view-link]').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const view = link.dataset.viewLink;
-            showDashboardView(view);
         });
     });
 }
@@ -260,6 +267,113 @@ function setupAdminConsole() {
         renderAlertBanner();
     };
 }
+
+
+/**
+ * NOUVEAU: Initialise le planificateur "Où allons-nous ?"
+ */
+function initPlanner() {
+    // 1. Initialiser la date et l'heure
+    initPlannerDateTime();
+
+    // 2. Attacher les écouteurs
+    plannerInvertBtn.addEventListener('click', invertPlannerInputs);
+    plannerSearchBtn.addEventListener('click', executePlannerSearch);
+
+    // Le bouton retour sur la page de résultats
+    btnBackFromResults.addEventListener('click', showDashboardHall);
+    
+    // TODO: Étape 2 - Initialiser l'autocomplétion Google Places ici
+    // initGooglePlaces();
+}
+
+/**
+ * NOUVEAU: Pré-remplit les champs date et heure
+ */
+function initPlannerDateTime() {
+    try {
+        const now = new Date();
+        // Décalage pour le fuseau horaire local
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        
+        plannerDateInput.value = now.toISOString().slice(0, 10);
+        plannerTimeInput.value = now.toISOString().slice(11, 16);
+    } catch (e) {
+        console.error("Erreur d'initialisation de la date/heure du planificateur:", e);
+    }
+}
+
+/**
+ * NOUVEAU: Inverse les champs Départ et Arrivée
+ */
+function invertPlannerInputs() {
+    const fromVal = plannerFromInput.value;
+    plannerFromInput.value = plannerToInput.value;
+    plannerToInput.value = fromVal;
+}
+
+/**
+ * NOUVEAU: Logique de recherche (transition de vue)
+ */
+function executePlannerSearch() {
+    const from = plannerFromInput.value;
+    const to = plannerToInput.value;
+    
+    if (!from || !to) {
+        alert("Veuillez remplir un point de départ et d'arrivée.");
+        return;
+    }
+    
+    console.log(`Recherche d'itinéraire: De ${from} à ${to}`);
+    
+    // TODO: Étape 2 - Appeler l'API Google Directions
+    // 1. directionsService.route(...)
+    // 2. Afficher les 3 résultats dans #planner-results-list
+    // 3. Afficher le polyline sur la carte 'resultsMap'
+    // Pour l'instant, on affiche un message temporaire :
+    const resultsList = document.getElementById('planner-results-list');
+    resultsList.innerHTML = `<p class="card-note">Recherche de De <strong>${from}</strong> à <strong>${to}</strong>...</p><p class="card-note">Intégration de l'API Google en cours...</p>`;
+
+
+    // --- Basculement de la Vue ---
+    
+    // 1. Cacher le Hall
+    dashboardHall.classList.remove('view-is-active');
+    
+    // 2. Cacher les vues internes (Horaires, Info) si elles étaient ouvertes
+    dashboardContentView.classList.remove('view-is-active');
+
+    // 3. Afficher la vue des résultats
+    plannerResultsView.classList.remove('hidden');
+
+    // 4. Initialiser la carte Leaflet (SEULEMENT si elle ne l'est pas)
+    // C'est crucial de le faire APRÈS que le div soit visible
+    if (!resultsMap) {
+        initResultsMap();
+    } else {
+        resultsMap.invalidateSize(); // S'assurer qu'elle se redessine
+    }
+}
+
+/**
+ * NOUVEAU: Initialise la carte Leaflet sur la page de résultats
+ */
+function initResultsMap() {
+    try {
+        //         resultsMap = L.map('planner-results-map').setView([45.1833, 0.7167], 13); // Centre Périgueux
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(resultsMap);
+        console.log('🗺️ Carte des résultats initialisée.');
+    } catch (e) {
+        console.error("Erreur d'initialisation de la carte des résultats:", e);
+        if (plannerResultsMapEl) {
+            plannerResultsMapEl.innerHTML = "Erreur: Impossible de charger la carte.";
+        }
+    }
+}
+
 
 /**
  * Affiche la carte "Info Trafic"
@@ -505,6 +619,11 @@ function showDashboardHall() {
     // Cache la carte
     mapContainer.classList.add('hidden');
     
+    // NOUVEAU: Cache la vue des résultats
+    if (plannerResultsView) { // Vérifie si la variable est initialisée
+        plannerResultsView.classList.add('hidden');
+    }
+
     // Déverrouille le body
     document.body.classList.remove('map-is-active'); 
     
