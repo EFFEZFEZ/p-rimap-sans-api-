@@ -55,6 +55,12 @@ html, body {
     /* CORRECTION (BUG SWIPE): Règle 'overscroll-behavior: none;' SUPPRIMÉE pour réparer le scroll */
 }
 
+/* NOUVEAU (FIX 2): Verrouille le scroll quand la carte est active */
+body.map-is-active {
+    overflow: hidden;
+    overscroll-behavior: none; 
+}
+
 /* Ajout pour s'assurer que le contenu pousse le bas de page */
 body {
     display: flex;
