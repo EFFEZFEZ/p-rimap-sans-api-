@@ -63,6 +63,32 @@ const PDF_FILENAME_MAP = {
     'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
 };
 
+// NOUVEAU (REQ 1): Mappage des noms longs (terminus) fournis par l'utilisateur
+const ROUTE_LONG_NAME_MAP = {
+    'A': 'ZAE Marsac <> Centre Hospitalier',
+    'B': 'Les Tournesols <> Gare SNCF',
+    'C': 'ZAE Marsac <> P+R Aquacap',
+    'D': 'P+R Charrieras <> Tourny',
+    'e1': 'ZAE Marsac <> P+R Aquacap',
+    'e2': 'Talleyrand Périgord <> Fromarsac',
+    'e4': 'Charrieras <> La Feuilleraie <> Tourny',
+    'e5': 'Les Tournesols <> PEM',
+    'e6': 'Créavallée <> Trésorerie municipale',
+    'e7': 'Notre-Dame de Sanilhac poste <> Les Lilas hôpital',
+    'K1A': 'Maison Rouge <> Tourny / La Rudeille <> Tourny',
+    'K1B': 'Le Lac <> Pôle universitaire Grenadière <> Taillefer',
+    'K2': 'Champcevinel bourg <> Tourny',
+    'K3A': 'La Feuilleraie <> Place du 8 mai',
+    'K3B': 'Pépinière <> Place du 8 mai',
+    'K4A': 'Sarrazi <> Dojo départemental <> Tourny',
+    'K4B': 'Coulounieix bourg <> Tourny',
+    'K5': 'Halte ferroviaire Boulazac <> La Feuilleraie',
+    'K6': 'Halte ferroviaire Marsac sur l’Isle',
+    'N': 'Tourny <> PEM',
+    'N1': 'Gare SNCF <> 8 mai <> Tourny <> Gare SNCF',
+};
+
+
 // ÉLÉMENTS DOM (Tableau de bord)
 let dashboardContainer, dashboardHall, dashboardContentView, btnBackToHall;
 let infoTraficList, infoTraficAvenir;
@@ -204,15 +230,6 @@ function setupDashboard() {
             showDashboardView(view);
         });
     });
-
-    // *** CORRECTION DU BUG ***
-    // La ligne ci-dessous provoquait l'erreur car 'quick-link-map' n'existe pas dans index.html
-    /*
-    document.getElementById('quick-link-map').addEventListener('click', (e) => {
-        e.preventDefault();
-        showMapView();
-    });
-    */
 }
 
 /**
@@ -362,15 +379,16 @@ function buildFicheHoraireList() {
         
         if (groupName === 'Lignes R') {
             // CAS SPÉCIAL: Lignes R (fichiers unifiés)
+            // MODIFIÉ (REQ 1): Utilise les noms longs fournis par l'utilisateur
             linksHtml = `
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3</a>
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R4_R5_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R4, R5</a>
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R6_R7_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R6, R7</a>
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R8_R9_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R8, R9</a>
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R10_R11_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R10, R11</a>
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R12_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Ligne R12</a>
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R13_R14_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R13, R14</a>
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R15_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Ligne R15</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3 La Feuilleraie &lt;&gt; ESAT / Les Gourdoux &lt;&gt; Trélissac Les Garennes / Les Pinots &lt;&gt; P+R Aquacap</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R4_R5_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R4, R5 Route de Payenché &lt;&gt; Collège Jean Moulin / Les Mondines / Clément Laval &lt;&gt; Collège Jean Moulin</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R6_R7_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R6, R7 Maison des Compagnons &lt;&gt; Gour de l’Arche poste / Le Charpe &lt;&gt; Gour de l’Arche poste</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R8_R9_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R8, R9 Jaunour &lt;&gt; Boulazac centre commercial / Stèle de Lesparat &lt;&gt; Place du 8 mai</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R10_R11_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R10, R11 Notre Dame de Sanilhac poste &lt;&gt; Centre de la communication / Héliodore &lt;&gt; Place du 8 mai</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R12_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Ligne R12 Le Change &lt;&gt; Boulazac centre commercial</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R13_R14_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R13, R14 Coursac &lt;&gt; Razac sur l’Isle / La Chapelle Gonaguet &lt;&gt;Razac sur l’Isle</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R15_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Ligne R15 Boulazac Isle Manoire &lt;&gt; Halte ferroviaire Niversac</a>
             `;
 
         } else {
@@ -391,8 +409,10 @@ function buildFicheHoraireList() {
                     pdfPath = `/data/fichehoraire/${pdfName}`;
                 }
                 
-                // MODIFICATION (REQ 3) : Formate le nom du lien
-                const longName = route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '';
+                // MODIFICATION (REQ 1) : Utilise le mappage statique pour les noms longs
+                const longName = ROUTE_LONG_NAME_MAP[route.route_short_name] || 
+                                 (route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '');
+                
                 const displayName = `Ligne ${route.route_short_name} ${longName}`.trim();
 
                 linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
@@ -403,11 +423,14 @@ function buildFicheHoraireList() {
 
         // Ajout au DOM
         if (linksHtml) {
+            // MODIFIÉ (REQ 2): Ajout d'un wrapper pour l'animation
             accordionGroup.innerHTML = `
                 <details>
                     <summary>${groupName}</summary>
                     <div class="accordion-content">
-                        ${linksHtml}
+                        <div class="accordion-content-inner">
+                            ${linksHtml}
+                        </div>
                     </div>
                 </details>
             `;
@@ -691,9 +714,6 @@ function setupEventListeners() {
                     }
                 });
             }
-            // Si l'élément se ferme (event.target.open === false), 
-            // le listener 'toggle' des autres éléments ne sera pas
-            // déclenché en boucle, car on ne fait rien dans ce cas.
         });
     });
 }
