@@ -15,7 +15,7 @@ import { ApiManager } from './apiManager.js';
 // *** ACTION REQUISE ***
 // Remplacez cette chaîne par votre clé d'API Google Cloud
 // (Vous devez activer "Places API" et "Routes API" pour cette clé)
-const GOOGLE_API_KEY = "VOTRE_CLE_API_GOOGLE_ICI";
+const GOOGLE_API_KEY = "AIzaSyBYDN_8hSHSx_irp_fxLw--XyxuLiixaW4";
 
 // Modules
 let dataManager;
