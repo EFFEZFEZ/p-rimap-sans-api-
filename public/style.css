@@ -175,7 +175,6 @@ body {
     max-width: 1300px;
     margin: 0 auto;
     padding: 2rem 1.5rem;
-    
     display: flex;
     flex-direction: column;
 }
@@ -183,76 +182,85 @@ body {
 /* NOUVEAU: Style "Hero" (Page d'accueil) */
 .hero-section {
     background-image: 
-        /* Superposition sombre pour la lisibilité */
-        linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
         /* NOUVELLE IMAGE DE FOND */
         url('https://www.vie-economique.com/wp-content/uploads/sites/13/2024/12/shutterstock_2365894285-scaled.jpg');
     
     background-size: cover;
     background-position: center;
     border-radius: var(--radius-lg);
-    padding: 2.5rem 1.5rem; /* Espacement intérieur équilibré */
     box-shadow: var(--shadow-md);
+    /* JUSTE UNE IMAGE BANNIÈRE */
+    height: 250px; 
+    margin-bottom: 1.5rem;
 }
 
 /*
  * ====================================
- * MISE À JOUR DU PLANIFICATEUR (SUR HERO)
+ * MISE À JOUR DU PLANIFICATEUR (STYLE IDFM)
  * ====================================
  */
 
-/* Titre (devient blanc) */
-.hero-section .planner-title-bar {
+/* NOUVEAU: Wrapper pour le planificateur sur fond blanc */
+.planner-block-wrapper {
+    background: var(--bg-main);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    max-width: 900px;
+    margin: -100px auto 0 auto; /* Remonte sur la section hero */
+    position: relative;
+    z-index: 10;
+    box-shadow: var(--shadow-lg);
+}
+
+/* Titre (devient noir) */
+.planner-title-bar {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
 }
-.hero-section .planner-title-bar h3 {
+.planner-title-bar h3 {
     font-size: 1.5rem;
-    color: white; 
-    text-shadow: 0 1px 2px rgba(0,0,0,0.4); 
+    color: var(--text-primary); 
+    text-shadow: none;
 }
-.hero-section .planner-title-bar svg {
-    color: white; 
+.planner-title-bar svg {
+    color: var(--primary); 
     flex-shrink: 0;
 }
 
 /* Formulaire (centré) */
-.hero-section .planner-form {
+.planner-form {
     display: flex;
     flex-wrap: nowrap; /* Empêche le retour à la ligne sur PC */
     gap: 1rem;
     align-items: flex-end; 
-    max-width: 900px;
-    margin: 0 auto;
 }
 
 /* Groupes d'input (Départ, Arrivée, Quand) */
-.hero-section .planner-input-group {
+.planner-input-group {
     flex: 1 1 auto; 
     margin-bottom: 0;
 }
 
-/* Labels (deviennent blancs) */
-.hero-section .form-group label {
+/* Labels (deviennent noirs) */
+.form-group label {
+    display: block;
     font-size: 0.875rem;
     font-weight: 500;
     margin-bottom: 0.5rem;
-    color: white; 
-    text-shadow: 0 1px 2px rgba(0,0,0,0.4); 
+    color: var(--text-primary); 
+    text-shadow: none;
 }
-.hero-section .label-optional {
+.label-optional {
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.7); 
+    color: var(--text-secondary);
     font-size: 0.8em;
 }
 
 /* Inputs (restent blancs) */
-.hero-section .form-group input[type="text"] {
+.form-group input[type="text"] {
     background: var(--bg-main);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -261,24 +269,23 @@ body {
     font-size: 0.9rem;
     height: 44px; /* Hauteur fixe pour alignement */
 }
-.hero-section .form-group input[type="text"]:focus {
+.form-group input[type="text"]:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     outline: none;
 }
 
-
 /* Tailles spécifiques pour les groupes */
-.hero-section .planner-input-depart { flex-grow: 2.5; }
-.hero-section .planner-input-arrivee { flex-grow: 2.5; }
-.hero-section .planner-input-quand { 
+.planner-input-depart { flex-grow: 2.5; }
+.planner-input-arrivee { flex-grow: 2.5; }
+.planner-input-quand { 
     flex-grow: 1.5;
     min-width: 210px; 
     position: relative; /* AJOUT CRUCIAL pour le panneau flottant */
 }
 
 /* Bouton Rechercher */
-.hero-section .planner-search-btn {
+.planner-search-btn {
     padding: 0.75rem 1.5rem;
     font-size: 1rem;
     font-weight: 600;
@@ -288,7 +295,7 @@ body {
 }
 
 /* Bouton Inverser (btn-icon) */
-.hero-section .btn-icon {
+.btn-icon {
     background: var(--bg-main);
     border: 1px solid var(--border);
     border-radius: 50%;
@@ -302,21 +309,200 @@ body {
     transition: all 0.2s ease;
     margin-bottom: 0; 
 }
-.hero-section .btn-icon:hover {
+.btn-icon:hover {
     background: var(--bg-secondary);
     border-color: var(--secondary);
 }
-.hero-section .btn-icon svg {
+.btn-icon svg {
     color: var(--primary); 
     width: 1.25rem;
     height: 1.25rem;
     transform: none; 
 }
 
+/* * ====================================
+ * NOUVEAU: SÉLECTEUR DE TEMPS (STYLE IDFM)
+ * ====================================
+ */
+
+/* 1. Bouton "Partir maintenant" */
+.planner-time-selector-wrapper {
+    position: relative;
+}
+.planner-time-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    height: 44px;
+    border-radius: var(--radius-md);
+    justify-content: space-between;
+    font-size: 0.95rem;
+    font-weight: 500;
+    /* Style IDFM: fond blanc, bordure standard, texte noir */
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+}
+.planner-time-btn:hover {
+    border-color: var(--primary);
+    background: var(--bg-main);
+}
+.planner-time-btn svg {
+    margin: 0;
+    color: var(--primary);
+    transition: transform 0.2s;
+}
+.planner-time-btn[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+/* 2. Panneau Flottant (Le style IDFM) */
+.planner-time-panel {
+    position: absolute;
+    top: calc(100% + 10px); /* 10px sous le bouton */
+    left: 0;
+    width: 320px; /* Largeur fixe pour le panneau */
+    z-index: 2000;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    /* Le panneau n'a pas de transparence */
+    backdrop-filter: none; 
+    -webkit-backdrop-filter: none;
+}
+
+.time-panel-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+}
+.time-tab {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+}
+.time-tab.active {
+    color: var(--primary);
+    position: relative;
+    background: var(--bg-secondary);
+}
+.time-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--primary);
+}
+
+/* 3. Contenu du Panneau */
+.time-panel-body {
+    padding: 1rem;
+}
+
+/* CORRECTION LISIBILITÉ: Labels noirs */
+.time-panel-body .form-group label {
+    color: var(--text-primary); 
+    text-shadow: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+/* CORRECTION: Style du Date Picker */
+.time-panel-body .date-select input[type="date"] {
+    width: 100%;
+    height: 44px;
+    padding: 0 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-main);
+    font-size: 0.95rem;
+    text-align: left;
+    
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' r='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.time-panel-body .date-select input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0; /* Cache l'icône moche de Chrome */
+    cursor: pointer;
+}
+
+
+/* Champs Heure et Minutes */
+.time-inputs-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: flex-end; /* Aligne les inputs et le "h" */
+}
+.time-inputs-group .form-group {
+    flex: 1;
+}
+/* Style les inputs numériques */
+.time-inputs-group input[type="number"] {
+    width: 100%;
+    height: 44px;
+    padding: 0 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-main);
+    font-size: 1.125rem;
+    font-weight: 600;
+    text-align: center;
+}
+.time-inputs-group input[type="number"]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    outline: none;
+}
+/* Masque les flèches du input[type=number] */
+.time-inputs-group input[type=number]::-webkit-inner-spin-button, 
+.time-inputs-group input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Style le "h" et "min" (correction alignement) */
+.time-inputs-group .time-select,
+.time-inputs-group .minutes-select {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+.time-inputs-group .time-select::after {
+    content: 'h';
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding-bottom: 0.7rem; /* Aligne avec le texte de l'input */
+}
+.time-inputs-group .minutes-select::after {
+    content: 'min';
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding-bottom: 0.7rem; /* Aligne avec le texte de l'input */
+}
+
+
+/* Bouton de confirmation au bas du panneau */
+#time-panel-confirm-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+}
 
 /* * ====================================
- * FIN MISE À JOUR PLANIFICATEUR
- * (Le style du SÉLECTEUR DE TEMPS est défini juste après ce bloc)
+ * FIN SÉLECTEUR DE TEMPS
  * ====================================
  */
 
@@ -327,26 +513,23 @@ body {
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     
-    margin-top: 2.5rem; 
-    max-width: 900px; /* Centré avec le planificateur */
+    margin-top: 1.5rem; /* Rapproché du planificateur */
+    max-width: 900px; 
     margin-left: auto;
     margin-right: auto;
     position: relative; 
     z-index: 1; 
 }
 
-/* MODIFIÉ: Boutons de Nav (styles "Liquid Glass") */
+/* MODIFIÉ: Boutons de Nav (styles "Cartes" au lieu de "Liquid Glass") */
 .nav-button-condensed {
-    background: rgba(0, 90, 156, 0.75); 
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    
+    background: var(--bg-main);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 1.5rem;
     font-size: 1.125rem;
     font-weight: 700;
-    color: white;
+    color: var(--text-primary);
     text-decoration: none;
     box-shadow: var(--shadow-sm);
     transition: all 0.2s ease;
@@ -359,46 +542,26 @@ body {
     gap: 0.75rem;
 }
 .nav-button-condensed:hover {
-    background: rgba(0, 74, 128, 0.9); 
-    border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 90, 156, 0.3); 
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
 }
-
 .nav-button-condensed svg {
     width: 28px;
     height: 28px;
+    color: var(--primary); /* Icônes en bleu */
 }
+.nav-button-condensed[data-view="horaires"] svg { color: var(--color-green); }
+.nav-button-condensed[data-view="info-trafic"] svg { color: var(--color-orange); }
+
 .nav-button-condensed .notification-badge {
     top: 0.75rem;
     right: 0.75rem;
 }
 
-/* MODIFIÉ: Boutons "Liquid Glass" (Couleurs) */
-.nav-button-condensed[data-view="horaires"] {
-    background: rgba(40, 167, 69, 0.75); 
-    border-color: rgba(255, 255, 255, 0.2);
-}
-.nav-button-condensed[data-view="horaires"]:hover {
-    background: rgba(35, 139, 58, 0.9); 
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 10px 15px -3px rgba(40, 167, 69, 0.4); 
-}
-
-.nav-button-condensed[data-view="info-trafic"] {
-    background: rgba(253, 126, 20, 0.75); 
-    border-color: rgba(255, 255, 255, 0.2);
-}
-.nav-button-condensed[data-view="info-trafic"]:hover {
-    background: rgba(228, 113, 18, 0.9); 
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 10px 15px -3px rgba(253, 126, 20, 0.4); 
-}
-
-
 /* NOUVEAU: Contenu du bas (Chiffres clés) */
 .bottom-content-wrapper {
-    margin-top: 3.5rem; /* Plus d'espace après les boutons de nav */
+    margin-top: 1.5rem; 
     margin-bottom: 2rem; 
     max-width: 900px; 
     margin-left: auto;
@@ -540,10 +703,9 @@ body {
 
 /* MODIFIÉ: Style de carte "Liquid Glass" et transition */
 .card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    /* Style carte standard */
+    background: var(--bg-main);
+    border: 1px solid var(--border);
     
     border-radius: var(--radius-md);
     padding: 1.5rem;
@@ -575,13 +737,9 @@ body {
 .form-group {
     margin-bottom: 1rem;
 }
-.form-group label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-}
-.form-group input[type="text"] {
+/* La règle .form-group label est déjà définie en haut */
+
+.form-group input[type="text"]:not(#hall-planner-from):not(#hall-planner-to) {
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid var(--border);
@@ -589,9 +747,9 @@ body {
     font-size: 0.9rem;
     font-family: inherit;
     transition: all 0.15s ease;
-    background: var(--bg-main); /* Fond solide pour les inputs */
+    background: var(--bg-main); 
 }
-.form-group input[type="text"]:focus {
+.form-group input[type="text"]:not(#hall-planner-from):not(#hall-planner-to):focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     outline: none;
@@ -891,6 +1049,7 @@ details[open] .accordion-content {
     display: flex;
     flex: 1 1 auto;
     overflow: hidden; /* Important pour le scroll interne */
+    background: var(--bg-light); /* Fond gris clair pour la séparation */
 }
 
 .results-left-panel {
@@ -1056,35 +1215,40 @@ details[open] .accordion-content {
 @media (max-width: 768px) {
     
     /* --- Dashboard Hall --- */
+
+    /* MODIFIÉ: Le planificateur remonte moins sur l'image */
+    .planner-block-wrapper {
+        margin-top: -50px; 
+    }
     
     /* MODIFICATION PLANIFICATEUR MOBILE */
-    .hero-section .planner-form {
+    .planner-form {
         flex-direction: column;
         align-items: stretch;
     }
-    .hero-section .btn-icon {
+    .btn-icon {
         order: 2; /* Ordre d'affichage */
         margin: 0.5rem auto; /* Centré */
         transform: rotate(90deg); /* Rotation pour le mobile */
     }
-    .hero-section .planner-input-depart { order: 1; }
-    .hero-section .planner-input-arrivee { order: 3; }
-    .hero-section .planner-input-quand { order: 4; }
-    .hero-section .planner-search-btn { 
+    .planner-input-depart { order: 1; }
+    .planner-input-arrivee { order: 3; }
+    .planner-input-quand { order: 4; }
+    .planner-search-btn { 
         order: 5;
         padding: 0.875rem;
     }
 
     /* Input Date/Heure mobile (retour au style classique) */
-    .hero-section .planner-time-inputs {
+    .planner-time-inputs {
         height: auto;
     }
-    .hero-section .form-group input[type="date"],
-    .hero-section .form-group input[type="time"] {
-        text-align: left;
-        padding: 0.75rem 1rem;
-        height: auto;
+    
+    /* NOUVEAU: Panneau de temps mobile */
+    .planner-time-panel {
+        width: 100%; /* Pleine largeur */
     }
+
     /* FIN MODIFICATION PLANIFICATEUR */
 
     .main-nav-buttons-condensed {
@@ -1139,7 +1303,6 @@ details[open] .accordion-content {
         position: relative;
     }
     
-    /* 3. Ré-affiche et repositionne les 4 éléments (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #btn-back-to-dashboard,
     #map-container #map-view #top-bar > #clock,
     #map-container #map-view #top-bar > #status-info,
@@ -1155,7 +1318,6 @@ details[open] .accordion-content {
         box-shadow: var(--shadow-md);
     }
     
-    /* 4. Positionne [Retour] */
     #map-container #map-view #top-bar > #btn-back-to-dashboard {
         top: 15px;
         left: 15px;
@@ -1165,7 +1327,6 @@ details[open] .accordion-content {
     #map-container #map-view #top-bar > #btn-back-to-dashboard span { display: none; }
     #map-container #map-view #top-bar > #btn-back-to-dashboard svg { margin-right: 0; }
     
-    /* 5. Positionne [Horloge] */
     #map-container #map-view #top-bar > #clock {
         display: flex !important; 
         top: 15px; 
@@ -1177,7 +1338,6 @@ details[open] .accordion-content {
     }
     #map-container #map-view #top-bar > #clock #date-indicator { display: none; }
     
-    /* 6. Positionne [Statut Bus] */
     #map-container #map-view #top-bar > #status-info {
         display: flex !important; 
         top: 15px;
@@ -1189,7 +1349,6 @@ details[open] .accordion-content {
     }
     #map-container #map-view #top-bar > #status-info #data-status { display: none; }
     
-    /* 7. Positionne [Filtre] */
     #map-container #map-view #top-bar > #btn-toggle-filter {
         top: auto;
         left: auto;
