@@ -262,9 +262,14 @@ body {
     position: relative; /* S'assure qu'il n'y a pas de z-index étrange */
     z-index: 1; /* S'assure qu'il est au-dessus du fond, mais pas de superposition */
 }
+
+/* MODIFIÉ: Boutons "Liquid Glass" */
 .nav-button-condensed {
-    background: var(--color-nav-condensed-bg);
-    border: 1px solid var(--color-nav-condensed-bg);
+    background: rgba(0, 90, 156, 0.75); /* Bleu verre par défaut */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    
     border-radius: var(--radius-md);
     padding: 1.5rem;
     font-size: 1.125rem;
@@ -282,13 +287,10 @@ body {
     gap: 0.75rem;
 }
 
-/* MODIFICATION: Effets de survol (ombre colorée) */
 .nav-button-condensed:hover {
-    background: var(--color-nav-condensed-hover); /* (Gardé pour le fallback) */
-    border-color: var(--color-nav-condensed-hover); /* (Gardé pour le fallback) */
+    background: rgba(0, 74, 128, 0.9); /* Bleu verre plus sombre */
+    border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-5px);
-    
-    /* Ombre générique (pour le bouton bleu) */
     box-shadow: 0 10px 15px -3px rgba(0, 90, 156, 0.3); 
 }
 
@@ -301,32 +303,26 @@ body {
     right: 0.75rem;
 }
 
-/* NOUVEAU: Couleurs des boutons de navigation (Hall) */
-
-/* Bouton 1: Horaires & Lignes (Vert - Planification) */
+/* MODIFIÉ: Boutons "Liquid Glass" (Couleurs) */
 .nav-button-condensed[data-view="horaires"] {
-    background: var(--color-green);
-    border-color: var(--color-green);
+    background: rgba(40, 167, 69, 0.75); /* Vert verre */
+    border-color: rgba(255, 255, 255, 0.2);
 }
 .nav-button-condensed[data-view="horaires"]:hover {
-    background: #238b3a; /* Vert plus sombre */
-    border-color: #238b3a;
-    box-shadow: 0 10px 15px -3px rgba(40, 167, 69, 0.4); /* Ombre verte */
+    background: rgba(35, 139, 58, 0.9); /* Vert verre plus sombre */
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(40, 167, 69, 0.4); 
 }
 
-/* Bouton 2: État du Réseau (Orange - Alerte) */
 .nav-button-condensed[data-view="info-trafic"] {
-    background: var(--color-orange);
-    border-color: var(--color-orange);
+    background: rgba(253, 126, 20, 0.75); /* Orange verre */
+    border-color: rgba(255, 255, 255, 0.2);
 }
 .nav-button-condensed[data-view="info-trafic"]:hover {
-    background: #e47112; /* Orange plus sombre */
-    border-color: #e47112;
-    box-shadow: 0 10px 15px -3px rgba(253, 126, 20, 0.4); /* Ombre orange */
+    background: rgba(228, 113, 18, 0.9); /* Orange verre plus sombre */
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(253, 126, 20, 0.4); 
 }
-
-/* Bouton 3: Carte Interactive (Bleu - Principal) */
-/* (Il garde le style par défaut --color-nav-condensed-bg) */
 
 
 /* NOUVEAU: Contenu du bas (Chiffres clés) */
