@@ -484,19 +484,38 @@ function renderAlertBanner() {
 
 
 /**
- * NOUVEAU: Fonctions de basculement de vue (MODIFIÉES POUR TRANSITION)
+ * NOUVEAU: Fonctions de basculement de vue (MODIFIÉES POUR CORRIGER LE SCROLL MOBILE)
  */
 function showMapView() {
-    dashboardContainer.classList.add('hidden'); // La carte est une modale, on la garde en 'hidden'
+    // Cache les éléments du dashboard
+    dashboardContainer.classList.add('hidden');
+    document.getElementById('main-header').classList.add('hidden');
+    document.getElementById('alert-banner').classList.add('hidden');
+    
+    // Affiche la carte
     mapContainer.classList.remove('hidden');
+    
+    // Verrouille le body
+    document.body.classList.add('map-is-active'); 
+    
     mapRenderer.map.invalidateSize();
 }
 
 function showDashboardHall() {
-    mapContainer.classList.add('hidden'); // Cache la carte si on revient
+    // Cache la carte
+    mapContainer.classList.add('hidden');
+    
+    // Déverrouille le body
+    document.body.classList.remove('map-is-active'); 
+    
+    // Affiche les éléments du dashboard
+    document.getElementById('main-header').classList.remove('hidden');
     dashboardContainer.classList.remove('hidden');
+    
+    // (La logique de la bannière d'alerte la ré-affichera si besoin)
+    renderAlertBanner(); 
 
-    // NOUVELLE LOGIQUE DE TRANSITION
+    // Logique de transition interne du dashboard
     dashboardContentView.classList.remove('view-is-active');
     dashboardHall.classList.add('view-is-active');
     
