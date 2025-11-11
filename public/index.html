@@ -76,12 +76,41 @@
                             </div>
 
                             <div class="form-group planner-input-group planner-input-quand">
-                                <label for="hall-planner-date">QUAND</label>
-                                <div class="planner-time-inputs">
-                                    <input type="date" id="hall-planner-date" aria-label="Date de départ">
-                                    <input type="time" id="hall-planner-time" aria-label="Heure de départ">
-                                </div>
-                            </div>
+    <label for="hall-planner-date">QUAND</label>
+    <div class="planner-time-selector-wrapper">
+        <button type="button" id="planner-time-btn" class="btn btn-secondary planner-time-btn">
+            Partir maintenant
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        
+        <div id="planner-time-panel" class="planner-time-panel hidden">
+            <div class="time-panel-tabs">
+                <button class="time-tab active" data-type="depart">Partir</button>
+                <button class="time-tab" data-type="arrivee">Arriver</button>
+            </div>
+            
+            <div class="time-panel-body">
+                <div class="form-group date-select">
+                    <label for="date-select-input">DATE DU TRAJET</label>
+                    <input type="date" id="date-select-input" value="2025-11-11">
+                </div>
+                
+                <div class="time-inputs-group">
+                    <div class="form-group time-select">
+                        <label for="hour-select-input">HEURE</label>
+                        <input type="number" id="hour-select-input" min="0" max="23" value="12"> h
+                    </div>
+                    <div class="form-group minutes-select">
+                        <label for="minutes-select-input">MINUTES</label>
+                        <input type="number" id="minutes-select-input" min="0" max="59" value="00"> min
+                    </div>
+                </div>
+                
+                <button id="time-panel-confirm-btn" class="btn btn-primary">Partir maintenant</button>
+            </div>
+        </div>
+    </div>
+</div>
                             
                             <button type="button" id="planner-search-btn" class="btn btn-primary planner-search-btn">Rechercher</button>
                             
