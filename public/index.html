@@ -95,18 +95,25 @@
                     <h3>Horaires</h3>
                     <div class="search-container" id="horaires-search-container">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" id="horaires-search-bar" placeholder="Rechercher une ligne ou un arrêt...">
+                        <input type="text" id="horaires-search-bar" placeholder="Rechercher un arrêt...">
                         <div id="horaires-search-results" class="hidden"></div>
                     </div>
+                    
+                    <h4 class="fiche-horaire-title">Consulter les fiches horaires</h4>
+                    <div id="fiche-horaire-container">
+                        </div>
                 </div>
 
                 <div id="info-trafic" class="card">
                     <h3>Infos Trafic</h3>
                     <div class="tabs">
-                        <button class="tab active">en cours</button>
-                        <button class="tab">à venir</button>
+                        <button class="tab active" data-tab="en-cours">en cours</button>
+                        <button class="tab" data-tab="a-venir">à venir</button>
                     </div>
-                    <div id="info-trafic-list">
+                    <div id="info-trafic-list" class="tab-content active" data-content="en-cours">
+                        </div>
+                    <div id="info-trafic-avenir" class="tab-content hidden" data-content="a-venir">
+                        <p class="card-note">Aucune perturbation à venir signalée.</p>
                     </div>
                 </div>
 
