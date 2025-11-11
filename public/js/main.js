@@ -30,6 +30,73 @@ let apiManager; // Nouvelle instance
 // NOUVEL ÉTAT GLOBAL
 let lineStatuses = {}; 
 
+// NOUVELLES ICÔNES SVG
+const ICONS = {
+    busSmall: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
+    statusTriangle: `<svg width="16" height="8" viewBox="0 0 16 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8 0L16 8H0L8 0Z" /></svg>`,
+    statusWarning: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
+    statusError: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
+    alertBanner: (type) => {
+        if (type === 'annulation') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+        if (type === 'retard') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    },
+    // --- NOUVELLES ICÔNES D'ITINÉRAIRE ---
+    WALK: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-2.2c0-.4-.1-.8-.4-1.1l-1.9-2.8c-.8-1.1-2.2-1.8-3.7-1.8H5v8h2v-3h2.3c1 0 1.8.8 1.8 1.8V16H16z"/><path d="M5 18v2h4v-2H5z"/><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/></svg>`,
+    BUS: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`
+};
+
+// Mappage des noms de fichiers PDF
+const PDF_FILENAME_MAP = {
+    'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
+    'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
+    'C': 'grandperigueux_fiche_horaires_ligne_C_sept_2025.pdf',
+    'D': 'grandperigueux_fiche_horaires_ligne_D_sept_2025.pdf',
+    'e1': 'grandperigueux_fiche_horaires_ligne_e1_sept_2025.pdf',
+    'e2': 'grandperigueux_fiche_horaires_ligne_e2_sept_2025.pdf',
+    'e4': 'grandperigueux_fiche_horaires_ligne_e4_sept_2025.pdf',
+    'e5': 'grandperigueux_fiche_horaires_ligne_e5_sept_2025.pdf',
+    'e6': 'grandperigueux_fiche_horaires_ligne_e6_sept_2025.pdf',
+    'e7': 'grandperigueux_fiche_horaires_ligne_e7_sept_2025.pdf',
+    'K1A': 'grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf',
+    'K1B': 'grandperigueux_fiche_horaires_ligne_K1B_sept_2025.pdf',
+    'K2': 'grandperigueux_fiche_horaires_ligne_K2_sept_2025.pdf',
+    'K3A': 'grandperigueux_fiche_horaires_ligne_K3A_sept_2025.pdf',
+    'K3B': 'grandperigueux_fiche_horaires_ligne_K3B_sept_2025.pdf',
+    'K4A': 'grandperigueux_fiche_horaires_ligne_K4A_sept_2025.pdf',
+    'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
+    'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
+    'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
+    'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
+    'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
+};
+
+// Mappage des noms longs
+const ROUTE_LONG_NAME_MAP = {
+    'A': 'ZAE Marsac <> Centre Hospitalier',
+    'B': 'Les Tournesols <> Gare SNCF',
+    'C': 'ZAE Marsac <> P+R Aquacap',
+    'D': 'P+R Charrieras <> Tourny',
+    'e1': 'ZAE Marsac <> P+R Aquacap',
+    'e2': 'Talleyrand Périgord <> Fromarsac',
+    'e4': 'Charrieras <> La Feuilleraie <> Tourny',
+    'e5': 'Les Tournesols <> PEM',
+    'e6': 'Créavallée <> Trésorerie municipale',
+    'e7': 'Notre-Dame de Sanilhac poste <> Les Lilas hôpital',
+    'K1A': 'Maison Rouge <> Tourny / La Rudeille <> Tourny',
+    'K1B': 'Le Lac <> Pôle universitaire Grenadière <> Taillefer',
+    'K2': 'Champcevinel bourg <> Tourny',
+    'K3A': 'La Feuilleraie <> Place du 8 mai',
+    'K3B': 'Pépinière <> Place du 8 mai',
+    'K4A': 'Sarrazi <> Dojo départemental <> Tourny',
+    'K4B': 'Coulounieix bourg <> Tourny',
+    'K5': 'Halte ferroviaire Boulazac <> La Feuilleraie',
+    'K6': 'Halte ferroviaire Marsac sur l’Isle',
+    'N': 'Tourny <> PEM',
+    'N1': 'Gare SNCF <> 8 mai <> Tourny <> Gare SNCF',
+};
+
+
 // ÉLÉMENTS DOM (VUE 1: DASHBOARD)
 let dashboardContainer, dashboardHall, dashboardContentView, btnBackToHall;
 let infoTraficList, infoTraficAvenir;
@@ -98,7 +165,6 @@ async function initializeApp() {
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
     resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
 
-    // NOUVELLES SÉLECTIONS DOM
     plannerWhenBtn = document.getElementById('planner-when-btn');
     plannerOptionsPopover = document.getElementById('planner-options-popover');
     plannerSubmitBtn = document.getElementById('planner-submit-btn');
@@ -170,7 +236,6 @@ function setupStaticEventListeners() {
         apiManager.loadGoogleMapsAPI();
     } catch (error) {
         console.error("Impossible de charger l'API Google:", error);
-        // On pourrait afficher une erreur à l'utilisateur ici
     }
 
     // --- Navigation principale ---
@@ -263,7 +328,6 @@ function setupStaticEventListeners() {
             plannerWhenBtn.classList.remove('popover-active');
         }
 
-        // Valide que nous avons les Place IDs
         if (!fromPlaceId || !toPlaceId) {
             alert("Veuillez sélectionner un point de départ et d'arrivée depuis les suggestions.");
             return;
@@ -273,21 +337,18 @@ function setupStaticEventListeners() {
         showResultsView(); // Affiche la vue des résultats (avec "Recherche en cours...")
 
         try {
-            // Appelle l'API Routes
+            // 1. Appelle l'API Routes
             const results = await apiManager.fetchItinerary(fromPlaceId, toPlaceId);
             
-            // TODO: Créer une fonction "renderItineraryResults(results)"
-            // Pour l'instant, on affiche le succès
-            console.log("Résultats de l'API Routes:", results);
-            if (resultsListContainer) {
-                // Remplace "Recherche..." par un message de succès (temporaire)
-                resultsListContainer.innerHTML = `<p class="results-message">Résultats trouvés ! (Voir console)</p>`; 
-            }
+            // 2. Traite la réponse complexe de Google
+            const itineraries = processGoogleRoutesResponse(results);
+            
+            // 3. Affiche les itinéraires formatés
+            renderItineraryResults(itineraries);
             
         } catch (error) {
             console.error("Échec de la recherche d'itinéraire:", error);
             if (resultsListContainer) {
-                // Affiche l'erreur à l'utilisateur
                 resultsListContainer.innerHTML = `<p class="results-message error">Impossible de calculer l'itinéraire. ${error.message}</p>`;
             }
         }
@@ -296,16 +357,14 @@ function setupStaticEventListeners() {
     // Autocomplétion pour le champ "Départ"
     fromInput.addEventListener('input', (e) => {
         handleAutocomplete(e.target.value, fromSuggestions, (placeId) => {
-            fromPlaceId = placeId; // Stocke l'ID
-            fromInput.value = e.target.value; // Garde le texte
+            fromPlaceId = placeId; 
         });
     });
 
     // Autocomplétion pour le champ "Arrivée"
     toInput.addEventListener('input', (e) => {
         handleAutocomplete(e.target.value, toSuggestions, (placeId) => {
-            toPlaceId = placeId; // Stocke l'ID
-            toInput.value = e.target.value; // Garde le texte
+            toPlaceId = placeId; 
         });
     });
 
@@ -343,11 +402,9 @@ function setupStaticEventListeners() {
     if (swapBtn) {
         swapBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // Échange les valeurs textuelles
             const fromVal = fromInput.value;
             fromInput.value = toInput.value;
             toInput.value = fromVal;
-            // Échange les Place IDs stockés
             const tempId = fromPlaceId;
             fromPlaceId = toPlaceId;
             toPlaceId = tempId;
@@ -356,11 +413,9 @@ function setupStaticEventListeners() {
 
     // Clic global "Click Outside"
     document.addEventListener('click', (e) => {
-        // Cache les résultats de la recherche GTFS
         if (searchResultsContainer && !e.target.closest('#horaires-search-container')) {
             searchResultsContainer.classList.add('hidden');
         }
-        // Cache le popover "QUAND"
         if (plannerOptionsPopover && !e.target.closest('.form-group-when')) {
             if (!plannerOptionsPopover.classList.contains('hidden')) {
                 plannerOptionsPopover.classList.add('hidden');
@@ -369,7 +424,6 @@ function setupStaticEventListeners() {
                 }
             }
         }
-        // NOUVEAU: Cache les suggestions d'autocomplétion
         if (!e.target.closest('.form-group')) {
             fromSuggestions.style.display = 'none';
             toSuggestions.style.display = 'none';
@@ -393,18 +447,13 @@ function setupDataDependentEventListeners() {
     }
 }
 
-// --- NOUVELLES FONCTIONS POUR L'AUTOCOMPLÉTION ---
+// --- NOUVELLES FONCTIONS POUR L'AUTOCOMPLÉTION ET LES RÉSULTATS ---
 
-/**
- * Gère l'autocomplétion pour un champ de saisie
- * @param {string} query - Le texte de l'utilisateur
- * @param {HTMLElement} container - Le div où afficher les résultats
- * @param {function} onSelect - Callback à appeler avec le placeId
- */
 async function handleAutocomplete(query, container, onSelect) {
     if (query.length < 3) {
         container.innerHTML = '';
         container.style.display = 'none';
+        onSelect(null); // Réinitialise l'ID si la recherche est effacée
         return;
     }
 
@@ -417,12 +466,6 @@ async function handleAutocomplete(query, container, onSelect) {
     }
 }
 
-/**
- * Affiche les suggestions dans le conteneur
- * @param {Array} suggestions - Liste de suggestions de l'API
- * @param {HTMLElement} container - Le div où afficher les résultats
- * @param {function} onSelect - Callback à appeler avec le placeId
- */
 function renderSuggestions(suggestions, container, onSelect) {
     container.innerHTML = '';
     if (suggestions.length === 0) {
@@ -434,16 +477,15 @@ function renderSuggestions(suggestions, container, onSelect) {
         const item = document.createElement('div');
         item.className = 'suggestion-item';
         
-        // Sépare le nom principal du reste de l'adresse
         const mainText = suggestion.description.split(',')[0];
         const secondaryText = suggestion.description.substring(mainText.length);
         item.innerHTML = `<strong>${mainText}</strong>${secondaryText}`;
         
         item.addEventListener('click', () => {
-            const inputElement = container.previousElementSibling; // L'input est juste avant
-            inputElement.value = suggestion.description; // Met à jour le texte
-            onSelect(suggestion.placeId); // Stocke l'ID
-            container.innerHTML = ''; // Vide et cache la liste
+            const inputElement = container.previousElementSibling; 
+            inputElement.value = suggestion.description; 
+            onSelect(suggestion.placeId); 
+            container.innerHTML = ''; 
             container.style.display = 'none';
         });
         container.appendChild(item);
@@ -452,8 +494,202 @@ function renderSuggestions(suggestions, container, onSelect) {
     container.style.display = 'block';
 }
 
+/**
+ * Traite la réponse brute de l'API Google Routes
+ * @param {object} data - La réponse JSON brute de l'API
+ * @returns {Array} Un tableau d'objets itinéraires simplifiés
+ */
+function processGoogleRoutesResponse(data) {
+    if (!data || !data.routes || data.routes.length === 0) {
+        console.warn("Réponse de l'API Routes vide ou invalide.");
+        return [];
+    }
 
-// --- Fonctions de l'application (logique métier) ---
+    // Mappe chaque "route" de Google en un "itinéraire" simple
+    return data.routes.map(route => {
+        const leg = route.legs[0]; // Nous supposons un seul "leg" pour un trajet simple
+        
+        const itinerary = {
+            departureTime: formatGoogleTime(leg.startTime),
+            arrivalTime: formatGoogleTime(leg.endTime),
+            duration: formatGoogleDuration(route.duration),
+            summaryIcons: [], // Pour les icônes [WALK] [BUS 24] [BUS A]
+            steps: [] // Pour les détails [Marcher 5min...] [Prendre Bus 24...]
+        };
+
+        // Construit les listes de "legs" et de "summary"
+        leg.steps.forEach(step => {
+            const duration = formatGoogleDuration(step.duration);
+            
+            if (step.travelMode === 'WALK') {
+                itinerary.summaryIcons.push({ type: 'WALK' });
+                itinerary.steps.push({
+                    type: 'WALK',
+                    icon: ICONS.WALK,
+                    instruction: step.navigationInstruction.instructions,
+                    duration: duration
+                });
+            } else if (step.travelMode === 'TRANSIT') {
+                const transit = step.transitDetails;
+                const line = transit.transitLine;
+                
+                const shortName = line.nameShort || 'BUS';
+                const color = line.color || '#3388ff';
+                const textColor = line.textColor || '#ffffff';
+
+                itinerary.summaryIcons.push({
+                    type: 'BUS',
+                    name: shortName,
+                    color: color,
+                    textColor: textColor
+                });
+                itinerary.steps.push({
+                    type: 'BUS',
+                    icon: ICONS.BUS,
+                    routeShortName: shortName,
+                    routeColor: color,
+                    routeTextColor: textColor,
+                    instruction: `Prendre le <b>${shortName}</b> direction <b>${transit.headsign}</b>`,
+                    departureStop: transit.departureStop.name,
+                    departureTime: formatGoogleTime(transit.departureTime),
+                    arrivalStop: transit.arrivalStop.name,
+                    arrivalTime: formatGoogleTime(transit.arrivalTime),
+                    numStops: transit.stopCount,
+                    duration: duration
+                });
+            }
+        });
+
+        // Nettoie les icônes de résumé (supprime les marches en double)
+        itinerary.summaryIcons = itinerary.summaryIcons.filter((icon, index, self) => 
+            icon.type !== 'WALK' || (index > 0 && self[index - 1].type !== 'WALK')
+        );
+
+        return itinerary;
+    });
+}
+
+/**
+ * Affiche les itinéraires formatés dans la liste des résultats
+ * @param {Array} itineraries - Le tableau d'itinéraires propres
+ */
+function renderItineraryResults(itineraries) {
+    if (!resultsListContainer) return;
+    
+    resultsListContainer.innerHTML = ''; // Vide la liste
+
+    if (itineraries.length === 0) {
+        resultsListContainer.innerHTML = '<p class="results-message">Aucun itinéraire en transport en commun trouvé.</p>';
+        return;
+    }
+
+    // Crée une carte HTML pour chaque itinéraire
+    itineraries.forEach((itinerary, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'route-option-wrapper';
+        
+        // --- 1. Titre (ex: "Suggéré") ---
+        if (index === 0) {
+            wrapper.innerHTML += `<p class="route-option-title">Suggéré</p>`;
+        }
+
+        // --- 2. Carte Résumé (cliquable) ---
+        const card = document.createElement('div');
+        card.className = 'route-option';
+
+        // Icônes résumé (Marche, Bus 24, Bus A)
+        const summaryHtml = itinerary.summaryIcons.map(icon => {
+            if (icon.type === 'WALK') {
+                return `<div class="route-summary-icon walk">${ICONS.WALK}</div>`;
+            } else { // BUS
+                return `<div class="route-line-badge" style="background-color: ${icon.color}; color: ${icon.textColor};">${icon.name}</div>`;
+            }
+        }).join('<span class="route-summary-separator">></span>');
+
+        card.innerHTML = `
+            <div class="route-option-left">
+                ${summaryHtml}
+            </div>
+            <div class="route-option-right">
+                <span class="route-time">${itinerary.departureTime} > ${itinerary.arrivalTime}</span>
+                <span class="route-duration">${itinerary.duration}</span>
+            </div>
+        `;
+        
+        // --- 3. Vue Détaillée (cachée par défaut) ---
+        const details = document.createElement('div');
+        details.className = 'route-details hidden'; // Caché par défaut
+
+        details.innerHTML = itinerary.steps.map(step => {
+            if (step.type === 'WALK') {
+                return `
+                    <div class="step-detail walk">
+                        <div class="step-icon">${step.icon}</div>
+                        <div class="step-info">
+                            <span class="step-instruction">${step.instruction}</span>
+                            <span class="step-duration">${step.duration}</span>
+                        </div>
+                    </div>
+                `;
+            } else { // BUS
+                return `
+                    <div class="step-detail bus">
+                        <div class="step-icon">
+                            <div class="route-line-badge" style="background-color: ${step.routeColor}; color: ${step.routeTextColor};">${step.routeShortName}</div>
+                        </div>
+                        <div class="step-info">
+                            <span class="step-instruction">${step.instruction}</span>
+                            <span class="step-time">${step.departureStop} (${step.departureTime})</span>
+                            <span class="step-duration">${step.duration} (${step.numStops} arrêts)</span>
+                            <span class="step-time">${step.arrivalStop} (${step.arrivalTime})</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
+
+        // Ajoute le listener pour déplier/replier
+        card.addEventListener('click', () => {
+            details.classList.toggle('hidden');
+            card.classList.toggle('is-active');
+        });
+
+        wrapper.appendChild(card);
+        wrapper.appendChild(details);
+        resultsListContainer.appendChild(wrapper);
+    });
+}
+
+/**
+ * Helper pour formater le temps ISO de Google en HH:MM
+ */
+function formatGoogleTime(isoTime) {
+    try {
+        const date = new Date(isoTime);
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    } catch (e) {
+        return "--:--";
+    }
+}
+
+/**
+ * Helper pour formater la durée de Google (ex: "1800s") en "30 min"
+ */
+function formatGoogleDuration(durationString) {
+    try {
+        const seconds = parseInt(durationString.slice(0, -1));
+        const minutes = Math.round(seconds / 60);
+        if (minutes < 1) return "< 1 min";
+        return `${minutes} min`;
+    } catch (e) {
+        return "";
+    }
+}
+
+
+// --- Fonctions de l'application (logique métier GTFS) ---
 
 function setupAdminConsole() {
     btnAdminConsole.addEventListener('click', () => {
