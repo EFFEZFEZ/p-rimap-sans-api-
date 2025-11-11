@@ -341,7 +341,7 @@ function setupStaticEventListeners() {
                 const popoverSubmitBtn = document.getElementById('popover-submit-btn');
                 if (e.currentTarget.dataset.tab === 'arriver') { 
                     mainBtnText.textContent = 'Arriver à...'; 
-                    popoverSubmitBtn.textContent = 'Valider l'arrivée';
+                    popoverSubmitBtn.textContent = 'Valider l arrivée';
                 } else {
                     mainBtnText.textContent = 'Partir maintenant';
                     popoverSubmitBtn.textContent = 'Partir maintenant';
