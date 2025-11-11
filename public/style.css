@@ -225,6 +225,28 @@ html, body {
     padding: 4px;
 }
 
+/* NOUVEAU: Conteneur de "Pièce" (Vue de contenu) */
+#dashboard-content-view {
+    /* (masqué par .hidden par défaut) */
+}
+#btn-back-to-hall {
+    margin-bottom: 1.5rem;
+    background: var(--bg-secondary);
+    border-color: var(--border);
+    color: var(--text-primary);
+    font-weight: 600;
+    padding-left: 0.75rem;
+}
+#btn-back-to-hall:hover {
+    background: var(--border);
+    border-color: var(--secondary);
+}
+#btn-back-to-hall svg {
+    margin-right: 0.5rem;
+    color: var(--text-secondary);
+}
+
+
 /* Cartes de contenu */
 .content-cards {
     display: grid;
@@ -238,16 +260,12 @@ html, body {
     padding: 1.5rem;
     box-shadow: var(--shadow-sm);
 }
-.card h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
+/* NOUVEAU: Les cartes sont masquées par défaut dans la vue de contenu */
+#dashboard-content-view .card {
+    display: none; /* JS les affichera */
 }
-.card-note {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-top: 1rem;
-    font-style: italic;
+#dashboard-content-view .card.view-active {
+    display: block; /* Affiche la carte active */
 }
 
 /* Formulaires dans les cartes */
@@ -548,6 +566,10 @@ html, body {
     .content-cards .card:last-child {
         grid-column: 1 / -1;
     }
+    /* NOUVEAU: Force les vues de contenu à 1 colonne */
+    #dashboard-content-view .content-cards {
+        grid-template-columns: 1fr;
+    }
 }
 @media (max-width: 768px) {
     .main-nav-buttons {
@@ -561,7 +583,6 @@ html, body {
         grid-template-columns: 1fr;
     }
     .info-trafic-grid {
-        /* Plus de colonnes sur petit écran */
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         gap: 0.75rem;
     }
@@ -602,11 +623,11 @@ html, body {
 }
 
 /* Bouton Retour (VUE CARTE) */
-#btn-back-to-dashboard {
+#map-container #btn-back-to-dashboard {
     padding-left: 0.75rem;
     padding-right: 1.25rem;
 }
-#btn-back-to-dashboard svg {
+#map-container #btn-back-to-dashboard svg {
     margin-right: 0.25rem;
 }
 
@@ -686,7 +707,7 @@ html, body {
         height: 100vh;
     }
 
-    #btn-back-to-dashboard {
+    #map-container #btn-back-to-dashboard {
         position: fixed;
         top: 15px;
         left: 15px;
@@ -694,8 +715,8 @@ html, body {
         box-shadow: var(--shadow-md);
         padding: 0.5rem 0.75rem;
     }
-    #btn-back-to-dashboard span { display: none; }
-    #btn-back-to-dashboard svg { margin-right: 0; }
+    #map-container #btn-back-to-dashboard span { display: none; }
+    #map-container #btn-back-to-dashboard svg { margin-right: 0; }
 
 
     #map-view #clock {
@@ -789,6 +810,16 @@ html, body {
 .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
 .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
 .btn-primary svg { margin-right: 0.25rem; }
+.btn-secondary {
+    background: var(--bg-secondary);
+    border-color: var(--border);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.btn-secondary:hover {
+    background: var(--border);
+    border-color: var(--secondary);
+}
 
 /* En-tête panneau de filtre */
 .filter-header {
