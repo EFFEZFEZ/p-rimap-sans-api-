@@ -730,6 +730,8 @@ details[open] .accordion-content {
 .tab-content {
     max-height: 450px;
     overflow-y: auto;
+    /* CORRECTION (BUG SWIPE) */
+    overscroll-behavior: contain;
 }
 
 /* NOUVEAU: Style Info Trafic (image_a08441.png) */
@@ -808,6 +810,8 @@ details[open] .accordion-content {
     position: relative;
     z-index: 1; 
     background: #f0f0f0;
+    /* CORRECTION (BUG SWIPE): Laisse Leaflet gérer le tactile */
+    touch-action: none;
 }
 
 /* =========================================
@@ -903,7 +907,11 @@ details[open] .accordion-content {
 #route-filter-panel.hidden {
     transform: translateX(100%); 
 }
-.panel-handle { display: none; } 
+.panel-handle { 
+    display: none; 
+    /* CORRECTION (BUG SWIPE): Change le curseur pour indiquer l'action */
+    cursor: pointer;
+} 
 
 /* =========================================
  * DESIGN MOBILE (VUE CARTE) - ENTIÈREMENT RÉÉCRIT
@@ -940,29 +948,32 @@ details[open] .accordion-content {
         border: none;
         padding: 0;
         height: 0;
+        /* Assure que les enfants (même s'ils deviennent 'fixed') sont visibles */
+        display: block; 
+        position: relative;
     }
 
     #map-view #map {
-        height: 100vh;
+        /* 2. Supprime 100vh instable, flexbox s'en charge */
+        /* height: 100vh; -- SUPPRIMÉ */
     }
 
-    /* 2. Repositionne le bouton RETOUR */
+    /* 3. Repositionne le bouton RETOUR */
     #map-view #top-bar > #btn-back-to-dashboard {
-        display: inline-flex; /* Assure qu'il est visible */
+        display: inline-flex; 
         position: fixed;
         top: 15px;
         left: 15px;
         z-index: 1000;
         box-shadow: var(--shadow-md);
         padding: 0.5rem 0.75rem;
-        /* Ajout des styles "liquid glass" */
+        /* Styles "liquid glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
         border: 1px solid var(--border);
-        /* S'assure qu'il est bien un bouton primary */
-        color: var(--primary); 
         /* Réinitialise les styles 'btn-primary' pour le fond */
+        color: var(--primary); 
         background-color: rgba(255, 255, 255, 0.85);
         border-color: var(--border);
     }
@@ -972,15 +983,15 @@ details[open] .accordion-content {
     #map-view #top-bar > #btn-back-to-dashboard span { display: none; }
     #map-view #top-bar > #btn-back-to-dashboard svg { margin-right: 0; }
 
-    /* 3. Repositionne l'HORLOGE */
+    /* 4. Repositionne l'HORLOGE */
     #map-view #top-bar > #clock {
-        display: flex; /* Assure qu'il est visible */
+        display: flex; 
         position: fixed;
         top: 15px; 
         left: 50%;
         transform: translateX(-50%);
         z-index: 999;
-        /* Ajout des styles "liquid glass" */
+        /* Styles "liquid glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
@@ -991,14 +1002,14 @@ details[open] .accordion-content {
     }
     #map-view #top-bar > #clock #date-indicator { display: none; }
 
-    /* 4. Repositionne le STATUT (compteur bus) */
+    /* 5. Repositionne le STATUT (compteur bus) */
     #map-view #top-bar > #status-info {
-        display: flex; /* Assure qu'il est visible */
+        display: flex; 
         position: fixed;
         top: 15px;
         right: 15px;
         z-index: 999;
-        /* Ajout des styles "liquid glass" */
+        /* Styles "liquid glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
@@ -1010,9 +1021,9 @@ details[open] .accordion-content {
     }
     #map-view #top-bar > #status-info #data-status { display: none; }
 
-    /* 5. Repositionne le bouton FILTRE */
+    /* 6. Repositionne le bouton FILTRE */
     #map-view #top-bar > #btn-toggle-filter {
-        display: inline-flex; /* Assure qu'il est visible */
+        display: inline-flex; 
         position: fixed;
         top: auto;
         left: auto;
@@ -1025,12 +1036,12 @@ details[open] .accordion-content {
         box-shadow: var(--shadow-lg);
         padding: 0;
         justify-content: center;
-        /* Ajout des styles "liquid glass" */
+        /* Styles "liquid glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
         border: 1px solid var(--border);
-        color: var(--text-primary); /* S'assure que l'icône est visible */
+        color: var(--text-primary); 
     }
     #map-view #top-bar > #btn-toggle-filter:hover {
         background-color: rgba(240, 240, 240, 0.9);
@@ -1060,7 +1071,7 @@ details[open] .accordion-content {
         background: var(--border);
         border-radius: var(--radius-full);
         margin: 8px auto;
-        cursor: grab;
+        /* cursor: grab; -- (changé en 'pointer' plus haut) */
     }
 }
 
@@ -1153,6 +1164,8 @@ details[open] .accordion-content {
     overflow-y: auto;
     flex: 1;
     background: transparent; /* Laisse passer le fond "glass" */
+    /* CORRECTION (BUG SWIPE) */
+    overscroll-behavior: contain;
 }
 .category-header {
     padding: 0.75rem 1.25rem;
@@ -1385,6 +1398,8 @@ details[open] .accordion-content {
     width: 100%;
     max-height: 250px;
     overflow-y: auto;
+    /* CORRECTION (BUG SWIPE) */
+    overscroll-behavior: contain;
 }
 .info-popup-header {
     background: var(--bg-secondary);
