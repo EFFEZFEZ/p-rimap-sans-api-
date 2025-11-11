@@ -23,8 +23,8 @@ let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
 
 // NOUVELLES ICÔNES SVG
 const ICONS = {
-    // NOUVELLE ICÔNE (plus propre, inspirée de l'exemple)
-    busSmall: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15C5 16.0915 5.223 17.1383 5.62099 18.092C5.69766 18.261 5.7871 18.4233 5.888 18.5768C6.00244 18.7508 6.09642 18.9038 6.166 18.997C6.23072 19.0837 6.27976 19.1437 6.333 19.197C6.40201 19.266 6.49003 19.354 6.59604 19.4599C6.80806 19.672 7.0736 19.9375 7.37871 20.2426C7.98892 20.8528 8.79619 21.4646 9.67157 21.7487C10.547 22.0328 11.453 22.0328 12.3284 21.7487C13.2038 21.4646 14.0111 20.8528 14.6213 20.2426C14.9264 19.9375 15.1919 19.672 15.404 19.4599C15.51 19.354 15.598 19.266 15.667 19.197C15.7202 19.1437 15.7693 19.0837 15.834 18.997C15.9036 18.9038 15.9976 18.7508 16.112 18.5768C16.2129 18.4233 16.3023 18.261 16.379 18.092C16.777 17.1383 17 16.0915 17 15"/><path d="M5 15V8C5 6.84078 5.223 5.79396 5.62099 4.84024C5.69766 4.67119 5.7871 4.50887 5.888 4.35639C6.00244 4.18231 6.09642 4.02931 6.166 3.93605C6.23072 3.84938 6.27976 3.78931 6.333 3.73605C6.40201 3.66704 6.49003 3.57902 6.59604 3.47301C6.80806 3.26099 7.0736 2.99545 7.37871 2.69034C7.98892 2.08013 8.79619 1.46831 9.67157 1.18417C10.547 0.900024 11.453 0.900024 12.3284 1.18417C13.2038 1.46831 14.0111 2.08013 14.6213 2.69034C14.9264 2.99545 15.1919 3.26099 15.404 3.47301C15.51 3.57902 15.598 3.66704 15.667 3.73605C15.7202 3.78931 15.7693 3.84938 15.834 3.93605C15.9036 4.02931 15.9976 4.18231 16.112 4.35639C16.2129 4.50887 16.3023 4.67119 16.379 4.84024C16.777 5.79396 17 6.84078 17 8V15"/><rect width="12" height="4" x="5" y="8" rx="1"/><path d="M3 11H5"/><path d="M17 11H19"/></svg>`,
+    // CORRIGÉ: Icône SVG de bus standard et fonctionnelle
+    busSmall: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
     statusWarning: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
     statusError: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
     alertBanner: (type) => {
@@ -34,8 +34,28 @@ const ICONS = {
     }
 };
 
-// NOUVEAUX ÉLÉMENTS DOM (Tableau de bord)
-let dashboardContainer;
+// NOUVEAU: Mappage des noms de fichiers PDF (basé sur image_a01f3d.png)
+const PDF_FILENAME_MAP = {
+    'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
+    'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
+    'C': 'grandperigueux_fiche_horaires_ligne_C_sept_2025.pdf',
+    'D': 'grandperigueux_fiche_horaires_ligne_D_sept_2025.pdf',
+    'K1A': 'grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf',
+    'K1B': 'grandperigueux_fiche_horaires_ligne_K1B_sept_2025.pdf',
+    'K2': 'grandperigueux_fiche_horaires_ligne_K2_sept_2025.pdf',
+    'K3A': 'grandperigueux_fiche_horaires_ligne_K3A_sept_2025.pdf',
+    'K3B': 'grandperigueux_fiche_horaires_ligne_K3B_sept_2025.pdf',
+    'K4A': 'grandperigueux_fiche_horaires_ligne_K4A_sept_2025.pdf',
+    'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
+    'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
+    'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
+    'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
+    // Ajoutez les autres (e, R, N1) ici s'ils existent
+};
+
+
+// ÉLÉMENTS DOM (Tableau de bord)
+let dashboardContainer, dashboardHall, dashboardContentView, btnBackToHall, dashboardTitle, dashboardSubtitle, mainNavButtons;
 let infoTraficList, infoTraficAvenir;
 let infoTraficCount;
 let alertBanner, alertBannerContent, alertBannerClose;
@@ -45,7 +65,7 @@ let ficheHoraireContainer;
 // ÉLÉMENTS DOM (Vue Carte)
 let mapContainer;
 let btnShowMap, btnBackToDashboard;
-let searchBar, searchResultsContainer; // Maintenant pour la carte Horaires
+let searchBar, searchResultsContainer;
 
 // Catégories de lignes
 const LINE_CATEGORIES = {
@@ -66,8 +86,15 @@ function getCategoryForRoute(routeShortName) {
 }
 
 async function initializeApp() {
-    // Sélection des nouveaux éléments DOM
+    // Sélection des éléments DOM
     dashboardContainer = document.getElementById('dashboard-container');
+    dashboardHall = document.getElementById('dashboard-hall');
+    dashboardContentView = document.getElementById('dashboard-content-view');
+    btnBackToHall = document.getElementById('btn-back-to-hall');
+    dashboardTitle = document.getElementById('dashboard-title');
+    dashboardSubtitle = document.getElementById('dashboard-subtitle');
+    mainNavButtons = document.querySelector('.main-nav-buttons');
+    
     mapContainer = document.getElementById('map-container');
     btnShowMap = document.getElementById('btn-show-map');
     btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
@@ -80,7 +107,6 @@ async function initializeApp() {
     btnAdminConsole = document.getElementById('btn-admin-console');
     ficheHoraireContainer = document.getElementById('fiche-horaire-container');
 
-    // Barre de recherche (maintenant dans la carte Horaires)
     searchBar = document.getElementById('horaires-search-bar');
     searchResultsContainer = document.getElementById('horaires-search-results');
 
@@ -104,11 +130,7 @@ async function initializeApp() {
         }
 
         mapRenderer.displayStops();
-        
-        // Configure les écouteurs d'événements pour la vue carte ET le tableau de bord
         setupEventListeners();
-        
-        // Configure le nouveau tableau de bord
         setupDashboard();
 
         if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
@@ -116,9 +138,7 @@ async function initializeApp() {
         }
         
         updateDataStatus('Données chargées', 'loaded');
-        
         checkAndSetupTimeMode();
-        
         updateData(); // Appel initial
         
     } catch (error) {
@@ -131,40 +151,39 @@ async function initializeApp() {
  * Configure le tableau de bord (état du trafic, admin, fiches horaires)
  */
 function setupDashboard() {
-    // Initialise l'état de toutes les lignes
     dataManager.routes.forEach(route => {
         lineStatuses[route.route_id] = { status: 'normal', message: '' };
     });
 
-    // Affiche la carte Info Trafic
     renderInfoTraficCard();
-
-    // NOUVEAU: Construit la liste des fiches horaires
     buildFicheHoraireList();
-
-    // Configure la console admin
     setupAdminConsole();
 
-    // Configure les boutons de basculement de vue
+    // Boutons de navigation (HALL -> PIÈCE)
+    document.querySelectorAll('.main-nav-buttons .nav-button[data-view]').forEach(button => {
+        button.addEventListener('click', () => {
+            const view = button.dataset.view;
+            showDashboardView(view);
+        });
+    });
+
+    // Bouton de navigation (CARTE)
     btnShowMap.addEventListener('click', showMapView);
-    btnBackToDashboard.addEventListener('click', showDashboardView);
+
+    // Boutons de navigation (RETOUR)
+    btnBackToDashboard.addEventListener('click', showDashboardHall); // (Depuis la carte)
+    btnBackToHall.addEventListener('click', showDashboardHall); // (Depuis une pièce)
+
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
 
-    // NOUVEAU: Gère les onglets "en cours" / "à venir"
+    // Gère les onglets "en cours" / "à venir"
     document.querySelectorAll('.tabs .tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            // Gère l'état actif du bouton
             document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-
-            // Gère l'affichage du contenu
             const tabContent = tab.dataset.tab;
             document.querySelectorAll('.tab-content').forEach(content => {
-                if (content.dataset.content === tabContent) {
-                    content.classList.remove('hidden');
-                } else {
-                    content.classList.add('hidden');
-                }
+                content.classList.toggle('hidden', content.dataset.content !== tabContent);
             });
         });
     });
@@ -182,23 +201,18 @@ function setupAdminConsole() {
         alert('Console Admin activée. Voir la console (F12) pour les instructions.');
     });
 
-    // Expose la fonction à la fenêtre globale
     window.setStatus = (lineShortName, status, message = "") => {
         const route = dataManager.routes.find(r => r.route_short_name === lineShortName);
         if (!route) {
             console.warn(`Ligne "${lineShortName}" non trouvée.`);
             return;
         }
-
         if (!['normal', 'perturbation', 'retard', 'annulation'].includes(status)) {
-            console.warn(`Statut "${status}" invalide. Utilisez "normal", "perturbation", "retard", "annulation".`);
+            console.warn(`Statut "${status}" invalide.`);
             return;
         }
-
         console.log(`Mise à jour statut: Ligne ${lineShortName} -> ${status.toUpperCase()}`);
         lineStatuses[route.route_id] = { status, message };
-
-        // Met à jour l'interface
         renderInfoTraficCard();
         renderAlertBanner();
     };
@@ -209,17 +223,14 @@ function setupAdminConsole() {
  */
 function renderInfoTraficCard() {
     infoTraficList.innerHTML = '';
-    infoTraficList.className = 'info-trafic-grid tab-content active'; // Applique le style de grille
+    infoTraficList.className = 'info-trafic-grid tab-content active';
     let alertCount = 0;
     
-    // Filtre pour les catégories demandées
     const allowedCategories = ['majeures', 'express', 'de quartier'];
 
     dataManager.routes.forEach(route => {
         const category = getCategoryForRoute(route.route_short_name);
-        if (!allowedCategories.includes(category)) {
-            return; // Saute cette ligne
-        }
+        if (!allowedCategories.includes(category)) return;
 
         const state = lineStatuses[route.route_id] || { status: 'normal', message: '' };
         const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
@@ -244,22 +255,16 @@ function renderInfoTraficCard() {
         infoTraficList.appendChild(item);
     });
 
-    // Met à jour le compteur d'alertes
     infoTraficCount.textContent = alertCount;
-    if (alertCount > 0) {
-        infoTraficCount.classList.remove('hidden');
-    } else {
-        infoTraficCount.classList.add('hidden');
-    }
+    infoTraficCount.classList.toggle('hidden', alertCount === 0);
 }
 
 /**
- * NOUVEAU: Construit l'accordéon des fiches horaires
+ * CORRIGÉ: Construit l'accordéon des fiches horaires avec les bons noms de fichiers
  */
 function buildFicheHoraireList() {
-    ficheHoraireContainer.innerHTML = ''; // Vide le conteneur
+    ficheHoraireContainer.innerHTML = '';
 
-    // 1. Grouper les routes par catégorie (inspiré de votre exemple)
     const groupedRoutes = {
         'Lignes A, B, C et D': [],
         'Lignes e': [],
@@ -283,7 +288,6 @@ function buildFicheHoraireList() {
         }
     });
 
-    // 2. Construire l'HTML
     for (const [groupName, routes] of Object.entries(groupedRoutes)) {
         if (routes.length === 0) continue;
 
@@ -291,7 +295,6 @@ function buildFicheHoraireList() {
         accordionGroup.className = 'accordion-group';
 
         let linksHtml = '';
-        // Trie les lignes (ex: R1, R2, R10...)
         routes.sort((a, b) => {
             const numA = parseInt(a.route_short_name.replace(/[^0-9]/g, ''), 10);
             const numB = parseInt(b.route_short_name.replace(/[^0-9]/g, ''), 10);
@@ -302,22 +305,30 @@ function buildFicheHoraireList() {
         });
         
         routes.forEach(route => {
-            // Crée le lien vers le PDF dans le dossier /data/fichehoraire/
-            const pdfPath = `/data/fichehoraire/${route.route_short_name}.pdf`;
+            // CORRECTION: Utilise le mappage de noms de fichiers
+            const pdfName = PDF_FILENAME_MAP[route.route_short_name];
+            if (!pdfName) {
+                console.warn(`Fichier PDF manquant pour la ligne ${route.route_short_name}`);
+                return; // Ne crée pas de lien si le fichier n'est pas mappé
+            }
+            
+            const pdfPath = `/data/fichehoraire/${pdfName}`;
             linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
                 ${route.route_long_name || `Ligne ${route.route_short_name}`}
             </a>`;
         });
 
-        accordionGroup.innerHTML = `
-            <details>
-                <summary>${groupName}</summary>
-                <div class="accordion-content">
-                    ${linksHtml}
-                </div>
-            </details>
-        `;
-        ficheHoraireContainer.appendChild(accordionGroup);
+        if (linksHtml) { // N'ajoute le groupe que s'il contient des liens valides
+            accordionGroup.innerHTML = `
+                <details>
+                    <summary>${groupName}</summary>
+                    <div class="accordion-content">
+                        ${linksHtml}
+                    </div>
+                </details>
+            `;
+            ficheHoraireContainer.appendChild(accordionGroup);
+        }
     }
 }
 
@@ -366,16 +377,48 @@ function renderAlertBanner() {
 
 
 /**
- * Fonctions de basculement de vue
+ * NOUVEAU: Fonctions de basculement de vue
  */
 function showMapView() {
     dashboardContainer.classList.add('hidden');
     mapContainer.classList.remove('hidden');
     mapRenderer.map.invalidateSize();
 }
-function showDashboardView() {
+function showDashboardHall() {
     mapContainer.classList.add('hidden');
     dashboardContainer.classList.remove('hidden');
+    
+    // Cache la vue de contenu
+    dashboardContentView.classList.add('hidden');
+
+    // Affiche le "Hall"
+    dashboardHall.classList.remove('hidden');
+    dashboardTitle.classList.remove('hidden');
+    dashboardSubtitle.classList.remove('hidden');
+    mainNavButtons.classList.remove('hidden');
+}
+function showDashboardView(viewName) {
+    // Cache le "Hall"
+    dashboardHall.classList.add('hidden');
+    dashboardTitle.classList.add('hidden');
+    dashboardSubtitle.classList.add('hidden');
+    mainNavButtons.classList.add('hidden');
+
+    // Affiche la vue de contenu
+    dashboardContentView.classList.remove('hidden');
+
+    // Cache toutes les cartes
+    document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
+        card.classList.remove('view-active'); // (Utilise 'view-active' pour le style)
+        card.classList.add('hidden');
+    });
+
+    // Affiche la carte demandée
+    const activeCard = document.getElementById(viewName);
+    if (activeCard) {
+        activeCard.classList.add('view-active');
+        activeCard.classList.remove('hidden');
+    }
 }
 
 
@@ -394,9 +437,7 @@ function initializeRouteFilter() {
     visibleRoutes.clear();
     
     const routesByCategory = {};
-    Object.keys(LINE_CATEGORIES).forEach(cat => {
-        routesByCategory[cat] = [];
-    });
+    Object.keys(LINE_CATEGORIES).forEach(cat => { routesByCategory[cat] = []; });
     routesByCategory['autres'] = [];
     
     dataManager.routes.forEach(route => {
@@ -407,15 +448,10 @@ function initializeRouteFilter() {
 
     Object.values(routesByCategory).forEach(routes => {
         routes.sort((a, b) => {
-            const nameA = a.route_short_name;
-            const nameB = b.route_short_name;
-
+            const nameA = a.route_short_name; const nameB = b.route_short_name;
             const isRLineA = nameA.startsWith('R') && !isNaN(parseInt(nameA.substring(1)));
             const isRLineB = nameB.startsWith('R') && !isNaN(parseInt(nameB.substring(1)));
-
-            if (isRLineA && isRLineB) {
-                return parseInt(nameA.substring(1)) - parseInt(nameB.substring(1));
-            }
+            if (isRLineA && isRLineB) { return parseInt(nameA.substring(1)) - parseInt(nameB.substring(1)); }
             return nameA.localeCompare(nameB);
         });
     });
@@ -428,17 +464,14 @@ function initializeRouteFilter() {
         categoryHeader.className = 'category-header';
         categoryHeader.innerHTML = `
             <div class="category-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="${categoryInfo.color}">
-                    <circle cx="12" cy="12" r="10"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="${categoryInfo.color}"><circle cx="12" cy="12" r="10"/></svg>
                 <strong>${categoryInfo.name}</strong>
                 <span class="category-count">(${routes.length})</span>
             </div>
             <div class="category-actions">
                 <button class="btn-category-action" data-category="${categoryId}" data-action="select">Tous</button>
                 <button class="btn-category-action" data-category="${categoryId}" data-action="deselect">Aucun</button>
-            </div>
-        `;
+            </div>`;
         routeCheckboxesContainer.appendChild(categoryHeader);
         
         const categoryContainer = document.createElement('div');
@@ -448,44 +481,33 @@ function initializeRouteFilter() {
         routes.forEach(route => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'route-checkbox-item';
-            
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = `route-${route.route_id}`;
             checkbox.checked = true;
             checkbox.dataset.category = categoryId;
             checkbox.addEventListener('change', () => handleRouteFilterChange());
-            
             const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
             const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
-            
             const badge = document.createElement('div');
             badge.className = 'route-badge';
             badge.style.backgroundColor = routeColor;
             badge.style.color = textColor;
             badge.textContent = route.route_short_name || route.route_id;
-            
             const label = document.createElement('span');
             label.className = 'route-name';
             label.textContent = route.route_long_name || route.route_short_name || route.route_id;
-            
             itemDiv.appendChild(checkbox);
             itemDiv.appendChild(badge);
             itemDiv.appendChild(label);
             categoryContainer.appendChild(itemDiv);
-
-            itemDiv.addEventListener('mouseenter', () => {
-                mapRenderer.highlightRoute(route.route_id, true);
-            });
-            itemDiv.addEventListener('mouseleave', () => {
-                mapRenderer.highlightRoute(route.route_id, false);
-            });
+            itemDiv.addEventListener('mouseenter', () => mapRenderer.highlightRoute(route.route_id, true));
+            itemDiv.addEventListener('mouseleave', () => mapRenderer.highlightRoute(route.route_id, false));
             itemDiv.addEventListener('click', (e) => {
                 if (e.target.type === 'checkbox') return;
                 mapRenderer.zoomToRoute(route.route_id);
             });
         });
-        
         routeCheckboxesContainer.appendChild(categoryContainer);
     });
     
@@ -494,17 +516,14 @@ function initializeRouteFilter() {
         categoryHeader.className = 'category-header';
         categoryHeader.innerHTML = `
             <div class="category-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#64748b">
-                    <circle cx="12" cy="12" r="10"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#64748b"><circle cx="12" cy="12" r="10"/></svg>
                 <strong>Autres lignes</strong>
                 <span class="category-count">(${routesByCategory['autres'].length})</span>
             </div>
             <div class="category-actions">
                 <button class="btn-category-action" data-category="autres" data-action="select">Tous</button>
                 <button class="btn-category-action" data-category="autres" data-action="deselect">Aucun</button>
-            </div>
-        `;
+            </div>`;
         routeCheckboxesContainer.appendChild(categoryHeader);
         
         const categoryContainer = document.createElement('div');
@@ -514,44 +533,33 @@ function initializeRouteFilter() {
         routesByCategory['autres'].forEach(route => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'route-checkbox-item';
-            
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = `route-${route.route_id}`;
             checkbox.checked = true;
             checkbox.dataset.category = 'autres';
             checkbox.addEventListener('change', () => handleRouteFilterChange());
-            
             const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
             const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
-            
             const badge = document.createElement('div');
             badge.className = 'route-badge';
             badge.style.backgroundColor = routeColor;
             badge.style.color = textColor;
             badge.textContent = route.route_short_name || route.route_id;
-            
             const label = document.createElement('span');
             label.className = 'route-name';
             label.textContent = route.route_long_name || route.route_short_name || route.route_id;
-            
             itemDiv.appendChild(checkbox);
             itemDiv.appendChild(badge);
             itemDiv.appendChild(label);
             categoryContainer.appendChild(itemDiv);
-
-            itemDiv.addEventListener('mouseenter', () => {
-                mapRenderer.highlightRoute(route.route_id, true);
-            });
-            itemDiv.addEventListener('mouseleave', () => {
-                mapRenderer.highlightRoute(route.route_id, false);
-            });
+            itemDiv.addEventListener('mouseenter', () => mapRenderer.highlightRoute(route.route_id, true));
+            itemDiv.addEventListener('mouseleave', () => mapRenderer.highlightRoute(route.route_id, false));
             itemDiv.addEventListener('click', (e) => {
                 if (e.target.type === 'checkbox') return;
                 mapRenderer.zoomToRoute(route.route_id);
             });
         });
-        
         routeCheckboxesContainer.appendChild(categoryContainer);
     }
 
@@ -566,27 +574,20 @@ function initializeRouteFilter() {
 
 function handleCategoryAction(category, action) {
     const checkboxes = document.querySelectorAll(`input[data-category="${category}"]`);
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = (action === 'select');
-    });
+    checkboxes.forEach(checkbox => { checkbox.checked = (action === 'select'); });
     handleRouteFilterChange();
 }
 
 function handleRouteFilterChange() {
     visibleRoutes.clear();
-    
     dataManager.routes.forEach(route => {
         const checkbox = document.getElementById(`route-${route.route_id}`);
-        if (checkbox && checkbox.checked) {
-            visibleRoutes.add(route.route_id);
-        }
+        if (checkbox && checkbox.checked) { visibleRoutes.add(route.route_id); }
     });
-    
     if (dataManager.geoJson) {
         mapRenderer.displayMultiColorRoutes(dataManager.geoJson, dataManager, visibleRoutes);
     }
-    
-    updateData(); // Appelle updateData sans timeInfo
+    updateData();
 }
 
 /**
@@ -594,17 +595,7 @@ function handleRouteFilterChange() {
  */
 function setupEventListeners() {
     
-    // NOUVEAU: Scroll pour les boutons de navigation
-    document.querySelectorAll('.nav-button[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    });
+    // (Les écouteurs pour la nav du tableau de bord sont dans setupDashboard)
 
     // Écouteurs pour la VUE CARTE
     document.getElementById('close-instructions').addEventListener('click', () => {
@@ -658,17 +649,14 @@ function setupEventListeners() {
  */
 function handleSearchInput(e) {
     const query = e.target.value.toLowerCase();
-    
     if (query.length < 2) {
         searchResultsContainer.classList.add('hidden');
         searchResultsContainer.innerHTML = '';
         return;
     }
-
     const matches = dataManager.masterStops
         .filter(stop => stop.stop_name.toLowerCase().includes(query))
         .slice(0, 10); 
-
     displaySearchResults(matches, query);
 }
 
@@ -677,24 +665,19 @@ function handleSearchInput(e) {
  */
 function displaySearchResults(stops, query) {
     searchResultsContainer.innerHTML = '';
-
     if (stops.length === 0) {
         searchResultsContainer.innerHTML = `<div class="search-result-item">Aucun arrêt trouvé.</div>`;
         searchResultsContainer.classList.remove('hidden');
         return;
     }
-
     stops.forEach(stop => {
         const item = document.createElement('div');
         item.className = 'search-result-item';
-        
         const regex = new RegExp(`(${query})`, 'gi');
         item.innerHTML = stop.stop_name.replace(regex, '<strong>$1</strong>');
-        
         item.addEventListener('click', () => onSearchResultClick(stop));
         searchResultsContainer.appendChild(item);
     });
-
     searchResultsContainer.classList.remove('hidden');
 }
 
@@ -704,8 +687,8 @@ function displaySearchResults(stops, query) {
 function onSearchResultClick(stop) {
     showMapView(); 
     mapRenderer.zoomToStop(stop);
-    searchBar.value = stop.stop_name; // 'searchBar' est correct
-    searchResultsContainer.classList.add('hidden'); // 'searchResultsContainer' est correct
+    searchBar.value = stop.stop_name;
+    searchResultsContainer.classList.add('hidden');
 }
 
 /**
@@ -718,7 +701,6 @@ function updateData(timeInfo) {
     updateClock(currentSeconds);
     
     const activeBuses = tripScheduler.getActiveTrips(currentSeconds, currentDate);
-    
     const allBusesWithPositions = busPositionCalculator.calculateAllPositions(activeBuses);
 
     // MODIFICATION: Ajoute l'état du trafic à chaque bus
@@ -774,4 +756,7 @@ function updateDataStatus(message, status = '') {
     statusElement.textContent = message;
 }
 
-initializeApp();
+// Initialise l'application et affiche le "Hall"
+initializeApp().then(() => {
+    showDashboardHall();
+});
