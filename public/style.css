@@ -811,57 +811,6 @@ details[open] .accordion-content {
 }
 
 /* =========================================
- * RESPONSIVITÉ
- * ========================================= */
-@media (max-width: 768px) {
-    /* "Hall" en 1 colonne */
-    .planner-form {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .planner-inputs {
-        flex-direction: column;
-    }
-    .planner-search-btn {
-        padding: 0.875rem;
-    }
-    .main-nav-buttons-condensed {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    /* "Pièce" en 1 colonne */
-    .content-cards {
-        grid-template-columns: 1fr;
-    }
-
-    /* Contenu du bas en 1 colonne */
-    .bottom-grid {
-        grid-template-columns: 1fr;
-    }
-}
-@media (max-width: 600px) {
-    #dashboard-main {
-        padding: 1.5rem 1rem;
-    }
-
-    .logo span {
-        display: none; /* Cache "Mon Réseau" sur mobile */
-    }
-    #main-header {
-        padding: 0 1rem;
-    }
-    
-    .hero-section {
-        padding: 1.5rem 1rem;
-    }
-    .hero-section .planner-block {
-        padding: 1rem;
-    }
-}
-
-
-/* =========================================
  * STYLES EXISTANTS (Nettoyés et conservés)
  * ========================================= */
 
@@ -957,83 +906,116 @@ details[open] .accordion-content {
 .panel-handle { display: none; } 
 
 /* =========================================
- * DESIGN MOBILE (VUE CARTE)
+ * DESIGN MOBILE (VUE CARTE) - ENTIÈREMENT RÉÉCRIT
  * ========================================= */
 @media (max-width: 768px) {
     
+    /* --- Dashboard Hall --- */
+    .planner-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .planner-inputs {
+        flex-direction: column;
+    }
+    .planner-search-btn {
+        padding: 0.875rem;
+    }
+    .main-nav-buttons-condensed {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .content-cards {
+        grid-template-columns: 1fr;
+    }
+    .bottom-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* --- VUE CARTE (LE FIX) --- */
+    
     #map-view #top-bar {
+        /* 1. Cache la barre de fond, mais pas les enfants */
         background: none;
         border: none;
         padding: 0;
         height: 0;
-        
-        /* NOUVEAU: Cache tous les enfants SAUF le bouton filtre */
-        & > *:not(#btn-toggle-filter) {
-            display: none;
-        }
     }
 
     #map-view #map {
         height: 100vh;
     }
 
-    /* MODIFICATION: Cible #btn-back-to-dashboard (qui est caché)
-       et le repositionne. */
+    /* 2. Repositionne le bouton RETOUR */
     #map-view #top-bar > #btn-back-to-dashboard {
-        display: inline-flex; /* Ré-affiche le bouton retour */
+        display: inline-flex; /* Assure qu'il est visible */
         position: fixed;
         top: 15px;
         left: 15px;
         z-index: 1000;
         box-shadow: var(--shadow-md);
         padding: 0.5rem 0.75rem;
-        /* MODIFIÉ: Effet "Liquid Glass" */
+        /* Ajout des styles "liquid glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid var(--border);
+        /* S'assure qu'il est bien un bouton primary */
+        color: var(--primary); 
+        /* Réinitialise les styles 'btn-primary' pour le fond */
+        background-color: rgba(255, 255, 255, 0.85);
+        border-color: var(--border);
+    }
+    #map-view #top-bar > #btn-back-to-dashboard:hover {
+        background-color: rgba(240, 240, 240, 0.9);
     }
     #map-view #top-bar > #btn-back-to-dashboard span { display: none; }
     #map-view #top-bar > #btn-back-to-dashboard svg { margin-right: 0; }
 
-
-    #map-view #clock {
-        display: flex; /* Ré-affiche l'horloge */
+    /* 3. Repositionne l'HORLOGE */
+    #map-view #top-bar > #clock {
+        display: flex; /* Assure qu'il est visible */
         position: fixed;
         top: 15px; 
         left: 50%;
         transform: translateX(-50%);
         z-index: 999;
-        /* MODIFIÉ: Effet "Liquid Glass" */
+        /* Ajout des styles "liquid glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
         padding: 6px 10px;
         border-radius: var(--radius-full);
         box-shadow: var(--shadow-sm);
         border: 1px solid var(--border);
     }
-    #map-view #clock #date-indicator { display: none; }
+    #map-view #top-bar > #clock #date-indicator { display: none; }
 
-    #map-view #status-info {
-        display: flex; /* Ré-affiche le statut */
+    /* 4. Repositionne le STATUT (compteur bus) */
+    #map-view #top-bar > #status-info {
+        display: flex; /* Assure qu'il est visible */
         position: fixed;
         top: 15px;
         right: 15px;
         z-index: 999;
-        /* MODIFIÉ: Effet "Liquid Glass" */
+        /* Ajout des styles "liquid glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
         padding: 6px 10px;
         border-radius: var(--radius-full);
         box-shadow: var(--shadow-sm);
         border: 1px solid var(--border);
         margin-left: 0;
     }
-    #map-view #status-info #data-status { display: none; }
+    #map-view #top-bar > #status-info #data-status { display: none; }
 
-    /* MODIFICATION (REQ 1): Cible le bouton DANS la top-bar */
+    /* 5. Repositionne le bouton FILTRE */
     #map-view #top-bar > #btn-toggle-filter {
+        display: inline-flex; /* Assure qu'il est visible */
         position: fixed;
-        top: auto; /* Annule le 'top' du desktop */
-        left: auto; /* Annule le 'left' du desktop */
+        top: auto;
+        left: auto;
         bottom: 30px;
         right: 20px;
         z-index: 1000;
@@ -1043,15 +1025,20 @@ details[open] .accordion-content {
         box-shadow: var(--shadow-lg);
         padding: 0;
         justify-content: center;
-        /* MODIFIÉ: Effet "Liquid Glass" */
+        /* Ajout des styles "liquid glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
-        transform: none; /* Annule le 'transform' du desktop */
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid var(--border);
+        color: var(--text-primary); /* S'assure que l'icône est visible */
+    }
+    #map-view #top-bar > #btn-toggle-filter:hover {
+        background-color: rgba(240, 240, 240, 0.9);
     }
     #map-view #top-bar > #btn-toggle-filter span { display: none; }
     #map-view #top-bar > #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
 
-
+    /* --- Panneau de filtre mobile --- */
     #route-filter-panel {
         top: auto;
         bottom: 0;
@@ -1062,7 +1049,6 @@ details[open] .accordion-content {
         border-left: none;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transform: translateY(0); 
-        /* MODIFIÉ: Effet "Liquid Glass" */
         background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
     }
@@ -1077,6 +1063,7 @@ details[open] .accordion-content {
         cursor: grab;
     }
 }
+
 
 /* =========================================
  * STYLES COMMUNS (Conservés)
