@@ -633,7 +633,8 @@ body {
     font-size: 1.5rem;
     font-weight: 300;
     color: var(--text-secondary);
-    transition: transform 0.2s ease;
+    /* MODIFIÉ (REQ 2): Ajout de la transition */
+    transition: transform 0.3s ease-in-out;
 }
 .accordion-group details[open] summary {
     background: var(--bg-main);
@@ -641,11 +642,25 @@ body {
 .accordion-group details[open] summary::after {
     transform: rotate(45deg);
 }
+
+/* MODIFIÉ (REQ 2): Animation de l'accordéon */
 .accordion-content {
     background: var(--bg-main);
-    padding: 1rem 1.25rem;
+    /* padding: 1rem 1.25rem; -- ANCIEN */
+    padding: 0 1.25rem; /* Garde le padding horizontal */
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.35s ease-in-out;
 }
-.accordion-content a {
+details[open] .accordion-content {
+    max-height: 1000px; /* Assez grand pour tout contenu */
+}
+/* NOUVEAU (REQ 2): Wrapper interne pour le padding vertical */
+.accordion-content-inner {
+    padding: 1rem 0;
+}
+/* MODIFIÉ (REQ 2): Cible les liens dans le wrapper interne */
+.accordion-content-inner a {
     display: block;
     padding: 0.75rem 0;
     color: var(--primary);
@@ -653,10 +668,10 @@ body {
     font-weight: 500;
     border-bottom: 1px solid var(--border);
 }
-.accordion-content a:last-child {
+.accordion-content-inner a:last-child {
     border-bottom: none;
 }
-.accordion-content a:hover {
+.accordion-content-inner a:hover {
     text-decoration: underline;
 }
 
@@ -775,34 +790,16 @@ body {
  * VUE CARTE (Ancienne App)
  * ========================================= */
 #map-container {
-    /* CORRECTION: Suppression de 'position: fixed' pour 
-       l'intégrer au flux de la page, sous l'en-tête. */
-    
-    /* position: fixed; */
-    /* top: 0; */
-    /* left: 0; */
-    /* width: 100%; */
-    /* height: 100vh; */
-    /* z-index: 1100; */
-
-    /* AJOUT: S'étend pour remplir l'espace (comme #dashboard-container) */
     display: flex;
     flex-direction: column;
     flex: 1 0 auto;
-    
     background: var(--bg-light);
 }
 
 #map-view {
     display: flex;
     flex-direction: column;
-    
-    /* CORRECTION: Doit remplir son parent (#map-container) 
-       au lieu d'avoir une hauteur fixe de 100vh */
-    /* height: 100vh; */
     flex: 1; 
-
-    /* MODIFICATION (REQ 1): Doit être relatif pour positionner le bouton filtre */
     position: relative;
 }
 
@@ -812,12 +809,6 @@ body {
     z-index: 1; 
     background: #f0f0f0;
 }
-
-
-/* =========================================
- * FOOTER SUPPRIMÉ
- * ========================================= */
-
 
 /* =========================================
  * RESPONSIVITÉ
@@ -899,12 +890,6 @@ body {
 #map-container #btn-back-to-dashboard svg {
     margin-right: 0.25rem;
 }
-
-/* * MODIFICATION : Suppression de l'ancienne règle
- * #map-view > #btn-toggle-filter 
- * Le bouton est maintenant un enfant flex normal.
-*/
-
 
 #clock {
     display: flex;
