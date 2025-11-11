@@ -44,81 +44,87 @@
 
     <div id="dashboard-container">
         <main id="dashboard-main">
-            <h2>Bienvenue sur votre réseau</h2>
-            <p class="subtitle">Que souhaitez-vous faire ?</p>
 
-            <div class="main-nav-buttons">
-                <a href="#itineraires" class="nav-button blue">
-                    <span class="nav-button-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 18h-2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M12 18V6"/><path d="M7 18h10"/><path d="m12 6 3 3-3 3"/><path d="M10 15h4"/></svg>
-                    </span>
-                    Trajets & Itinéraires
-                </a>
-                <a href="#horaires" class="nav-button purple">
-                    <span class="nav-button-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    </span>
-                    Horaires & Lignes
-                </a>
-                <a href="#info-trafic" class="nav-button orange">
-                    <span class="nav-button-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    </span>
-                    État du Réseau
-                    <span id="info-trafic-count" class="notification-badge hidden">0</span>
-                </a>
-                <button id="btn-show-map" class="nav-button green">
-                    <span class="nav-button-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-                    </span>
-                    Carte Interactive
+            <div id="dashboard-hall">
+                <h2 id="dashboard-title">Bienvenue sur votre réseau</h2>
+                <p id="dashboard-subtitle" class="subtitle">Que souhaitez-vous faire ?</p>
+
+                <div class="main-nav-buttons">
+                    <button class="nav-button blue" data-view="itineraires">
+                        <span class="nav-button-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 18h-2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M12 18V6"/><path d="M7 18h10"/><path d="m12 6 3 3-3 3"/><path d="M10 15h4"/></svg>
+                        </span>
+                        Trajets & Itinéraires
+                    </button>
+                    <button class="nav-button purple" data-view="horaires">
+                        <span class="nav-button-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        </span>
+                        Horaires & Lignes
+                    </button>
+                    <button class="nav-button orange" data-view="info-trafic">
+                        <span class="nav-button-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        </span>
+                        État du Réseau
+                        <span id="info-trafic-count" class="notification-badge hidden">0</span>
+                    </button>
+                    <button id="btn-show-map" class="nav-button green">
+                        <span class="nav-button-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                        </span>
+                        Carte Interactive
+                    </button>
+                </div>
+            </div> <div id="dashboard-content-view" class="hidden">
+                <button id="btn-back-to-hall" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    Retour au menu
                 </button>
-            </div>
 
-            <div class="content-cards">
-                
-                <div id="itineraires" class="card">
-                    <h3>Itinéraires</h3>
-                    <div class="form-group">
-                        <label for="planner-from">*Départ</label>
-                        <input type="text" id="planner-from" placeholder="Adresse, arrêt, lieu...">
-                    </div>
-                    <div class="form-group">
-                        <label for="planner-to">*Arrivée</label>
-                        <input type="text" id="planner-to" placeholder="Adresse, arrêt, lieu...">
-                    </div>
-                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Rechercher</button>
-                    <p class="card-note">*Fonctionnalité de recherche d'itinéraire (plannerPanel.js) non incluse dans cette démo.</p>
-                </div>
-
-                <div id="horaires" class="card">
-                    <h3>Horaires</h3>
-                    <div class="search-container" id="horaires-search-container">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" id="horaires-search-bar" placeholder="Rechercher un arrêt...">
-                        <div id="horaires-search-results" class="hidden"></div>
-                    </div>
+                <div class="content-cards">
                     
-                    <h4 class="fiche-horaire-title">Consulter les fiches horaires</h4>
-                    <div id="fiche-horaire-container">
+                    <div id="itineraires" class="card hidden">
+                        <h3>Itinéraires</h3>
+                        <div class="form-group">
+                            <label for="planner-from">*Départ</label>
+                            <input type="text" id="planner-from" placeholder="Adresse, arrêt, lieu...">
                         </div>
-                </div>
-
-                <div id="info-trafic" class="card">
-                    <h3>Infos Trafic</h3>
-                    <div class="tabs">
-                        <button class="tab active" data-tab="en-cours">en cours</button>
-                        <button class="tab" data-tab="a-venir">à venir</button>
-                    </div>
-                    <div id="info-trafic-list" class="tab-content active" data-content="en-cours">
+                        <div class="form-group">
+                            <label for="planner-to">*Arrivée</label>
+                            <input type="text" id="planner-to" placeholder="Adresse, arrêt, lieu...">
                         </div>
-                    <div id="info-trafic-avenir" class="tab-content hidden" data-content="a-venir">
-                        <p class="card-note">Aucune perturbation à venir signalée.</p>
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Rechercher</button>
+                        <p class="card-note">*Fonctionnalité de recherche d'itinéraire (plannerPanel.js) non incluse dans cette démo.</p>
                     </div>
-                </div>
 
-            </div>
-        </main>
+                    <div id="horaires" class="card hidden">
+                        <h3>Horaires</h3>
+                        <div class="search-container" id="horaires-search-container">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="horaires-search-bar" placeholder="Rechercher un arrêt...">
+                            <div id="horaires-search-results" class="hidden"></div>
+                        </div>
+                        
+                        <h4 class="fiche-horaire-title">Consulter les fiches horaires</h4>
+                        <div id="fiche-horaire-container">
+                            </div>
+                    </div>
+
+                    <div id="info-trafic" class="card hidden">
+                        <h3>Infos Trafic</h3>
+                        <div class="tabs">
+                            <button class="tab active" data-tab="en-cours">en cours</button>
+                            <button class="tab" data-tab="a-venir">à venir</button>
+                        </div>
+                        <div id="info-trafic-list" class="tab-content active" data-content="en-cours">
+                            </div>
+                        <div id="info-trafic-avenir" class="tab-content hidden" data-content="a-venir">
+                            <p class="card-note">Aucune perturbation à venir signalée.</p>
+                        </div>
+                    </div>
+
+                </div> </div> </main>
     </div>
     
     <div id="map-container" class="hidden">
