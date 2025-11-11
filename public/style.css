@@ -1512,7 +1512,6 @@ details[open] .accordion-content {
     justify-content: center;
 }
 
-/* *** NOUVEAUX STYLES POUR L'AUTOCOMPLÉTION *** */
 .autocomplete-suggestions {
     position: absolute;
     top: 100%;
@@ -1546,7 +1545,6 @@ details[open] .accordion-content {
     font-weight: 700;
     color: var(--text-primary);
 }
-/* *** FIN DES NOUVEAUX STYLES *** */
 
 
 @media (max-width: 900px) { 
@@ -1666,6 +1664,11 @@ details[open] .accordion-content {
     color: var(--text-secondary);
     font-style: italic;
 }
+.results-message.error {
+    color: var(--color-red);
+    font-style: normal;
+    font-weight: 600;
+}
 
 .route-option-wrapper {
     margin-bottom: 1.5rem;
@@ -1686,13 +1689,17 @@ details[open] .accordion-content {
     cursor: pointer;
     transition: all 0.2s ease;
 }
+.route-option.is-active,
 .route-option:hover {
     border-color: var(--primary);
+    background: var(--bg-main);
 }
+
 .route-option-left {
     display: flex;
     gap: 0.5rem;
     flex: 1;
+    align-items: center;
 }
 .route-line-badge {
     display: inline-flex;
@@ -1705,6 +1712,22 @@ details[open] .accordion-content {
     min-width: 28px;
     text-align: center;
 }
+.route-summary-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+.route-summary-icon svg {
+    width: 20px;
+    height: 20px;
+}
+.route-summary-separator {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin: 0 -0.15rem;
+}
+
 
 .route-option-right {
     display: flex;
@@ -1720,6 +1743,110 @@ details[open] .accordion-content {
     font-size: 0.875rem;
     color: var(--text-secondary);
     font-weight: 500;
+}
+
+/* --- Styles pour les détails d'itinéraire --- */
+.route-details {
+    padding: 1rem;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    margin-top: -0.5rem; /* Chevauche la carte */
+    animation: fadeIn 0.3s ease;
+}
+.route-details.hidden {
+    display: none;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.step-detail {
+    display: flex;
+    position: relative;
+    padding-left: 3rem; /* Espace pour l'icône */
+    margin-bottom: 1.5rem;
+}
+.step-detail:last-child {
+    margin-bottom: 0;
+}
+.step-detail::before { /* Ligne verticale */
+    content: '';
+    position: absolute;
+    left: 19px; /* Centre de l'icône de 40px */
+    top: 24px;
+    bottom: -1.5rem;
+    width: 2px;
+    background: var(--border);
+}
+.step-detail:last-child::before {
+    display: none;
+}
+.step-detail.walk::before {
+    background: repeating-linear-gradient(
+        var(--border) 0,
+        var(--border) 4px,
+        transparent 4px,
+        transparent 8px
+    );
+}
+
+.step-icon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bg-main);
+}
+.step-detail.walk .step-icon {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+.step-detail.bus .step-icon {
+    /* Le badge de bus a déjà un fond */
+}
+.step-icon .route-line-badge {
+    font-size: 1.1rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.step-info {
+    display: flex;
+    flex-direction: column;
+}
+.step-instruction {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.step-duration {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+.step-time {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    padding-left: 1rem;
+    position: relative;
+}
+.step-time::before { /* Puce avant le temps/arrêt */
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border);
 }
 
 /* Styles mobiles pour la vue résultats */
