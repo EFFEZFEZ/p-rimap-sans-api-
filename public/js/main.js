@@ -20,7 +20,7 @@ let visibleRoutes = new Set();
 let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
 
 // NOUVEAU: ÉLÉMENTS DOM DU PLANIFICATEUR
-let plannerFromInput, plannerToInput, plannerInvertBtn, plannerDateInput, plannerTimeInput, plannerSearchBtn;
+let plannerFromInput, plannerToInput, plannerInvertBtn, plannerSearchBtn;
 let plannerResultsView, btnBackFromResults, plannerResultsMapEl;
 let resultsMap = null; // Carte Leaflet pour les résultats
 
@@ -38,7 +38,7 @@ const ICONS = {
     }
 };
 
-// CORRIGÉ: Mappage des noms de fichiers PDF (Lignes R retirées car gérées manuellement)
+// CORRIGÉ: Mappage des noms de fichiers PDF
 const PDF_FILENAME_MAP = {
     'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
     'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
@@ -66,7 +66,7 @@ const PDF_FILENAME_MAP = {
     'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
 };
 
-// NOUVEAU (REQ 1): Mappage des noms longs (terminus) fournis par l'utilisateur
+// Mappage des noms longs (terminus) fournis par l'utilisateur
 const ROUTE_LONG_NAME_MAP = {
     'A': 'ZAE Marsac <> Centre Hospitalier',
     'B': 'Les Tournesols <> Gare SNCF',
@@ -123,7 +123,8 @@ function getCategoryForRoute(routeShortName) {
     return 'autres';
 }
 
-async function initializeApp() {
+// Fonction d'initialisation de l'App (Appelée par Google Maps API 'callback=initApp')
+async function initApp() {
     // Sélection des éléments DOM
     dashboardContainer = document.getElementById('dashboard-container');
     dashboardHall = document.getElementById('dashboard-hall');
@@ -147,20 +148,13 @@ async function initializeApp() {
     searchResultsContainer = document.getElementById('horaires-search-results');
 
     // NOUVEAU: Sélection des éléments du planificateur
-    // NOUVEAU: Sélection des éléments du planificateur
     plannerFromInput = document.getElementById('hall-planner-from');
     plannerToInput = document.getElementById('hall-planner-to');
     plannerInvertBtn = document.getElementById('planner-invert-btn');
-    // plannerDateInput et plannerTimeInput NE SONT PLUS UTILISÉS EN TANT QU'INPUTS DIRECTS
     plannerSearchBtn = document.getElementById('planner-search-btn');
     plannerResultsView = document.getElementById('planner-results-view');
     btnBackFromResults = document.getElementById('btn-back-to-hall-from-results');
     plannerResultsMapEl = document.getElementById('planner-results-map');
-    
-    // NOUVEAU: Éléments du sélecteur de temps
-    const plannerTimeBtn = document.getElementById('planner-time-btn');
-    const plannerTimePanel = document.getElementById('planner-time-panel');
-    const timePanelConfirmBtn = document.getElementById('time-panel-confirm-btn');
 
     dataManager = new DataManager();
     
@@ -182,7 +176,7 @@ async function initializeApp() {
         }
 
         mapRenderer.displayStops();
-        setupDashboard(); // CORRECTION: Appel déplacé AVANT setupEventListeners
+        setupDashboard(); 
         setupEventListeners();
 
         if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
@@ -198,6 +192,10 @@ async function initializeApp() {
         updateDataStatus('Erreur de chargement', 'error');
     }
 }
+
+// Rend la fonction d'initialisation disponible globalement
+window.initApp = initApp;
+
 
 /**
  * Configure le tableau de bord (état du trafic, admin, fiches horaires)
@@ -216,7 +214,7 @@ function setupDashboard() {
     // Attache les écouteurs aux 3 boutons du "Hall"
     document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
         button.addEventListener('click', (e) => {
-            e.preventDefault(); // Empêche le comportement par défaut
+            e.preventDefault(); 
             const view = button.dataset.view;
             showDashboardView(view);
         });
@@ -275,7 +273,7 @@ function setupAdminConsole() {
 
 
 /**
- * NOUVEAU: Initialise le planificateur "Où allons-nous ?"
+ * NOUVEAU: Initialise le planificateur "Où allons-nous ?" (Logique du panneau de temps)
  */
 function initPlanner() {
     const plannerTimeBtn = document.getElementById('planner-time-btn');
@@ -284,53 +282,124 @@ function initPlanner() {
     const dateSelectInput = document.getElementById('date-select-input');
     const hourSelectInput = document.getElementById('hour-select-input');
     const minutesSelectInput = document.getElementById('minutes-select-input');
+    const hourDropdown = document.getElementById('hour-dropdown');
+    const minutesDropdown = document.getElementById('minutes-dropdown');
     
     let isPartirMaintenant = true;
 
-    // 1. Initialiser la date et l'heure dans le panneau
+    // --- Fonctions de base du Panneau ---
+    
+    // Initialise les valeurs du panneau
     function updatePanelTime() {
         const now = timeManager.getCurrentDate();
         dateSelectInput.value = now.toISOString().slice(0, 10);
-        hourSelectInput.value = String(now.getHours()).padStart(2, '0');
-        minutesSelectInput.value = String(now.getMinutes()).padStart(2, '0');
+        
+        // Extrait l'heure et les minutes
+        const currentHour = now.getHours();
+        const currentMins = now.getMinutes();
+
+        // Arrondit à la minute supérieure par tranche de 5
+        const roundedMins = Math.ceil(currentMins / 5) * 5;
+        const finalHour = (roundedMins === 60) ? (currentHour + 1) % 24 : currentHour;
+        const finalMins = roundedMins % 60;
+        
+        hourSelectInput.value = `${String(finalHour).padStart(2, '0')} h`;
+        minutesSelectInput.value = `${String(finalMins).padStart(2, '0')} min`;
     }
     updatePanelTime();
+    
+    // Génère les listes déroulantes (heures et minutes par 5)
+    function generateDropdowns() {
+        hourDropdown.innerHTML = '';
+        for (let h = 0; h < 24; h++) {
+            const div = document.createElement('div');
+            div.textContent = `${String(h).padStart(2, '0')} h`;
+            div.dataset.value = h;
+            div.addEventListener('click', () => selectDropdownValue(hourSelectInput, h, ' h', hourDropdown));
+            hourDropdown.appendChild(div);
+        }
 
+        minutesDropdown.innerHTML = '';
+        for (let m = 0; m < 60; m += 5) {
+            const div = document.createElement('div');
+            div.textContent = `${String(m).padStart(2, '0')} min`;
+            div.dataset.value = m;
+            div.addEventListener('click', () => selectDropdownValue(minutesSelectInput, m, ' min', minutesDropdown));
+            minutesDropdown.appendChild(div);
+        }
+    }
+    generateDropdowns();
 
-    // 2. Logique du bouton "Partir maintenant"
+    // Logique de sélection d'une valeur
+    function selectDropdownValue(inputEl, value, suffix, dropdownEl) {
+        inputEl.value = `${String(value).padStart(2, '0')}${suffix}`;
+        dropdownEl.classList.add('hidden');
+        
+        // Change le texte du bouton de confirmation
+        timePanelConfirmBtn.textContent = 'Confirmer';
+        timePanelConfirmBtn.classList.remove('btn-primary');
+        timePanelConfirmBtn.classList.add('btn-secondary');
+    }
+    
+    // --- Événements du Panneau ---
+    
+    // Ouvre/ferme le panneau principal
     plannerTimeBtn.addEventListener('click', (e) => {
-        // Aligne le panneau à la droite du conteneur si nécessaire
+        const isHidden = plannerTimePanel.classList.toggle('hidden');
+        plannerTimeBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+        
+        // Logique de positionnement pour ancrer le panneau à droite si nécessaire
         const btnRect = plannerTimeBtn.getBoundingClientRect();
-        const wrapperRect = plannerTimePanel.parentElement.getBoundingClientRect();
-        if (btnRect.right + 320 > wrapperRect.right) {
+        const viewportWidth = window.innerWidth;
+        if (btnRect.right + 320 > viewportWidth) {
             plannerTimePanel.style.left = 'auto';
             plannerTimePanel.style.right = '0';
+        } else {
+             plannerTimePanel.style.left = '0';
+             plannerTimePanel.style.right = 'auto';
         }
         
-        plannerTimePanel.classList.toggle('hidden');
-        plannerTimeBtn.setAttribute('aria-expanded', plannerTimePanel.classList.contains('hidden') ? 'false' : 'true');
-        updatePanelTime(); // Met à jour l'heure avant d'ouvrir
+        // S'assurer que les dropdowns d'heure sont fermés quand on ouvre le panneau principal
+        hourDropdown.classList.add('hidden');
+        minutesDropdown.classList.add('hidden');
     });
     
-    // Fermeture si on clique ailleurs
+    // Ouvre/ferme les dropdowns d'heure/minute (et cache l'autre)
+    hourSelectInput.addEventListener('click', (e) => {
+        e.stopPropagation(); // Empêche la fermeture du panneau principal
+        hourDropdown.classList.toggle('hidden');
+        minutesDropdown.classList.add('hidden');
+    });
+    minutesSelectInput.addEventListener('click', (e) => {
+        e.stopPropagation(); // Empêche la fermeture du panneau principal
+        minutesDropdown.classList.toggle('hidden');
+        hourDropdown.classList.add('hidden');
+    });
+
+    // Fermeture du panneau et des dropdowns si on clique ailleurs
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.planner-time-selector-wrapper') && !plannerTimePanel.classList.contains('hidden')) {
+        if (!e.target.closest('.planner-time-selector-wrapper')) {
             plannerTimePanel.classList.add('hidden');
             plannerTimeBtn.setAttribute('aria-expanded', 'false');
+            hourDropdown.classList.add('hidden');
+            minutesDropdown.classList.add('hidden');
         }
     });
 
-
-    // 3. Logique de confirmation du panneau
+    // Confirmation du panneau
     timePanelConfirmBtn.addEventListener('click', () => {
-        if (timePanelConfirmBtn.textContent === 'Partir maintenant') {
+        if (timePanelConfirmBtn.textContent.includes('Partir maintenant')) {
             isPartirMaintenant = true;
+            // Réinitialise le texte du bouton principal
             plannerTimeBtn.innerHTML = `Partir maintenant <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+            
         } else {
             isPartirMaintenant = false;
             const date = new Date(dateSelectInput.value);
-            const hour = String(hourSelectInput.value).padStart(2, '0');
-            const min = String(minutesSelectInput.value).padStart(2, '0');
+            // Extrait l'heure et les minutes (retire " h" et " min")
+            const hour = hourSelectInput.value.replace(' h', '');
+            const min = minutesSelectInput.value.replace(' min', '');
+            
             const formattedDate = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
             
             // Met à jour le texte du bouton principal
@@ -341,16 +410,14 @@ function initPlanner() {
         plannerTimeBtn.setAttribute('aria-expanded', 'false');
     });
     
-    // 4. Mettre à jour le bouton de confirmation si les inputs changent
-    document.querySelectorAll('.time-panel-body input').forEach(input => {
-        input.addEventListener('input', () => {
-            timePanelConfirmBtn.textContent = 'Confirmer';
-            timePanelConfirmBtn.classList.add('btn-secondary');
-            timePanelConfirmBtn.classList.remove('btn-primary');
-        });
+    // Mettre à jour le bouton de confirmation si la date change
+    dateSelectInput.addEventListener('input', () => {
+        timePanelConfirmBtn.textContent = 'Confirmer';
+        timePanelConfirmBtn.classList.remove('btn-primary');
+        timePanelConfirmBtn.classList.add('btn-secondary');
     });
     
-    // 5. Gérer les onglets "Partir" / "Arriver" (uniquement le style pour l'instant)
+    // Gérer les onglets "Partir" / "Arriver"
     document.querySelectorAll('.time-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
@@ -358,37 +425,23 @@ function initPlanner() {
             
             // Simule le changement du bouton de confirmation
             if (tab.dataset.type === 'depart') {
-                timePanelConfirmBtn.innerHTML = `Partir maintenant`;
-                timePanelConfirmBtn.classList.remove('btn-secondary');
+                timePanelConfirmBtn.textContent = 'Partir maintenant';
                 timePanelConfirmBtn.classList.add('btn-primary');
+                timePanelConfirmBtn.classList.remove('btn-secondary');
             } else {
-                timePanelConfirmBtn.innerHTML = `Arriver avant`;
+                timePanelConfirmBtn.textContent = 'Arriver avant';
+                timePanelConfirmBtn.classList.add('btn-primary');
+                timePanelConfirmBtn.classList.remove('btn-secondary');
             }
         });
     });
 
-    // 6. Attacher les écouteurs du planificateur principal
+    // 7. Attacher les écouteurs du planificateur principal
     plannerInvertBtn.addEventListener('click', invertPlannerInputs);
     plannerSearchBtn.addEventListener('click', executePlannerSearch);
 
     // Le bouton retour sur la page de résultats
     btnBackFromResults.addEventListener('click', showDashboardHall);
-}
-
-/**
- * NOUVEAU: Pré-remplit les champs date et heure
- */
-function initPlannerDateTime() {
-    try {
-        const now = new Date();
-        // Décalage pour le fuseau horaire local
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        
-        plannerDateInput.value = now.toISOString().slice(0, 10);
-        plannerTimeInput.value = now.toISOString().slice(11, 16);
-    } catch (e) {
-        console.error("Erreur d'initialisation de la date/heure du planificateur:", e);
-    }
 }
 
 /**
@@ -414,10 +467,6 @@ function executePlannerSearch() {
     
     console.log(`Recherche d'itinéraire: De ${from} à ${to}`);
     
-    // TODO: Étape 2 - Appeler l'API Google Directions
-    // 1. directionsService.route(...)
-    // 2. Afficher les 3 résultats dans #planner-results-list
-    // 3. Afficher le polyline sur la carte 'resultsMap'
     // Pour l'instant, on affiche un message temporaire :
     const resultsList = document.getElementById('planner-results-list');
     resultsList.innerHTML = `<p class="card-note">Recherche de De <strong>${from}</strong> à <strong>${to}</strong>...</p><p class="card-note">Intégration de l'API Google en cours...</p>`;
@@ -435,24 +484,33 @@ function executePlannerSearch() {
     plannerResultsView.classList.remove('hidden');
 
     // 4. Initialiser la carte Leaflet (SEULEMENT si elle ne l'est pas)
-    // C'est crucial de le faire APRÈS que le div soit visible
     if (!resultsMap) {
         initResultsMap();
     } else {
-        resultsMap.invalidateSize(); // S'assurer qu'elle se redessine
+        // Invalide la taille pour la rendre visible dans le nouveau conteneur
+        resultsMap.invalidateSize(); 
     }
 }
+
 
 /**
  * NOUVEAU: Initialise la carte Leaflet sur la page de résultats
  */
 function initResultsMap() {
     try {
-        //         resultsMap = L.map('planner-results-map').setView([45.1833, 0.7167], 13); // Centre Périgueux
+        const centerCoordinates = [45.1833, 0.7167]; // Périgueux
+        const zoomLevel = 13;
+
+        resultsMap = L.map('planner-results-map').setView(centerCoordinates, zoomLevel);
+        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(resultsMap);
+        
+        // S'assure que la carte est visible (utile si l'initialisation a lieu avant la transition CSS)
+        resultsMap.invalidateSize();
+        
         console.log('🗺️ Carte des résultats initialisée.');
     } catch (e) {
         console.error("Erreur d'initialisation de la carte des résultats:", e);
@@ -461,7 +519,6 @@ function initResultsMap() {
         }
     }
 }
-
 
 /**
  * Affiche la carte "Info Trafic"
