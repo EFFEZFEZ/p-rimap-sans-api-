@@ -102,7 +102,7 @@ let mapContainer;
 let btnShowMap, btnBackToDashboard;
 let searchBar, searchResultsContainer;
 
-// *** NOUVEAUX ÉLÉMENTS DOM (PLANIFICATEUR) ***
+// NOUVEAUX ÉLÉMENTS DOM (PLANIFICATEUR)
 let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
 
 // Catégories de lignes
@@ -124,7 +124,8 @@ function getCategoryForRoute(routeShortName) {
 }
 
 async function initializeApp() {
-    // Sélection des éléments DOM
+    // --- 1. SÉLECTIONNER LES ÉLÉMENTS DOM ---
+    // (Cette partie est rapide et n'échoue pas)
     dashboardContainer = document.getElementById('dashboard-container');
     dashboardHall = document.getElementById('dashboard-hall');
     dashboardContentView = document.getElementById('dashboard-content-view');
@@ -132,7 +133,7 @@ async function initializeApp() {
     
     mapContainer = document.getElementById('map-container');
     btnShowMap = document.getElementById('btn-show-map');
-    btnBackToDashboard = document.getElementById('btn-back-to-dashboard'); // Bouton dans la vue carte
+    btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
     
     infoTraficList = document.getElementById('info-trafic-list');
     infoTraficAvenir = document.getElementById('info-trafic-avenir');
@@ -146,16 +147,21 @@ async function initializeApp() {
     searchBar = document.getElementById('horaires-search-bar');
     searchResultsContainer = document.getElementById('horaires-search-results');
 
-    // *** NOUVELLES SÉLECTIONS DOM (PLANIFICATEUR) ***
     plannerWhenBtn = document.getElementById('planner-when-btn');
     plannerOptionsPopover = document.getElementById('planner-options-popover');
-    plannerSubmitBtn = document.getElementById('planner-submit-btn'); // Le bouton "Rechercher"
+    plannerSubmitBtn = document.getElementById('planner-submit-btn');
 
+    // --- 2. ATTACHER LES ÉCOUTEURS STATIQUES ---
+    // (Se déclenche immédiatement pour que l'interface soit réactive)
+    setupStaticEventListeners();
+
+    // --- 3. CHARGER LES DONNÉES ET INITIALISER LE RESTE ---
     dataManager = new DataManager();
     
     try {
         await dataManager.loadAllData();
         
+        // --- 4. INITIALISER LES MODULES DÉPENDANTS DES DONNÉES ---
         timeManager = new TimeManager();
         
         mapRenderer = new MapRenderer('map', dataManager, timeManager);
@@ -164,6 +170,7 @@ async function initializeApp() {
         tripScheduler = new TripScheduler(dataManager);
         busPositionCalculator = new BusPositionCalculator(dataManager);
         
+        // --- 5. POPULER L'UI AVEC LES DONNÉES ---
         initializeRouteFilter();
         
         if (dataManager.geoJson) {
@@ -171,8 +178,10 @@ async function initializeApp() {
         }
 
         mapRenderer.displayStops();
-        setupDashboard(); // CORRECTION: Appel déplacé AVANT setupEventListeners
-        setupEventListeners();
+        setupDashboardContent(); // Renommé (anciennement setupDashboard)
+
+        // --- 6. ATTACHER LES ÉCOUTEURS DÉPENDANTS DES DONNÉES ---
+        setupDataDependentEventListeners();
 
         if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
             document.getElementById('instructions').classList.remove('hidden');
@@ -185,13 +194,14 @@ async function initializeApp() {
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
         updateDataStatus('Erreur de chargement', 'error');
+        // NOTE: Même en cas d'erreur, les boutons statiques fonctionneront.
     }
 }
 
 /**
- * Configure le tableau de bord (état du trafic, admin, fiches horaires)
+ * CORRECTION: Configure le *contenu* du tableau de bord (nécessite les données)
  */
-function setupDashboard() {
+function setupDashboardContent() {
     dataManager.routes.forEach(route => {
         lineStatuses[route.route_id] = { status: 'normal', message: '' };
     });
@@ -199,26 +209,27 @@ function setupDashboard() {
     renderInfoTraficCard();
     buildFicheHoraireList();
     setupAdminConsole();
+    
+    // Les écouteurs ont été déplacés dans 'setupStaticEventListeners'
+}
 
-    // Attache les écouteurs aux 3 boutons du "Hall"
+/**
+ * CORRECTION: Attache les écouteurs pour les éléments HTML statiques
+ * (Appelée avant le chargement des données)
+ */
+function setupStaticEventListeners() {
+    // --- Écouteurs de navigation du Dashboard ---
     document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
         button.addEventListener('click', (e) => {
-            e.preventDefault(); // Empêche le comportement par défaut
+            e.preventDefault();
             const view = button.dataset.view;
             showDashboardView(view);
         });
     });
-
-    // Bouton de navigation (CARTE)
     btnShowMap.addEventListener('click', showMapView);
-
-    // Boutons de navigation (RETOUR)
-    btnBackToDashboard.addEventListener('click', showDashboardHall); // (Depuis la carte)
-    btnBackToHall.addEventListener('click', showDashboardHall); // (Depuis une pièce)
-
+    btnBackToDashboard.addEventListener('click', showDashboardHall);
+    btnBackToHall.addEventListener('click', showDashboardHall);
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
-
-    // Gère les onglets "en cours" / "à venir"
     document.querySelectorAll('.tabs .tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
@@ -229,8 +240,6 @@ function setupDashboard() {
             });
         });
     });
-
-    // NOUVEAU: Écouteurs pour les "quick links"
     document.querySelectorAll('.quick-links a[data-view-link]').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -238,7 +247,155 @@ function setupDashboard() {
             showDashboardView(view);
         });
     });
+
+    // --- Écouteurs du panneau de filtre et instructions ---
+    document.getElementById('close-instructions').addEventListener('click', () => {
+        document.getElementById('instructions').classList.add('hidden');
+        localStorage.setItem('gtfsInstructionsShown', 'true');
+    });
+    document.getElementById('btn-toggle-filter').addEventListener('click', () => {
+        document.getElementById('route-filter-panel').classList.toggle('hidden');
+    });
+    document.getElementById('close-filter').addEventListener('click', () => {
+        document.getElementById('route-filter-panel').classList.add('hidden');
+    });
+    const panelHandle = document.querySelector('.panel-handle');
+    if (panelHandle) {
+        panelHandle.addEventListener('click', () => {
+            document.getElementById('route-filter-panel').classList.add('hidden');
+        });
+    }
+    document.getElementById('select-all-routes').addEventListener('click', () => {
+        dataManager.routes.forEach(route => {
+            const checkbox = document.getElementById(`route-${route.route_id}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        handleRouteFilterChange();
+    });
+    document.getElementById('deselect-all-routes').addEventListener('click', () => {
+        dataManager.routes.forEach(route => {
+            const checkbox = document.getElementById(`route-${route.route_id}`);
+            if (checkbox) checkbox.checked = false;
+        });
+        handleRouteFilterChange();
+    });
+
+    // --- Écouteurs de la recherche d'horaires ---
+    document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
+        const horairesCard = document.getElementById('horaires');
+        if (horairesCard) {
+            const mainDashboard = document.getElementById('dashboard-main');
+            if (mainDashboard) {
+                 mainDashboard.scrollTo({ top: horairesCard.offsetTop - 80, behavior: 'smooth' });
+            }
+        }
+        searchBar.focus();
+    });
+    searchBar.addEventListener('input', handleSearchInput);
+    searchBar.addEventListener('focus', handleSearchInput);
+
+    // --- Écouteurs de l'accordéon ---
+    const allDetails = document.querySelectorAll('#fiche-horaire-container details');
+    allDetails.forEach(details => {
+        details.addEventListener('toggle', (event) => {
+            if (event.target.open) {
+                allDetails.forEach(d => {
+                    if (d !== event.target && d.open) {
+                        d.open = false;
+                    }
+                });
+            }
+        });
+    });
+
+    // --- Écouteurs du NOUVEAU PLANIFICATEUR ---
+    if (plannerSubmitBtn) {
+        plannerSubmitBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
+                plannerOptionsPopover.classList.add('hidden');
+                plannerWhenBtn.classList.remove('popover-active');
+            }
+            console.log("Recherche lancée, transition vers la carte...");
+            showMapView();
+        });
+    }
+    if (plannerWhenBtn && plannerOptionsPopover) {
+        plannerWhenBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            plannerOptionsPopover.classList.toggle('hidden');
+            plannerWhenBtn.classList.toggle('popover-active');
+        });
+        document.querySelectorAll('.popover-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.popover-tab').forEach(t => t.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                const mainBtnText = document.querySelector('#planner-when-btn span');
+                const popoverSubmitBtn = document.getElementById('popover-submit-btn');
+                if (e.currentTarget.dataset.tab === 'arriver') {
+                    mainBtnText.textContent = 'Arriver à...';
+                    popoverSubmitBtn.textContent = 'Valider l'arrivée';
+                } else {
+                    mainBtnText.textContent = 'Partir maintenant';
+                    popoverSubmitBtn.textContent = 'Partir maintenant';
+                }
+            });
+        });
+        document.getElementById('popover-submit-btn').addEventListener('click', () => {
+             plannerOptionsPopover.classList.add('hidden');
+             plannerWhenBtn.classList.remove('popover-active');
+        });
+        plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation());
+    }
+    // --- Écouteur pour le bouton SWAP (MANQUANT) ---
+    const swapBtn = document.querySelector('.btn-swap-direction');
+    if (swapBtn) {
+        swapBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const fromInput = document.getElementById('hall-planner-from');
+            const toInput = document.getElementById('hall-planner-to');
+            const fromVal = fromInput.value;
+            fromInput.value = toInput.value;
+            toInput.value = fromVal;
+        });
+    }
+
+
+    // --- Écouteur global "Click Outside" ---
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#horaires-search-container')) {
+            searchResultsContainer.classList.add('hidden');
+        }
+        if (!e.target.closest('.form-group-when')) {
+            if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
+                plannerOptionsPopover.classList.add('hidden');
+                if (plannerWhenBtn) {
+                    plannerWhenBtn.classList.remove('popover-active');
+                }
+            }
+        }
+    });
 }
+
+/**
+ * CORRECTION: Attache les écouteurs qui dépendent des modules chargés (map, time)
+ */
+function setupDataDependentEventListeners() {
+    // Écouteur pour le "tick" de l'horloge
+    if (timeManager) {
+        timeManager.addListener(updateData);
+    }
+
+    // Écouteur pour le zoom de la carte
+    if (mapRenderer && mapRenderer.map) {
+        mapRenderer.map.on('zoomend', () => {
+            if (dataManager) {
+                mapRenderer.displayStops();
+            }
+        });
+    }
+}
+
 
 /**
  * Logique de la console d'administration
@@ -506,7 +663,10 @@ function showMapView() {
     // Verrouille le body
     document.body.classList.add('map-is-active'); 
     
-    mapRenderer.map.invalidateSize();
+    // S'assure que la carte est visible (si elle a été initialisée)
+    if (mapRenderer && mapRenderer.map) {
+        mapRenderer.map.invalidateSize();
+    }
 }
 
 function showDashboardHall() {
@@ -521,7 +681,9 @@ function showDashboardHall() {
     dashboardContainer.classList.remove('hidden');
     
     // (La logique de la bannière d'alerte la ré-affichera si besoin)
-    renderAlertBanner(); 
+    if (dataManager) { // Ne s'exécute que si les données sont chargées
+        renderAlertBanner(); 
+    }
 
     // Logique de transition interne du dashboard
     dashboardContentView.classList.remove('view-is-active');
@@ -669,181 +831,6 @@ function handleRouteFilterChange() {
 }
 
 /**
- * Attache tous les écouteurs d'événements
- */
-function setupEventListeners() {
-    
-    // (Les écouteurs pour la nav du tableau de bord sont dans setupDashboard)
-
-    // Écouteurs pour la VUE CARTE
-    document.getElementById('close-instructions').addEventListener('click', () => {
-        document.getElementById('instructions').classList.add('hidden');
-        localStorage.setItem('gtfsInstructionsShown', 'true');
-    });
-    document.getElementById('btn-toggle-filter').addEventListener('click', () => {
-        document.getElementById('route-filter-panel').classList.toggle('hidden');
-    });
-    document.getElementById('close-filter').addEventListener('click', () => {
-        document.getElementById('route-filter-panel').classList.add('hidden');
-    });
-
-    // CORRECTION (BUG SWIPE): Ajout d'un écouteur de clic sur la poignée
-    const panelHandle = document.querySelector('.panel-handle');
-    if (panelHandle) {
-        panelHandle.addEventListener('click', () => {
-            document.getElementById('route-filter-panel').classList.add('hidden');
-        });
-    }
-
-    document.getElementById('select-all-routes').addEventListener('click', () => {
-        dataManager.routes.forEach(route => {
-            const checkbox = document.getElementById(`route-${route.route_id}`);
-            if (checkbox) checkbox.checked = true;
-        });
-        handleRouteFilterChange();
-    });
-    document.getElementById('deselect-all-routes').addEventListener('click', () => {
-        dataManager.routes.forEach(route => {
-            const checkbox = document.getElementById(`route-${route.route_id}`);
-            if (checkbox) checkbox.checked = false;
-        });
-        handleRouteFilterChange();
-    });
-    
-    timeManager.addListener(updateData);
-
-    // NOUVEAU (REQ 2): Bouton raccourci recherche
-    document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
-        // Fait défiler la carte "Horaires" en haut
-        const horairesCard = document.getElementById('horaires');
-        if (horairesCard) {
-            // Fait défiler le conteneur principal (dashboard-main)
-            const mainDashboard = document.getElementById('dashboard-main');
-            if (mainDashboard) {
-                 mainDashboard.scrollTo({ top: horairesCard.offsetTop - 80, behavior: 'smooth' });
-            }
-        }
-        // Met le focus sur la barre de recherche
-        searchBar.focus();
-    });
-
-    // Écouteurs pour la VUE TABLEAU DE BORD (recherche horaires)
-    searchBar.addEventListener('input', handleSearchInput);
-    searchBar.addEventListener('focus', handleSearchInput); 
-
-    // Écouteurs pour la CARTE
-    if (mapRenderer && mapRenderer.map) {
-        mapRenderer.map.on('zoomend', () => {
-            if (dataManager) {
-                mapRenderer.displayStops();
-            }
-        });
-    }
-
-    // NOUVEAU: Logique pour l'accordéon exclusif (REQ 2)
-    const allDetails = document.querySelectorAll('#fiche-horaire-container details');
-    allDetails.forEach(details => {
-        details.addEventListener('toggle', (event) => {
-            // Si l'élément est en train de s'ouvrir
-            if (event.target.open) {
-                // Ferme tous les autres
-                allDetails.forEach(d => {
-                    if (d !== event.target && d.open) {
-                        d.open = false;
-                    }
-                });
-            }
-        });
-    });
-
-    // *** DÉBUT DES NOUVEAUX ÉCOUTEURS (PLANIFICATEUR) ***
-
-    // NOUVEAU: Transition vers la carte au clic sur "Rechercher"
-    // C'est ici que la "transition vers la nouvelle interface" se produit
-    if (plannerSubmitBtn) {
-        plannerSubmitBtn.addEventListener('click', (e) => {
-            e.preventDefault(); // Empêche la soumission de formulaire
-            
-            // On ferme le popover s'il est ouvert
-            if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
-                plannerOptionsPopover.classList.add('hidden');
-                plannerWhenBtn.classList.remove('popover-active');
-            }
-            
-            console.log("Recherche lancée, transition vers la carte...");
-            showMapView();
-            
-            // ÉTAPE FUTURE (Le "sang"):
-            // C'est ici qu'on récupérera les valeurs des inputs
-            // const depart = document.getElementById('hall-planner-from').value;
-            // const arrivee = document.getElementById('hall-planner-to').value;
-            // Et qu'on lancera la recherche d'itinéraire de l'API.
-        });
-    }
-
-    // NOUVEAU: Gestion du popover "QUAND"
-    if (plannerWhenBtn && plannerOptionsPopover) {
-        // Ouvre/ferme le popover
-        plannerWhenBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Empêche le 'click outside' de se déclencher
-            plannerOptionsPopover.classList.toggle('hidden');
-            plannerWhenBtn.classList.toggle('popover-active');
-        });
-
-        // Gestion des onglets Partir/Arriver dans le popover
-        document.querySelectorAll('.popover-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                // Désactive l'autre onglet
-                document.querySelectorAll('.popover-tab').forEach(t => t.classList.remove('active'));
-                // Active l'onglet cliqué
-                e.currentTarget.classList.add('active');
-                
-                // Met à jour le texte du bouton principal et du bouton du popover
-                const mainBtnText = document.querySelector('#planner-when-btn span');
-                const popoverSubmitBtn = document.getElementById('popover-submit-btn');
-                if (e.currentTarget.dataset.tab === 'arriver') {
-                    mainBtnText.textContent = 'Arriver à...';
-                    popoverSubmitBtn.textContent = 'Valider l'arrivée';
-                } else {
-                    mainBtnText.textContent = 'Partir maintenant';
-                    popoverSubmitBtn.textContent = 'Partir maintenant';
-                }
-            });
-        });
-
-        // Ferme le popover si on clique sur son bouton "Valider"
-        document.getElementById('popover-submit-btn').addEventListener('click', () => {
-             plannerOptionsPopover.classList.add('hidden');
-             plannerWhenBtn.classList.remove('popover-active');
-             // (On pourrait aussi mettre à jour le texte du bouton principal ici)
-        });
-
-        // Empêche le 'click outside' si on clique DANS le popover
-        plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation());
-    }
-
-    // MODIFICATION de l'écouteur 'click outside' existant
-    document.addEventListener('click', (e) => {
-        // Fermeture recherche horaires
-        if (!e.target.closest('#horaires-search-container')) {
-            searchResultsContainer.classList.add('hidden');
-        }
-        
-        // NOUVEAU: Fermeture popover "QUAND"
-        if (!e.target.closest('.form-group-when')) {
-            if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
-                plannerOptionsPopover.classList.add('hidden');
-                if (plannerWhenBtn) {
-                    plannerWhenBtn.classList.remove('popover-active');
-                }
-            }
-        }
-    });
-
-    // *** FIN DES NOUVEAUX ÉCOUTEURS ***
-}
-
-/**
  * Logique de recherche (corrigée)
  */
 function handleSearchInput(e) {
@@ -853,6 +840,9 @@ function handleSearchInput(e) {
         searchResultsContainer.innerHTML = '';
         return;
     }
+    // S'assurer que dataManager est chargé
+    if (!dataManager) return;
+    
     const matches = dataManager.masterStops
         .filter(stop => stop.stop_name.toLowerCase().includes(query))
         .slice(0, 10); 
@@ -886,8 +876,11 @@ function displaySearchResults(stops, query) {
  */
 function onSearchResultClick(stop) {
     showMapView(); 
-    mapRenderer.zoomToStop(stop);
-    mapRenderer.onStopClick(stop); // <<< CORRECTION DU BUG
+    // S'assurer que mapRenderer est chargé
+    if (mapRenderer) {
+        mapRenderer.zoomToStop(stop);
+        mapRenderer.onStopClick(stop); // <<< CORRECTION DU BUG
+    }
     searchBar.value = stop.stop_name;
     searchResultsContainer.classList.add('hidden');
 }
@@ -896,6 +889,12 @@ function onSearchResultClick(stop) {
  * Fonction de mise à jour principale, appelée à chaque tick
  */
 function updateData(timeInfo) {
+    // S'assure que tout est chargé avant de s'exécuter
+    if (!timeManager || !tripScheduler || !busPositionCalculator || !mapRenderer) {
+        // console.warn("UpdateData a été appelée avant l'initialisation complète.");
+        return;
+    }
+
     const currentSeconds = timeInfo ? timeInfo.seconds : timeManager.getCurrentSeconds();
     const currentDate = timeInfo ? timeInfo.date : new Date(); 
     
