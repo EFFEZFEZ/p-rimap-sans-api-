@@ -660,6 +660,24 @@ body {
     text-decoration: underline;
 }
 
+/* NOUVEAU (REQ 2): Raccourci recherche horaires */
+#horaires-search-shortcut {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+}
+#horaires-search-shortcut p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+#btn-horaires-search-focus {
+    font-weight: 600;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+}
+
 
 /* =========================================
  * NOUVEAU DESIGN: Carte Info Trafic
@@ -783,6 +801,9 @@ body {
        au lieu d'avoir une hauteur fixe de 100vh */
     /* height: 100vh; */
     flex: 1; 
+
+    /* MODIFICATION (REQ 1): Doit être relatif pour positionner le bouton filtre */
+    position: relative;
 }
 
 #map {
@@ -877,6 +898,15 @@ body {
 #map-container #btn-back-to-dashboard svg {
     margin-right: 0.25rem;
 }
+
+/* MODIFICATION (REQ 1): Positionnement du bouton Filtre (Desktop) */
+#map-view > #btn-toggle-filter {
+    position: absolute;
+    top: 0.875rem; /* Correspond au padding de top-bar */
+    left: 10rem; /* Position approx. après "Retour" */
+    z-index: 11; /* Au-dessus de la top-bar */
+}
+
 
 #clock {
     display: flex;
@@ -1006,8 +1036,11 @@ body {
     }
     #map-view #data-status { display: none; }
 
-    #btn-toggle-filter {
+    /* MODIFICATION (REQ 1): Positionnement du bouton Filtre (Mobile) */
+    #map-view > #btn-toggle-filter {
         position: fixed;
+        top: auto; /* Annule le 'top' du desktop */
+        left: auto; /* Annule le 'left' du desktop */
         bottom: 30px;
         right: 20px;
         z-index: 1000;
@@ -1020,9 +1053,11 @@ body {
         /* MODIFIÉ: Effet "Liquid Glass" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
+        transform: none; /* Annule le 'transform' du desktop */
     }
-    #btn-toggle-filter span { display: none; }
-    #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
+    #map-view > #btn-toggle-filter span { display: none; }
+    #map-view > #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
+
 
     #route-filter-panel {
         top: auto;
