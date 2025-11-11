@@ -16,6 +16,7 @@ let timeManager;
 let tripScheduler;
 let busPositionCalculator;
 let mapRenderer;
+let resultsMapRenderer; // NOUVEAU: Une 2e instance de carte pour les résultats
 let visibleRoutes = new Set();
 
 // NOUVEL ÉTAT GLOBAL
@@ -35,20 +36,18 @@ const ICONS = {
     }
 };
 
-// CORRIGÉ: Mappage des noms de fichiers PDF (Lignes R retirées car gérées manuellement)
+// Mappage des noms de fichiers PDF
 const PDF_FILENAME_MAP = {
     'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
     'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
     'C': 'grandperigueux_fiche_horaires_ligne_C_sept_2025.pdf',
     'D': 'grandperigueux_fiche_horaires_ligne_D_sept_2025.pdf',
-    
     'e1': 'grandperigueux_fiche_horaires_ligne_e1_sept_2025.pdf',
     'e2': 'grandperigueux_fiche_horaires_ligne_e2_sept_2025.pdf',
     'e4': 'grandperigueux_fiche_horaires_ligne_e4_sept_2025.pdf',
     'e5': 'grandperigueux_fiche_horaires_ligne_e5_sept_2025.pdf',
     'e6': 'grandperigueux_fiche_horaires_ligne_e6_sept_2025.pdf',
     'e7': 'grandperigueux_fiche_horaires_ligne_e7_sept_2025.pdf',
-
     'K1A': 'grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf',
     'K1B': 'grandperigueux_fiche_horaires_ligne_K1B_sept_2025.pdf',
     'K2': 'grandperigueux_fiche_horaires_ligne_K2_sept_2025.pdf',
@@ -58,12 +57,11 @@ const PDF_FILENAME_MAP = {
     'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
     'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
     'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
-    
     'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
     'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
 };
 
-// NOUVEAU (REQ 1): Mappage des noms longs (terminus) fournis par l'utilisateur
+// Mappage des noms longs
 const ROUTE_LONG_NAME_MAP = {
     'A': 'ZAE Marsac <> Centre Hospitalier',
     'B': 'Les Tournesols <> Gare SNCF',
@@ -89,21 +87,22 @@ const ROUTE_LONG_NAME_MAP = {
 };
 
 
-// ÉLÉMENTS DOM (Tableau de bord)
+// ÉLÉMENTS DOM (VUE 1: DASHBOARD)
 let dashboardContainer, dashboardHall, dashboardContentView, btnBackToHall;
 let infoTraficList, infoTraficAvenir;
 let infoTraficCount;
 let alertBanner, alertBannerContent, alertBannerClose;
 let btnAdminConsole;
 let ficheHoraireContainer;
-
-// ÉLÉMENTS DOM (Vue Carte)
-let mapContainer;
-let btnShowMap, btnBackToDashboard;
 let searchBar, searchResultsContainer;
-
-// NOUVEAUX ÉLÉMENTS DOM (PLANIFICATEUR)
 let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
+
+// ÉLÉMENTS DOM (VUE 2: CARTE)
+let mapContainer, btnShowMap, btnBackToDashboardFromMap;
+
+// ÉLÉMENTS DOM (VUE 3: RÉSULTATS)
+let itineraryResultsContainer, btnBackToDashboardFromResults;
+
 
 // Catégories de lignes
 const LINE_CATEGORIES = {
@@ -125,15 +124,10 @@ function getCategoryForRoute(routeShortName) {
 
 async function initializeApp() {
     // --- 1. SÉLECTIONNER LES ÉLÉMENTS DOM ---
-    // (Cette partie est rapide et n'échoue pas)
     dashboardContainer = document.getElementById('dashboard-container');
     dashboardHall = document.getElementById('dashboard-hall');
     dashboardContentView = document.getElementById('dashboard-content-view');
     btnBackToHall = document.getElementById('btn-back-to-hall');
-    
-    mapContainer = document.getElementById('map-container');
-    btnShowMap = document.getElementById('btn-show-map');
-    btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
     
     infoTraficList = document.getElementById('info-trafic-list');
     infoTraficAvenir = document.getElementById('info-trafic-avenir');
@@ -143,16 +137,20 @@ async function initializeApp() {
     alertBannerClose = document.getElementById('alert-banner-close');
     btnAdminConsole = document.getElementById('btn-admin-console');
     ficheHoraireContainer = document.getElementById('fiche-horaire-container');
-
     searchBar = document.getElementById('horaires-search-bar');
     searchResultsContainer = document.getElementById('horaires-search-results');
-
     plannerWhenBtn = document.getElementById('planner-when-btn');
     plannerOptionsPopover = document.getElementById('planner-options-popover');
     plannerSubmitBtn = document.getElementById('planner-submit-btn');
 
+    mapContainer = document.getElementById('map-container');
+    btnShowMap = document.getElementById('btn-show-map');
+    btnBackToDashboardFromMap = document.getElementById('btn-back-to-dashboard-from-map');
+    
+    itineraryResultsContainer = document.getElementById('itinerary-results-container');
+    btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
+
     // --- 2. ATTACHER LES ÉCOUTEURS STATIQUES ---
-    // (Se déclenche immédiatement pour que l'interface soit réactive)
     setupStaticEventListeners();
 
     // --- 3. CHARGER LES DONNÉES ET INITIALISER LE RESTE ---
@@ -164,8 +162,14 @@ async function initializeApp() {
         // --- 4. INITIALISER LES MODULES DÉPENDANTS DES DONNÉES ---
         timeManager = new TimeManager();
         
+        // Initialise la carte principale (plein écran)
         mapRenderer = new MapRenderer('map', dataManager, timeManager);
         mapRenderer.initializeMap();
+
+        // Initialise la 2e carte (celle des résultats)
+        resultsMapRenderer = new MapRenderer('results-map', dataManager, timeManager);
+        resultsMapRenderer.initializeMap(false); // false = n'ajoute pas les bus/arrêts par défaut
+
         
         tripScheduler = new TripScheduler(dataManager);
         busPositionCalculator = new BusPositionCalculator(dataManager);
@@ -178,7 +182,7 @@ async function initializeApp() {
         }
 
         mapRenderer.displayStops();
-        setupDashboardContent(); // Renommé (anciennement setupDashboard)
+        setupDashboardContent(); 
 
         // --- 6. ATTACHER LES ÉCOUTEURS DÉPENDANTS DES DONNÉES ---
         setupDataDependentEventListeners();
@@ -194,12 +198,11 @@ async function initializeApp() {
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
         updateDataStatus('Erreur de chargement', 'error');
-        // NOTE: Même en cas d'erreur, les boutons statiques fonctionneront.
     }
 }
 
 /**
- * CORRECTION: Configure le *contenu* du tableau de bord (nécessite les données)
+ * Configure le *contenu* du tableau de bord (nécessite les données)
  */
 function setupDashboardContent() {
     dataManager.routes.forEach(route => {
@@ -209,13 +212,10 @@ function setupDashboardContent() {
     renderInfoTraficCard();
     buildFicheHoraireList();
     setupAdminConsole();
-    
-    // Les écouteurs ont été déplacés dans 'setupStaticEventListeners'
 }
 
 /**
- * CORRECTION: Attache les écouteurs pour les éléments HTML statiques
- * (Appelée avant le chargement des données)
+ * Attache les écouteurs pour les éléments HTML statiques
  */
 function setupStaticEventListeners() {
     // --- Écouteurs de navigation du Dashboard ---
@@ -226,10 +226,29 @@ function setupStaticEventListeners() {
             showDashboardView(view);
         });
     });
-    btnShowMap.addEventListener('click', showMapView);
-    btnBackToDashboard.addEventListener('click', showDashboardHall);
+
+    // Bouton "Carte Interactive" -> Vue Carte Plein Écran
+    btnShowMap.addEventListener('click', showMapView); 
+    
+    // Bouton "Rechercher" -> Vue Résultats d'Itinéraire
+    plannerSubmitBtn.addEventListener('click', (e) => {
+        e.preventDefault(); 
+        if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
+            plannerOptionsPopover.classList.add('hidden');
+            plannerWhenBtn.classList.remove('popover-active');
+        }
+        console.log("Recherche lancée, transition vers la vue RÉSULTATS...");
+        showResultsView(); // *** CORRECTION DE LOGIQUE ***
+    });
+
+    // Boutons de retour
+    btnBackToDashboardFromMap.addEventListener('click', showDashboardHall);
+    btnBackToDashboardFromResults.addEventListener('click', showDashboardHall);
     btnBackToHall.addEventListener('click', showDashboardHall);
+
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
+    
+    // Onglets (Info Trafic)
     document.querySelectorAll('.tabs .tab').forEach(tab => {
         tab.addEventListener('click', () => {
             document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
@@ -240,15 +259,8 @@ function setupStaticEventListeners() {
             });
         });
     });
-    document.querySelectorAll('.quick-links a[data-view-link]').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const view = link.dataset.viewLink;
-            showDashboardView(view);
-        });
-    });
 
-    // --- Écouteurs du panneau de filtre et instructions ---
+    // --- Panneau de filtre et instructions ---
     document.getElementById('close-instructions').addEventListener('click', () => {
         document.getElementById('instructions').classList.add('hidden');
         localStorage.setItem('gtfsInstructionsShown', 'true');
@@ -266,7 +278,6 @@ function setupStaticEventListeners() {
         });
     }
     document.getElementById('select-all-routes').addEventListener('click', () => {
-        // Vérifie si dataManager existe avant d'essayer de l'utiliser
         if (dataManager) {
             dataManager.routes.forEach(route => {
                 const checkbox = document.getElementById(`route-${route.route_id}`);
@@ -276,7 +287,6 @@ function setupStaticEventListeners() {
         }
     });
     document.getElementById('deselect-all-routes').addEventListener('click', () => {
-        // Vérifie si dataManager existe
         if (dataManager) {
             dataManager.routes.forEach(route => {
                 const checkbox = document.getElementById(`route-${route.route_id}`);
@@ -286,7 +296,7 @@ function setupStaticEventListeners() {
         }
     });
 
-    // --- Écouteurs de la recherche d'horaires ---
+    // --- Recherche d'horaires ---
     document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
         const horairesCard = document.getElementById('horaires');
         if (horairesCard) {
@@ -300,33 +310,8 @@ function setupStaticEventListeners() {
     searchBar.addEventListener('input', handleSearchInput);
     searchBar.addEventListener('focus', handleSearchInput);
 
-    // --- Écouteurs de l'accordéon ---
-    // Note: Cela ne fonctionnera que si le contenu est déjà là, ce qui est le cas.
-    const allDetails = document.querySelectorAll('#fiche-horaire-container details');
-    allDetails.forEach(details => {
-        details.addEventListener('toggle', (event) => {
-            if (event.target.open) {
-                allDetails.forEach(d => {
-                    if (d !== event.target && d.open) {
-                        d.open = false;
-                    }
-                });
-            }
-        });
-    });
 
-    // --- Écouteurs du NOUVEAU PLANIFICATEUR ---
-    if (plannerSubmitBtn) {
-        plannerSubmitBtn.addEventListener('click', (e) => {
-            e.preventDefault(); 
-            if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
-                plannerOptionsPopover.classList.add('hidden');
-                plannerWhenBtn.classList.remove('popover-active');
-            }
-            console.log("Recherche lancée, transition vers la carte...");
-            showMapView();
-        });
-    }
+    // --- Planificateur (popover "QUAND") ---
     if (plannerWhenBtn && plannerOptionsPopover) { 
         plannerWhenBtn.addEventListener('click', (e) => {
             e.stopPropagation(); 
@@ -341,7 +326,7 @@ function setupStaticEventListeners() {
                 const popoverSubmitBtn = document.getElementById('popover-submit-btn');
                 if (e.currentTarget.dataset.tab === 'arriver') { 
                     mainBtnText.textContent = 'Arriver à...'; 
-                    popoverSubmitBtn.textContent = 'Valider l arrivée';
+                    popoverSubmitBtn.textContent = "Valider l'arrivée"; // Correction de l'apostrophe
                 } else {
                     mainBtnText.textContent = 'Partir maintenant';
                     popoverSubmitBtn.textContent = 'Partir maintenant';
@@ -354,7 +339,8 @@ function setupStaticEventListeners() {
         });
         plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation()); 
     }
-    // --- Écouteur pour le bouton SWAP ---
+    
+    // --- Bouton SWAP ---
     const swapBtn = document.querySelector('.btn-swap-direction'); 
     if (swapBtn) {
         swapBtn.addEventListener('click', (e) => {
@@ -367,14 +353,13 @@ function setupStaticEventListeners() {
         });
     }
 
-
     // --- Écouteur global "Click Outside" ---
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('#horaires-search-container')) {
+        if (searchResultsContainer && !e.target.closest('#horaires-search-container')) {
             searchResultsContainer.classList.add('hidden');
         }
-        if (!e.target.closest('.form-group-when')) {
-            if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
+        if (plannerOptionsPopover && !e.target.closest('.form-group-when')) {
+            if (!plannerOptionsPopover.classList.contains('hidden')) {
                 plannerOptionsPopover.classList.add('hidden');
                 if (plannerWhenBtn) {
                     plannerWhenBtn.classList.remove('popover-active');
@@ -385,15 +370,12 @@ function setupStaticEventListeners() {
 }
 
 /**
- * CORRECTION: Attache les écouteurs qui dépendent des modules chargés (map, time)
+ * Attache les écouteurs qui dépendent des modules chargés (map, time)
  */
 function setupDataDependentEventListeners() {
-    // Écouteur pour le "tick" de l'horloge
     if (timeManager) {
         timeManager.addListener(updateData);
     }
-
-    // Écouteur pour le zoom de la carte
     if (mapRenderer && mapRenderer.map) {
         mapRenderer.map.on('zoomend', () => {
             if (dataManager) {
@@ -417,7 +399,6 @@ function setupAdminConsole() {
     });
 
     window.setStatus = (lineShortName, status, message = "") => {
-        // S'assure que dataManager est chargé
         if (!dataManager) {
             console.warn("DataManager n'est pas encore chargé.");
             return;
@@ -442,21 +423,17 @@ function setupAdminConsole() {
  * Affiche la carte "Info Trafic"
  */
 function renderInfoTraficCard() {
+    if (!dataManager || !infoTraficList) return;
     infoTraficList.innerHTML = '';
     let alertCount = 0;
     
-    // 1. Grouper les lignes par catégorie
     const groupedRoutes = {
         'majeures': { name: 'Lignes majeures', routes: [] },
         'express': { name: 'Lignes express', routes: [] },
         'quartier': { name: 'Lignes de quartier', routes: [] },
         'navettes': { name: 'Navettes', routes: [] }
     };
-    
     const allowedCategories = ['majeures', 'express', 'quartier', 'navettes'];
-
-    // S'assure que dataManager est chargé
-    if (!dataManager) return;
 
     dataManager.routes.forEach(route => {
         const category = getCategoryForRoute(route.route_short_name);
@@ -465,7 +442,6 @@ function renderInfoTraficCard() {
         }
     });
 
-    // 2. Construire l'HTML pour chaque groupe
     for (const [categoryId, categoryData] of Object.entries(groupedRoutes)) {
         if (categoryData.routes.length === 0) continue;
 
@@ -473,7 +449,7 @@ function renderInfoTraficCard() {
         groupDiv.className = 'trafic-group';
         
         let badgesHtml = '';
-        categoryData.routes.sort((a, b) => { // Trie les lignes
+        categoryData.routes.sort((a, b) => { 
              return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
         });
 
@@ -481,18 +457,15 @@ function renderInfoTraficCard() {
             const state = lineStatuses[route.route_id] || { status: 'normal', message: '' };
             const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
             const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
-
             let statusIcon = '';
-            let statusColor = 'transparent'; // Couleur par défaut
+            let statusColor = 'transparent'; 
             if (state.status !== 'normal') {
                 alertCount++;
                 if (state.status === 'annulation') statusColor = 'var(--color-red)';
                 else if (state.status === 'retard') statusColor = 'var(--color-yellow)';
                 else statusColor = 'var(--color-orange)';
-                
                 statusIcon = `<div class="status-indicator-triangle type-${state.status}" style="border-bottom-color: ${statusColor};"></div>`;
             }
-
             badgesHtml += `
                 <div class="trafic-badge-item status-${state.status}">
                     <span class="line-badge" style="background-color: ${routeColor}; color: ${textColor};">
@@ -511,8 +484,6 @@ function renderInfoTraficCard() {
         `;
         infoTraficList.appendChild(groupDiv);
     }
-
-    // Met à jour le compteur d'alertes
     infoTraficCount.textContent = alertCount;
     infoTraficCount.classList.toggle('hidden', alertCount === 0);
 }
@@ -522,9 +493,9 @@ function renderInfoTraficCard() {
  * Construit l'accordéon des fiches horaires
  */
 function buildFicheHoraireList() {
+    if (!dataManager || !ficheHoraireContainer) return;
     ficheHoraireContainer.innerHTML = '';
 
-    // 1. Grouper les routes par catégorie
     const groupedRoutes = {
         'Lignes A, B, C et D': [],
         'Lignes e': [],
@@ -533,36 +504,22 @@ function buildFicheHoraireList() {
         'Lignes R': [],
     };
 
-    // S'assure que dataManager est chargé
-    if (!dataManager) return;
-
     dataManager.routes.forEach(route => {
         const name = route.route_short_name;
-        if (['A', 'B', 'C', 'D'].includes(name)) {
-            groupedRoutes['Lignes A, B, C et D'].push(route);
-        } else if (name.startsWith('e')) {
-            groupedRoutes['Lignes e'].push(route);
-        } else if (name.startsWith('K')) {
-            groupedRoutes['Lignes K'].push(route);
-        } else if (name.startsWith('N')) {
-            groupedRoutes['Lignes N'].push(route);
-        } else if (name.startsWith('R')) {
-            groupedRoutes['Lignes R'].push(route);
-        }
+        if (['A', 'B', 'C', 'D'].includes(name)) groupedRoutes['Lignes A, B, C et D'].push(route);
+        else if (name.startsWith('e')) groupedRoutes['Lignes e'].push(route);
+        else if (name.startsWith('K')) groupedRoutes['Lignes K'].push(route);
+        else if (name.startsWith('N')) groupedRoutes['Lignes N'].push(route);
+        else if (name.startsWith('R')) groupedRoutes['Lignes R'].push(route);
     });
 
-    // 2. Construire l'HTML
     for (const [groupName, routes] of Object.entries(groupedRoutes)) {
         if (routes.length === 0) continue;
-
         const accordionGroup = document.createElement('div');
         accordionGroup.className = 'accordion-group';
-
         let linksHtml = '';
         
         if (groupName === 'Lignes R') {
-            // CAS SPÉCIAL: Lignes R (fichiers unifiés)
-            // MODIFIÉ (REQ 1): Utilise les noms longs fournis par l'utilisateur
             linksHtml = `
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3 La Feuilleraie &lt;&gt; ESAT / Les Gourdoux &lt;&gt; Trélissac Les Garennes / Les Pinots &lt;&gt; P+R Aquacap</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R4_R5_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R4, R5 Route de Payenché &lt;&gt; Collège Jean Moulin / Les Mondines / Clément Laval &lt;&gt; Collège Jean Moulin</a>
@@ -573,40 +530,19 @@ function buildFicheHoraireList() {
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R13_R14_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R13, R14 Coursac &lt;&gt; Razac sur l’Isle / La Chapelle Gonaguet &lt;&gt;Razac sur l’Isle</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R15_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Ligne R15 Boulazac Isle Manoire &lt;&gt; Halte ferroviaire Niversac</a>
             `;
-
         } else {
-            // CAS NORMAL: (A, B, C, D, e, K, N)
-            routes.sort((a, b) => {
-                return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
-            });
-            
+            routes.sort((a, b) => a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true}));
             routes.forEach(route => {
                 let pdfName = PDF_FILENAME_MAP[route.route_short_name];
-                let pdfPath;
-                
-                if (!pdfName) {
-                    console.warn(`Nom de fichier PDF non mappé pour ${route.route_short_name}. Tentative avec la convention standard.`);
-                    pdfName = `grandperigueux_fiche_horaires_ligne_${route.route_short_name.toLowerCase()}_sept_2025.pdf`;
-                    pdfPath = `/data/fichehoraire/${pdfName}`;
-                } else {
-                    pdfPath = `/data/fichehoraire/${pdfName}`;
-                }
-                
-                // MODIFICATION (REQ 1) : Utilise le mappage statique pour les noms longs
-                const longName = ROUTE_LONG_NAME_MAP[route.route_short_name] || 
-                                 (route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '');
-                
+                let pdfPath = pdfName ? `/data/fichehoraire/${pdfName}` : '#';
+                if (!pdfName) console.warn(`PDF non mappé pour ${route.route_short_name}.`);
+                const longName = ROUTE_LONG_NAME_MAP[route.route_short_name] || (route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '');
                 const displayName = `Ligne ${route.route_short_name} ${longName}`.trim();
-
-                linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
-                    ${displayName}
-                </a>`;
+                linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">${displayName}</a>`;
             });
         }
 
-        // Ajout au DOM
         if (linksHtml) {
-            // MODIFIÉ (REQ 2): Ajout d'un wrapper pour l'animation
             accordionGroup.innerHTML = `
                 <details>
                     <summary>${groupName}</summary>
@@ -644,7 +580,6 @@ function renderAlertBanner() {
     let alerts = [];
     let firstAlertStatus = 'normal';
     
-    // lineStatuses peut être vide si dataManager n'a pas chargé
     if (Object.keys(lineStatuses).length === 0) {
         alertBanner.classList.add('hidden');
         return;
@@ -654,11 +589,13 @@ function renderAlertBanner() {
         const state = lineStatuses[route_id];
         if (state.status !== 'normal') {
             const route = dataManager.getRoute(route_id);
-            alerts.push({
-                name: route.route_short_name,
-                status: state.status,
-                message: state.message
-            });
+            if (route) { // Vérifie que la route existe
+                alerts.push({
+                    name: route.route_short_name,
+                    status: state.status,
+                    message: state.message
+                });
+            }
         }
     }
 
@@ -667,102 +604,82 @@ function renderAlertBanner() {
         return;
     }
 
-    if (alerts.some(a => a.status === 'annulation')) {
-        firstAlertStatus = 'annulation';
-    } else if (alerts.some(a => a.status === 'perturbation')) {
-        firstAlertStatus = 'perturbation';
-    } else {
-        firstAlertStatus = 'retard';
-    }
+    if (alerts.some(a => a.status === 'annulation')) firstAlertStatus = 'annulation';
+    else if (alerts.some(a => a.status === 'perturbation')) firstAlertStatus = 'perturbation';
+    else firstAlertStatus = 'retard';
+    
     alertBanner.className = `type-${firstAlertStatus}`;
-    
     let alertIcon = ICONS.alertBanner(firstAlertStatus);
-    let alertText = alerts.map(a => 
-        `<strong>Ligne ${a.name}</strong>`
-    ).join(', ');
-    
+    let alertText = alerts.map(a => `<strong>Ligne ${a.name}</strong>`).join(', ');
     alertBannerContent.innerHTML = `${alertIcon} <strong>Infos Trafic:</strong> ${alertText}`;
     alertBanner.classList.remove('hidden');
 }
 
 
 /**
- * NOUVEAU: Fonctions de basculement de vue (MODIFIÉES POUR CORRIGER LE SCROLL MOBILE)
+ * Logique de changement de VUE
  */
 function showMapView() {
-    // Cache les éléments du dashboard
     dashboardContainer.classList.add('hidden');
-    document.getElementById('main-header').classList.add('hidden');
-    document.getElementById('alert-banner').classList.add('hidden');
-    
-    // Affiche la carte
+    itineraryResultsContainer.classList.add('hidden');
     mapContainer.classList.remove('hidden');
-    
-    // Verrouille le body
-    document.body.classList.add('map-is-active'); 
-    
-    // S'assure que la carte est visible (si elle a été initialisée)
+    document.body.classList.add('view-is-locked'); 
     if (mapRenderer && mapRenderer.map) {
         mapRenderer.map.invalidateSize();
     }
 }
 
 function showDashboardHall() {
-    // Cache la carte
-    mapContainer.classList.add('hidden');
-    
-    // Déverrouille le body
-    document.body.classList.remove('map-is-active'); 
-    
-    // Affiche les éléments du dashboard
-    document.getElementById('main-header').classList.remove('hidden');
     dashboardContainer.classList.remove('hidden');
+    itineraryResultsContainer.classList.add('hidden');
+    mapContainer.classList.add('hidden');
+    document.body.classList.remove('view-is-locked'); 
     
-    // (La logique de la bannière d'alerte la ré-affichera si besoin)
-    if (dataManager) { // Ne s'exécute que si les données sont chargées
+    if (dataManager) { 
         renderAlertBanner(); 
     }
-
-    // Logique de transition interne du dashboard
     dashboardContentView.classList.remove('view-is-active');
     dashboardHall.classList.add('view-is-active');
-    
-    // Cache toutes les cartes internes (pour une transition propre au retour)
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
     });
+}
+
+function showResultsView() {
+    dashboardContainer.classList.add('hidden');
+    itineraryResultsContainer.classList.remove('hidden');
+    mapContainer.classList.add('hidden');
+    document.body.classList.add('view-is-locked');
+    if (resultsMapRenderer && resultsMapRenderer.map) {
+        resultsMapRenderer.map.invalidateSize();
+    }
+    // C'est ici qu'on lancera la recherche d'itinéraire
+    // et qu'on affichera la trace sur `resultsMapRenderer`
 }
 
 function showDashboardView(viewName) {
-    // NOUVELLE LOGIQUE DE TRANSITION
     dashboardHall.classList.remove('view-is-active');
     dashboardContentView.classList.add('view-is-active');
 
-    // *** CORRECTION (REQ 4) : Scrolle en haut de la vue ***
     const mainDashboard = document.getElementById('dashboard-main');
     if (mainDashboard) {
-        // Utilise 'auto' au lieu de 'smooth' pour un repositionnement instantané
         mainDashboard.scrollTo({ top: 0, behavior: 'auto' });
     }
-    // ******************************************************
 
-    // Cache toutes les cartes...
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
     });
 
-    // ...puis affiche la carte demandée
     const activeCard = document.getElementById(viewName);
     if (activeCard) {
-        // On utilise un petit délai pour laisser le conteneur parent s'afficher d'abord
         setTimeout(() => {
             activeCard.classList.add('view-active');
-        }, 50); // 50ms est suffisant pour la transition CSS
+        }, 50);
     }
 }
 
 
-// --- Fonctions de l'application existante (adaptées) ---
+// --- Fonctions de l'application (logique métier) ---
 
 function checkAndSetupTimeMode() {
     timeManager.setMode('real');
@@ -772,21 +689,23 @@ function checkAndSetupTimeMode() {
 
 function initializeRouteFilter() {
     const routeCheckboxesContainer = document.getElementById('route-checkboxes');
+    if (!routeCheckboxesContainer || !dataManager) return;
+
     routeCheckboxesContainer.innerHTML = '';
     visibleRoutes.clear();
     const routesByCategory = {};
     Object.keys(LINE_CATEGORIES).forEach(cat => { routesByCategory[cat] = []; });
     routesByCategory['autres'] = [];
+    
     dataManager.routes.forEach(route => {
         visibleRoutes.add(route.route_id);
         const category = getCategoryForRoute(route.route_short_name);
         routesByCategory[category].push(route);
     });
     Object.values(routesByCategory).forEach(routes => {
-        routes.sort((a, b) => {
-            return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
-        });
+        routes.sort((a, b) => a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true}));
     });
+
     Object.entries(LINE_CATEGORIES).forEach(([categoryId, categoryInfo]) => {
         const routes = routesByCategory[categoryId];
         if (routes.length === 0) return;
@@ -803,44 +722,33 @@ function initializeRouteFilter() {
                 <button class="btn-category-action" data-category="${categoryId}" data-action="deselect">Aucun</button>
             </div>`;
         routeCheckboxesContainer.appendChild(categoryHeader);
+        
         const categoryContainer = document.createElement('div');
         categoryContainer.className = 'category-routes';
         categoryContainer.id = `category-${categoryId}`;
         routes.forEach(route => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'route-checkbox-item';
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `route-${route.route_id}`;
-            checkbox.checked = true;
-            checkbox.dataset.category = categoryId;
-            checkbox.addEventListener('change', () => handleRouteFilterChange());
-            const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
-            const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
-            const badge = document.createElement('div');
-            badge.className = 'route-badge';
-            badge.style.backgroundColor = routeColor;
-            badge.style.color = textColor;
-            badge.textContent = route.route_short_name || route.route_id;
-            const label = document.createElement('span');
-            label.className = 'route-name';
-            label.textContent = route.route_long_name || route.route_short_name || route.route_id;
-            itemDiv.appendChild(checkbox);
-            itemDiv.appendChild(badge);
-            itemDiv.appendChild(label);
-            categoryContainer.appendChild(itemDiv);
+            itemDiv.innerHTML = `
+                <input type="checkbox" id="route-${route.route_id}" data-category="${categoryId}" checked>
+                <div class="route-badge" style="background-color: #${route.route_color || '3388ff'}; color: #${route.route_text_color || 'ffffff'};">
+                    ${route.route_short_name || route.route_id}
+                </div>
+                <span class="route-name">${route.route_long_name || route.route_short_name || route.route_id}</span>
+            `;
+            
+            itemDiv.querySelector('input[type="checkbox"]').addEventListener('change', handleRouteFilterChange);
             itemDiv.addEventListener('mouseenter', () => mapRenderer.highlightRoute(route.route_id, true));
             itemDiv.addEventListener('mouseleave', () => mapRenderer.highlightRoute(route.route_id, false));
             itemDiv.addEventListener('click', (e) => {
                 if (e.target.type === 'checkbox') return;
                 mapRenderer.zoomToRoute(route.route_id);
             });
+            categoryContainer.appendChild(itemDiv);
         });
         routeCheckboxesContainer.appendChild(categoryContainer);
     });
-    if (routesByCategory['autres'].length > 0) {
-        // ... (code pour 'autres' inchangé)
-    }
+
     document.querySelectorAll('.btn-category-action').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const category = e.target.dataset.category;
@@ -857,6 +765,7 @@ function handleCategoryAction(category, action) {
 }
 
 function handleRouteFilterChange() {
+    if (!dataManager) return;
     visibleRoutes.clear();
     dataManager.routes.forEach(route => {
         const checkbox = document.getElementById(`route-${route.route_id}`);
@@ -868,9 +777,6 @@ function handleRouteFilterChange() {
     updateData();
 }
 
-/**
- * Logique de recherche (corrigée)
- */
 function handleSearchInput(e) {
     const query = e.target.value.toLowerCase();
     if (query.length < 2) {
@@ -878,18 +784,13 @@ function handleSearchInput(e) {
         searchResultsContainer.innerHTML = '';
         return;
     }
-    // S'assurer que dataManager est chargé
     if (!dataManager) return;
-    
     const matches = dataManager.masterStops
         .filter(stop => stop.stop_name.toLowerCase().includes(query))
         .slice(0, 10); 
     displaySearchResults(matches, query);
 }
 
-/**
- * Affiche les résultats (corrigée)
- */
 function displaySearchResults(stops, query) {
     searchResultsContainer.innerHTML = '';
     if (stops.length === 0) {
@@ -908,28 +809,21 @@ function displaySearchResults(stops, query) {
     searchResultsContainer.classList.remove('hidden');
 }
 
-/**
- * Clic sur résultat (corrigée)
- * MODIFIÉ : Appelle zoomToStop PUIS onStopClick
- */
 function onSearchResultClick(stop) {
     showMapView(); 
-    // S'assurer que mapRenderer est chargé
     if (mapRenderer) {
         mapRenderer.zoomToStop(stop);
-        mapRenderer.onStopClick(stop); // <<< CORRECTION DU BUG
+        mapRenderer.onStopClick(stop);
     }
     searchBar.value = stop.stop_name;
     searchResultsContainer.classList.add('hidden');
 }
 
 /**
- * Fonction de mise à jour principale, appelée à chaque tick
+ * Fonction de mise à jour principale
  */
 function updateData(timeInfo) {
-    // S'assure que tout est chargé avant de s'exécuter
     if (!timeManager || !tripScheduler || !busPositionCalculator || !mapRenderer) {
-        // console.warn("UpdateData a été appelée avant l'initialisation complète.");
         return;
     }
 
@@ -941,7 +835,6 @@ function updateData(timeInfo) {
     const activeBuses = tripScheduler.getActiveTrips(currentSeconds, currentDate);
     const allBusesWithPositions = busPositionCalculator.calculateAllPositions(activeBuses);
 
-    // MODIFICATION: Ajoute l'état du trafic à chaque bus
     allBusesWithPositions.forEach(bus => {
         if (bus && bus.route) {
             const routeId = bus.route.route_id;
@@ -956,17 +849,15 @@ function updateData(timeInfo) {
         .filter(bus => bus.route && visibleRoutes.has(bus.route.route_id)); 
     
     mapRenderer.updateBusMarkers(visibleBuses, tripScheduler, currentSeconds);
-    
-    const visibleBusCount = visibleBuses.length;
-    updateBusCount(visibleBusCount, visibleBusCount);
+    updateBusCount(visibleBuses.length, visibleBuses.length);
 }
 
 function updateClock(seconds) {
     const hours = Math.floor(seconds / 3600) % 24;
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    
     const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    
     document.getElementById('current-time').textContent = timeString;
     
     const now = new Date();
@@ -994,7 +885,7 @@ function updateDataStatus(message, status = '') {
     statusElement.textContent = message;
 }
 
-// Initialise l'application et affiche le "Hall"
+// Initialise l'application
 initializeApp().then(() => {
-    // Le Hall est déjà visible par défaut grâce à 'view-is-active' dans le HTML
+    // Le Hall est déjà visible par défaut
 });
