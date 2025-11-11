@@ -54,41 +54,37 @@
                 
                 <div class="hero-section">
                     
-                    <div class="planner-block-wrapper">
-                        <div class="planner-block">
-                            <div class="planner-title-bar">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                <h3>Où allons-nous ?</h3>
-                            </div>
-                            
-                            <div class="planner-form">
+                    <div class="planner-title-bar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <h3>Où allons-nous ?</h3>
+                    </div>
+                    
+                    <div class="planner-form">
 
-                                <div class="form-group planner-input-group planner-input-depart">
-                                    <label for="hall-planner-from">DÉPART <span class="label-optional">(obligatoire)</span></label>
-                                    <input type="text" id="hall-planner-from" placeholder="Gare, station, arrêt ou lieu">
-                                </div>
+                        <div class="form-group planner-input-group planner-input-depart">
+                            <label for="hall-planner-from">DÉPART <span class="label-optional">(obligatoire)</span></label>
+                            <input type="text" id="hall-planner-from" placeholder="Gare, station, arrêt ou lieu">
+                        </div>
 
-                                <button type="button" id="planner-invert-btn" class="btn-icon" aria-label="Inverser le départ et l'arrivée">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l-10 10 10 10"/><path d="M7 12.1h10"/></svg>
-                                </button>
+                        <button type="button" id="planner-invert-btn" class="btn-icon" aria-label="Inverser le départ et l'arrivée">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l-10 10 10 10"/><path d="M7 12.1h10"/></svg>
+                        </button>
 
-                                <div class="form-group planner-input-group planner-input-arrivee">
-                                    <label for="hall-planner-to">ARRIVÉE <span class="label-optional">(obligatoire)</span></label>
-                                    <input type="text" id="hall-planner-to" placeholder="Gare, station, arrêt ou lieu">
-                                </div>
+                        <div class="form-group planner-input-group planner-input-arrivee">
+                            <label for="hall-planner-to">ARRIVÉE <span class="label-optional">(obligatoire)</span></label>
+                            <input type="text" id="hall-planner-to" placeholder="Gare, station, arrêt ou lieu">
+                        </div>
 
-                                <div class="form-group planner-input-group planner-input-quand">
-                                    <label for="hall-planner-date">QUAND</label>
-                                    <div class="planner-time-inputs">
-                                        <input type="date" id="hall-planner-date" aria-label="Date de départ">
-                                        <input type="time" id="hall-planner-time" aria-label="Heure de départ">
-                                    </div>
-                                </div>
-                                
-                                <button type="button" id="planner-search-btn" class="btn btn-primary planner-search-btn">Rechercher</button>
-                                
+                        <div class="form-group planner-input-group planner-input-quand">
+                            <label for="hall-planner-date">QUAND</label>
+                            <div class="planner-time-inputs">
+                                <input type="date" id="hall-planner-date" aria-label="Date de départ">
+                                <input type="time" id="hall-planner-time" aria-label="Heure de départ">
                             </div>
                         </div>
+                        
+                        <button type="button" id="planner-search-btn" class="btn btn-primary planner-search-btn">Rechercher</button>
+                        
                     </div>
                     <div class="main-nav-buttons-condensed">
                         <button class="nav-button-condensed" data-view="horaires">
@@ -186,7 +182,28 @@
 
                 </div> 
             </div> 
-        </main>
+
+            <div id="planner-results-view" class="hidden">
+                <div class="planner-results-header">
+                    <button id="btn-back-to-hall-from-results" class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                        <span>Nouvelle recherche</span>
+                    </button>
+                    </div>
+                <div class="planner-results-content">
+                    <div class="results-left-panel">
+                        <h3>Vos itinéraires</h3>
+                        <div id="planner-results-list">
+                            <p class="card-note">Le calcul d'itinéraire est en cours de développement.</p>
+                        </div>
+                    </div>
+                    <div class="results-map-container">
+                        <div id="planner-results-map">
+                            </div>
+                    </div>
+                </div>
+            </div>
+            </main>
     </div>
     
     <div id="map-container" class="hidden">
