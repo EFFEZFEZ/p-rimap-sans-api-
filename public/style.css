@@ -45,15 +45,14 @@
 }
 
 html, body {
-    height: 100%; [cite: 9]
-    width: 100%; [cite: 10]
-    overflow-x: hidden; [cite: 11]
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
-    /* CORRECTION (BUG SWIPE): Empêche le rebond de scroll sur mobile [cite: 12] */
-    overscroll-behavior: none; [cite: 13]
+    /* CORRECTION (BUG SWIPE): Règle 'overscroll-behavior: none;' supprimée pour rétablir le scroll */
 }
 
 /* Ajout pour s'assurer que le contenu pousse le bas de page */
@@ -562,19 +561,21 @@ body {
     outline: none;
 }
 #horaires-search-results {
-    position: absolute; [cite: 34]
-    top: calc(100% + 5px); [cite: 35]
-    left: 0; [cite: 35]
-    width: 100%; [cite: 38]
-    background: var(--bg-main); [cite: 39]
-    border: 1px solid var(--border); [cite: 40]
-    border-radius: var(--radius-md); [cite: 41]
-    box-shadow: var(--shadow-lg); [cite: 42]
-    max-height: 300px; [cite: 46]
-    overflow-y: auto; [cite: 45]
-    z-index: 2000; [cite: 47]
-    /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS [cite: 43] */
-    -webkit-overflow-scrolling: touch; 
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 2000;
+    /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Empêche le scroll de "déborder" sur la page */
+    overscroll-behavior: contain;
 }
 #horaires-search-results.hidden { display: none; }
 .search-result-item {
@@ -655,6 +656,10 @@ body {
     overflow: hidden;
     max-height: 0;
     transition: max-height 0.35s ease-in-out;
+    /* CORRECTION (BUG SWIPE): */
+    overscroll-behavior: contain;
+    /* Activation du défilement fluide sur iOS */
+    -webkit-overflow-scrolling: touch;
 }
 details[open] .accordion-content {
     max-height: 1000px; /* Assez grand pour tout contenu */
@@ -734,8 +739,10 @@ details[open] .accordion-content {
 .tab-content {
     max-height: 450px;
     overflow-y: auto;
-    /* CORRECTION (BUG SWIPE) */
+    /* CORRECTION (BUG SWIPE): */
     overscroll-behavior: contain;
+    /* Activation du défilement fluide sur iOS */
+    -webkit-overflow-scrolling: touch;
 }
 
 /* NOUVEAU: Style Info Trafic (image_a08441.png) */
@@ -918,7 +925,7 @@ details[open] .accordion-content {
 } 
 
 /* =========================================
- * DESIGN MOBILE (VUE CARTE) - CORRECTION FINALE
+ * DESIGN MOBILE (VUE CARTE & SOUS-PAGES)
  * ========================================= */
 @media (max-width: 768px) {
     
@@ -943,6 +950,33 @@ details[open] .accordion-content {
     .bottom-grid {
         grid-template-columns: 1fr;
     }
+    
+    /* --- NOUVEAU (REQ 1): Bouton retour flottant (Horaires, Info Trafic) --- */
+    #dashboard-content-view.view-is-active {
+        /* Ajoute de l'espace en haut pour le bouton fixe */
+        padding-top: 60px; 
+    }
+    #dashboard-content-view.view-is-active #btn-back-to-hall {
+        position: fixed;
+        top: 80px; /* 65px header + 15px margin */
+        left: 15px;
+        z-index: 1040;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        box-shadow: var(--shadow-md);
+        padding: 0.5rem 0.75rem;
+        border-color: var(--border);
+        margin-bottom: 0; /* Annule la marge d'origine */
+    }
+    /* Cache le texte du bouton, montre que l'icône */
+    #dashboard-content-view.view-is-active #btn-back-to-hall span {
+        display: none; 
+    }
+    #dashboard-content-view.view-is-active #btn-back-to-hall svg {
+        margin-right: 0;
+    }
+
 
     /* --- VUE CARTE (LE FIX V3) --- */
     
@@ -1140,13 +1174,13 @@ details[open] .accordion-content {
 
 /* Liste des routes */
 .route-list {
-    overflow-y: auto; [cite: 29]
-    flex: 1; [cite: 30]
-    background: transparent; [cite: 31]
-    /* CORRECTION (BUG SWIPE): [cite: 24] */
-    overscroll-behavior: contain; [cite: 26]
-    /* Activation du défilement fluide sur iOS [cite: 27] */
-    -webkit-overflow-scrolling: touch; 
+    overflow-y: auto;
+    flex: 1;
+    background: transparent;
+    /* CORRECTION (BUG SWIPE): */
+    overscroll-behavior: contain;
+    /* Activation du défilement fluide sur iOS */
+    -webkit-overflow-scrolling: touch;
 }
 .category-header {
     padding: 0.75rem 1.25rem;
@@ -1376,11 +1410,12 @@ details[open] .accordion-content {
 
 /* (Styles de popup unifiés conservés) */
 .info-popup-content {
-    width: 100%; [cite: 53]
-    max-height: 250px; [cite: 54]
-    overflow-y: auto; [cite: 55]
-    /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS [cite: 51] */
-    -webkit-overflow-scrolling: touch; 
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 .info-popup-header {
     background: var(--bg-secondary);
