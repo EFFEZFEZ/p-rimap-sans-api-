@@ -1,684 +1,636 @@
 /**
- * main.js
- * Point d'entrée principal de l'application
- * Gère le tableau de bord, la vue carte et l'état du trafic.
+ * mapRenderer.js - VERSION FINALE (Audit V4 + Statut V5)
+ * Gère l'affichage de la carte Leaflet et le rendu des bus et routes
+ *
+ * CORRECTION (V4): Implémente l'audit (Section 5.1 & 6.2).
+ * - Supprime l'appel destructeur à popup.setContent() pour les changements d'état.
+ * - Unifie la logique de mise à jour atomique du DOM pour tous les états
+ *
+ * NOUVEAU (V5):
+ * - Lit `bus.currentStatus` (normal, perturbation, etc.)
+ * - Ajoute des classes CSS (`bus-status-XX`) aux icônes de bus.
  */
 
-import { DataManager } from './dataManager.js';
-import { TimeManager } from './timeManager.js';
-import { TripScheduler } from './tripScheduler.js';
-import { BusPositionCalculator } from './busPositionCalculator.js';
-import { MapRenderer } from './mapRenderer.js';
+export class MapRenderer {
+    /**
+     * @param {string} mapElementId - L'ID de l'élément HTML de la carte
+     * @param {DataManager} dataManager - L'instance de DataManager
+     * @param {TimeManager} timeManager - L'instance de TimeManager
+     */
+    constructor(mapElementId, dataManager, timeManager) {
+        this.mapElementId = mapElementId;
+        this.map = null;
+        this.busMarkers = {}; // Garde la trace de nos marqueurs (clé: tripId)
+        this.routeLayer = null;
+        this.routeLayersById = {};
+        this.selectedRoute = null;
+        this.centerCoordinates = [45.1833, 0.7167]; // Périgueux
+        this.zoomLevel = 16;
+        this.tempStopMarker = null;
 
-// Modules
-let dataManager;
-let timeManager;
-let tripScheduler;
-let busPositionCalculator;
-let mapRenderer;
-let visibleRoutes = new Set();
+        this.stopLayer = null;
 
-// NOUVEL ÉTAT GLOBAL
-let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
+        /* Garder une référence aux managers */
+        this.dataManager = dataManager;
+        this.timeManager = timeManager;
 
-// NOUVEAUX ÉLÉMENTS DOM (Tableau de bord)
-let dashboardContainer;
-let infoTraficList;
-let infoTraficCount;
-let alertBanner, alertBannerContent, alertBannerClose;
-let btnAdminConsole;
-
-// ÉLÉMENTS DOM (Vue Carte)
-let mapContainer;
-let btnShowMap, btnBackToDashboard;
-let searchBar, searchResultsContainer; // Maintenant pour la carte Horaires
-
-// Catégories de lignes
-const LINE_CATEGORIES = {
-    'majeures': {
-        name: 'Lignes majeures',
-        lines: ['A', 'B', 'C', 'D'],
-        color: '#2563eb'
-    },
-    'express': {
-        name: 'Lignes express',
-        lines: ['e1', 'e2', 'e4', 'e5', 'e6', 'e7'],
-        color: '#dc2626'
-    },
-    'quartier': {
-        name: 'Lignes de quartier',
-        lines: ['K1A', 'K1B', 'K2', 'K3A', 'K3B', 'K4A', 'K4B', 'K5', 'K6'],
-        color: '#059669'
-    },
-    'rabattement': {
-        name: 'Lignes de rabattement',
-        lines: ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15'],
-        color: '#7c3aed'
-    },
-    'navettes': {
-        name: 'Navettes',
-        lines: ['N', 'N1'],
-        color: '#f59e0b'
+        /* Initialisation du groupe de clusters */
+        this.clusterGroup = L.markerClusterGroup({
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true,
+            disableClusteringAtZoom: 16 
+        });
     }
-};
 
-function getCategoryForRoute(routeShortName) {
-    for (const [categoryId, category] of Object.entries(LINE_CATEGORIES)) {
-        if (category.lines.includes(routeShortName)) {
-            return categoryId;
-        }
+    /**
+     * Initialise la carte Leaflet
+     */
+    initializeMap() {
+        this.map = L.map(this.mapElementId).setView(this.centerCoordinates, this.zoomLevel);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(this.map);
+        
+        /* Initialisation des couches */
+        this.stopLayer = L.layerGroup().addTo(this.map);
+        this.map.addLayer(this.clusterGroup);
+        
+        console.log('🗺️ Carte initialisée');
+        this.map.on('click', () => {
+            if (this.tempStopMarker) {
+                this.map.removeLayer(this.tempStopMarker);
+                this.tempStopMarker = null;
+            }
+        });
     }
-    return 'autres';
-}
 
-async function initializeApp() {
-    // Sélection des nouveaux éléments DOM
-    dashboardContainer = document.getElementById('dashboard-container');
-    mapContainer = document.getElementById('map-container');
-    btnShowMap = document.getElementById('btn-show-map');
-    btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
-    infoTraficList = document.getElementById('info-trafic-list');
-    infoTraficCount = document.getElementById('info-trafic-count');
-    alertBanner = document.getElementById('alert-banner');
-    alertBannerContent = document.getElementById('alert-banner-content');
-    alertBannerClose = document.getElementById('alert-banner-close');
-    btnAdminConsole = document.getElementById('btn-admin-console');
-
-    // Barre de recherche (maintenant dans la carte Horaires)
-    searchBar = document.getElementById('horaires-search-bar');
-    searchResultsContainer = document.getElementById('horaires-search-results');
-
-    dataManager = new DataManager();
+    offsetPoint(lat1, lon1, lat2, lon2, offsetMeters, index, total) {
+        const earthRadius = 6371000;
+        const lat1Rad = lat1 * Math.PI / 180;
+        const lon1Rad = lon1 * Math.PI / 180;
+        const lat2Rad = lat2 * Math.PI / 180;
+        const lon2Rad = lon2 * Math.PI / 180;
+        const bearing = Math.atan2(
+            Math.sin(lon2Rad - lon1Rad) * Math.cos(lat2Rad),
+            Math.cos(lat1Rad) * Math.sin(lat2Rad) - 
+            Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(lon2Rad - lon1Rad)
+        );
+        const perpBearing = bearing + Math.PI / 2;
+        const offsetDistance = offsetMeters * (index - (total - 1) / 2);
+        const angularDistance = offsetDistance / earthRadius;
+        const newLat = Math.asin(
+            Math.sin(lat1Rad) * Math.cos(angularDistance) +
+            Math.cos(lat1Rad) * Math.sin(angularDistance) * Math.cos(perpBearing)
+        );
+        const newLon = lon1Rad + Math.atan2(
+            Math.sin(perpBearing) * Math.sin(angularDistance) * Math.cos(lat1Rad),
+            Math.cos(angularDistance) - Math.sin(lat1Rad) * Math.sin(newLat)
+        );
+        return [newLat * 180 / Math.PI, newLon * 180 / Math.PI];
+    }
     
-    try {
-        await dataManager.loadAllData();
-        
-        timeManager = new TimeManager();
-        
-        mapRenderer = new MapRenderer('map', dataManager, timeManager);
-        mapRenderer.initializeMap();
-        
-        tripScheduler = new TripScheduler(dataManager);
-        busPositionCalculator = new BusPositionCalculator(dataManager);
-        
-        initializeRouteFilter();
-        
-        if (dataManager.geoJson) {
-            mapRenderer.displayMultiColorRoutes(dataManager.geoJson, dataManager, visibleRoutes);
+    offsetLineString(coordinates, offsetMeters, index, total) {
+        const offsetCoords = [];
+        for (let i = 0; i < coordinates.length; i++) {
+            const [lon, lat] = coordinates[i];
+            let lon2, lat2;
+            if (i < coordinates.length - 1) {
+                [lon2, lat2] = coordinates[i + 1];
+            } else {
+                [lon2, lat2] = coordinates[i - 1];
+            }
+            const [newLat, newLon] = this.offsetPoint(lat, lon, lat2, lon2, offsetMeters, index, total);
+            offsetCoords.push([newLon, newLat]);
         }
-
-        mapRenderer.displayStops();
-        
-        // Configure les écouteurs d'événements pour la vue carte ET le tableau de bord
-        setupEventListeners();
-        
-        // Configure le nouveau tableau de bord
-        setupDashboard();
-
-        if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
-            document.getElementById('instructions').classList.remove('hidden');
-        }
-        
-        updateDataStatus('Données chargées', 'loaded');
-        
-        checkAndSetupTimeMode();
-        
-        updateData(); // Appel initial
-        
-    } catch (error) {
-        console.error('Erreur lors de l\'initialisation:', error);
-        updateDataStatus('Erreur de chargement', 'error');
+        return offsetCoords;
     }
-}
-
-/**
- * NOUVEAU: Configure le tableau de bord (état du trafic, admin)
- */
-function setupDashboard() {
-    // Initialise l'état de toutes les lignes
-    dataManager.routes.forEach(route => {
-        lineStatuses[route.route_id] = { status: 'normal', message: '' };
-    });
-
-    // Affiche la carte Info Trafic
-    renderInfoTraficCard();
-
-    // Configure la console admin
-    setupAdminConsole();
-
-    // Configure les boutons de basculement de vue
-    btnShowMap.addEventListener('click', showMapView);
-    btnBackToDashboard.addEventListener('click', showDashboardView);
-    alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
-}
-
-/**
- * NOUVEAU: Logique de la console d'administration
- */
-function setupAdminConsole() {
-    btnAdminConsole.addEventListener('click', () => {
-        console.log("--- CONSOLE ADMIN ACTIVÉE ---");
-        console.log('Utilisez setStatus("NOM_LIGNE", "STATUT", "MESSAGE")');
-        console.log('Ex: setStatus("A", "perturbation", "Manifestation centre-ville")');
-        console.log('Statuts valides: "normal", "perturbation", "retard", "annulation"');
-        alert('Console Admin activée. Voir la console (F12) pour les instructions.');
-    });
-
-    // Expose la fonction à la fenêtre globale
-    window.setStatus = (lineShortName, status, message = "") => {
-        const route = dataManager.routes.find(r => r.route_short_name === lineShortName);
-        if (!route) {
-            console.warn(`Ligne "${lineShortName}" non trouvée.`);
+    
+    displayMultiColorRoutes(geoJsonData, dataManager, visibleRoutes) {
+        if (!geoJsonData) {
+            console.warn('Aucune donnée GeoJSON à afficher');
             return;
         }
+        if (this.routeLayer) {
+            this.map.removeLayer(this.routeLayer);
+        }
+        this.routeLayer = L.layerGroup().addTo(this.map);
+        this.routeLayersById = {};
+        const geometryMap = new Map();
+        geoJsonData.features.forEach(feature => {
+            if (feature.geometry && feature.geometry.type === 'LineString') {
+                const routeId = feature.properties?.route_id;
+                if (!visibleRoutes.has(routeId)) {
+                    return;
+                }
+                const geomKey = JSON.stringify(feature.geometry.coordinates);
+                if (!geometryMap.has(geomKey)) {
+                    geometryMap.set(geomKey, []);
+                }
+                geometryMap.get(geomKey).push(feature);
+            }
+        });
+        geometryMap.forEach((features, geomKey) => {
+            const numRoutes = features.length;
+            const baseWidth = 4;
+            const offsetMeters = 3;
+            if (numRoutes === 1) {
+                const feature = features[0];
+                const routeColor = feature.properties?.route_color || '#3388ff';
+                const routeId = feature.properties?.route_id;
+                const layer = L.geoJSON(feature, {
+                    style: {
+                        color: routeColor,
+                        weight: baseWidth,
+                        opacity: 0.85,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    }
+                });
+                if (routeId) {
+                    if (!this.routeLayersById[routeId]) this.routeLayersById[routeId] = [];
+                    this.routeLayersById[routeId].push(layer);
+                }
+                this.addRoutePopup(layer, features, dataManager);
+                layer.addTo(this.routeLayer);
+            } else {
+                features.forEach((feature, index) => {
+                    const routeColor = feature.properties?.route_color || '#3388ff';
+                    const routeId = feature.properties?.route_id;
+                    const offsetCoords = this.offsetLineString(
+                        feature.geometry.coordinates,
+                        offsetMeters,
+                        index,
+                        numRoutes
+                    );
+                    const offsetFeature = {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: offsetCoords
+                        },
+                        properties: feature.properties
+                    };
+                    const layer = L.geoJSON(offsetFeature, {
+                        style: {
+                            color: routeColor,
+                            weight: baseWidth,
+                            opacity: 0.85,
+                            lineCap: 'round',
+                            lineJoin: 'round'
+                        }
+                    });
+                    if (routeId) {
+                        if (!this.routeLayersById[routeId]) this.routeLayersById[routeId] = [];
+                        this.routeLayersById[routeId].push(layer);
+                    }
+                    layer.addTo(this.routeLayer);
+                    this.addRoutePopup(layer, features, dataManager);
+                });
+            }
+        });
+        console.log(`✓ ${geometryMap.size} segments de routes affichées (lignes décalées pour visibilité)`);
+    }
+    
+    addRoutePopup(layer, features, dataManager) {
+        let content = '<b>Ligne(s) sur ce tracé:</b><br>';
+        const routeNames = new Set();
+        features.forEach(feature => {
+            const routeId = feature.properties?.route_id;
+            const route = dataManager.getRoute(routeId);
+            if (route) {
+                routeNames.add(route.route_short_name || routeId);
+            }
+        });
+        content += Array.from(routeNames).join(', ');
+        layer.bindPopup(content);
+    }
 
-        if (!['normal', 'perturbation', 'retard', 'annulation'].includes(status)) {
-            console.warn(`Statut "${status}" invalide. Utilisez "normal", "perturbation", "retard", "annulation".`);
-            return;
+    /**
+     * MODIFIÉ (Section 6.2 de l'audit + V5)
+     * Logique de mise à jour unifiée pour éliminer setContent()
+     * ET pour mettre à jour le statut (perturbation, etc.)
+     */
+    updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
+        const markersToAdd = [];
+        const markersToRemove = [];
+        const activeBusIds = new Set();
+        let reopenPopupAt = null;
+
+        // 1. Trouver les marqueurs à supprimer
+        busesWithPositions.forEach(bus => activeBusIds.add(bus.tripId));
+
+        Object.keys(this.busMarkers).forEach(busId => {
+            if (!activeBusIds.has(busId)) {
+                const markerData = this.busMarkers[busId];
+                if (markerData.marker.isPopupOpen()) {
+                    reopenPopupAt = markerData.marker.getLatLng();
+                }
+                markersToRemove.push(markerData.marker);
+                delete this.busMarkers[busId];
+            }
+        });
+
+        // 2. Mettre à jour les marqueurs existants et ajouter les nouveaux
+        busesWithPositions.forEach(bus => {
+            const busId = bus.tripId;
+            if (!busId) return;
+            
+            const { lat, lon } = bus.position;
+            
+            if (this.busMarkers[busId]) {
+                // Marqueur existant
+                const markerData = this.busMarkers[busId];
+                markerData.bus = bus; 
+                markerData.marker.setLatLng([lat, lon]);
+                
+                const isWaiting = !bus.segment; 
+                const iconElement = markerData.marker.getElement();
+                if (iconElement) {
+                    // Met à jour l'état d'attente
+                    iconElement.classList.toggle('bus-icon-waiting', isWaiting);
+                    
+                    // *** NOUVEAU V5: Met à jour le statut (perturbation, etc.) ***
+                    const status = bus.currentStatus || 'normal';
+                    ['normal', 'perturbation', 'retard', 'annulation'].forEach(s => iconElement.classList.remove('bus-status-' + s));
+                    iconElement.classList.add('bus-status-' + status);
+                    // *** FIN NOUVEAU V5 ***
+                }
+                
+                // *** LOGIQUE DE L'AUDIT (Section 6.2) ***
+                if (markerData.marker.isPopupOpen()) {
+                    const popup = markerData.marker.getPopup();
+                    
+                    if (popup.getElement()) {
+                        const popupElement = popup.getElement();
+                        const currentState = bus.segment ? 'moving' : 'stationary';
+                        
+                        if (currentState === 'moving') {
+                            this.updateMovingBusPopup(popupElement, bus, tripScheduler);
+                        } else {
+                            this.updateStationaryBusPopup(popupElement, bus, tripScheduler);
+                        }
+                        markerData.lastState = currentState;
+                    }
+                } else {
+                    markerData.lastState = bus.segment ? 'moving' : 'stationary';
+                }
+                // *** FIN DE LA LOGIQUE DE L'AUDIT ***
+
+            } else {
+                // Nouveau marqueur
+                const markerData = this.createBusMarker(bus, tripScheduler, busId);
+                
+                if (reopenPopupAt && markerData.marker.getLatLng().equals(reopenPopupAt, 0.0001)) {
+                    markerData.marker.openPopup();
+                    reopenPopupAt = null; 
+                }
+
+                this.busMarkers[busId] = markerData;
+                markersToAdd.push(markerData.marker);
+            }
+        });
+
+        // Nettoyage final des couches
+        if (markersToRemove.length > 0) {
+            this.clusterGroup.removeLayers(markersToRemove);
+        }
+        if (markersToAdd.length > 0) {
+            this.clusterGroup.addLayers(markersToAdd);
+        }
+    }
+
+    /**
+     * MODIFIÉ (Section 5.1 de l'audit)
+     * Mise à jour atomique pour un bus en mouvement
+     */
+    updateMovingBusPopup(popupElement, bus, tripScheduler) {
+        try {
+            const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
+            const destination = tripScheduler.getTripDestination(stopTimes);
+            const nextStopName = bus.segment?.toStopInfo?.stop_name || 'Inconnu';
+            const nextStopETA = tripScheduler.getNextStopETA(bus.segment, bus.currentSeconds);
+
+            const stateText = `En Ligne (vers ${destination})`;
+            const nextStopLabelText = "Prochain arrêt :";
+            const nextStopText = nextStopName;
+            const etaLabelText = "Arrivée :";
+            const etaText = nextStopETA ? nextStopETA.formatted : '...';
+
+            const stateEl = popupElement.querySelector('[data-update="state"]');
+            const nextStopLabelEl = popupElement.querySelector('[data-update="next-stop-label"]');
+            const nextStopEl = popupElement.querySelector('[data-update="next-stop-value"]');
+            const etaLabelEl = popupElement.querySelector('[data-update="eta-label"]');
+            const etaEl = popupElement.querySelector('[data-update="eta-value"]');
+
+            if (stateEl && stateEl.textContent !== stateText) stateEl.textContent = stateText;
+            if (nextStopLabelEl && nextStopLabelEl.textContent !== nextStopLabelText) nextStopLabelEl.textContent = nextStopLabelText;
+            if (nextStopEl && nextStopEl.textContent !== nextStopText) nextStopEl.textContent = nextStopText;
+            if (etaLabelEl && etaLabelEl.textContent !== etaLabelText) etaLabelEl.textContent = etaLabelText;
+            if (etaEl && etaEl.textContent !== etaText) etaEl.textContent = etaText;
+            
+        } catch (e) {
+             console.error("Erreur mise à jour popup 'moving':", e, bus);
+        }
+    }
+
+    /**
+     * NOUVEAU (Section 6.1 de l'audit)
+     * Mise à jour atomique pour un bus à l'arrêt (intermédiaire)
+     */
+    updateStationaryBusPopup(popupElement, bus, tripScheduler) {
+        try {
+            const stopName = bus.position.stopInfo.stop_name;
+            const departureTime = bus.position.nextDepartureTime;
+            const departureText = this.dataManager.formatTime(departureTime).substring(0, 5);
+            
+            const stateText = `À l'arrêt`;
+            const nextStopLabelText = "Arrêt actuel :";
+            const nextStopText = stopName;
+            const etaLabelText = "Départ :";
+            const etaText = departureText;
+
+            const stateEl = popupElement.querySelector('[data-update="state"]');
+            const nextStopLabelEl = popupElement.querySelector('[data-update="next-stop-label"]');
+            const nextStopEl = popupElement.querySelector('[data-update="next-stop-value"]');
+            const etaLabelEl = popupElement.querySelector('[data-update="eta-label"]');
+            const etaEl = popupElement.querySelector('[data-update="eta-value"]');
+
+            if (stateEl && stateEl.textContent !== stateText) stateEl.textContent = stateText;
+            if (nextStopLabelEl && nextStopLabelEl.textContent !== nextStopLabelText) nextStopLabelEl.textContent = nextStopLabelText;
+            if (nextStopEl && nextStopEl.textContent !== nextStopText) nextStopEl.textContent = nextStopText;
+            if (etaLabelEl && etaLabelEl.textContent !== etaLabelText) etaLabelEl.textContent = etaLabelText;
+            if (etaEl && etaEl.textContent !== etaText) etaEl.textContent = etaText;
+
+        } catch (e) {
+            console.error("Erreur mise à jour popup 'stationary':", e, bus);
+        }
+    }
+
+
+    /**
+     * MODIFIÉ (Section 5.1 de l'audit + V5)
+     * Crée le contenu popup avec une structure HTML unifiée
+     */
+    createBusPopupContent(bus, tripScheduler) {
+        const route = bus.route;
+        const routeShortName = route?.route_short_name || route?.route_id || '?';
+        const routeColor = route?.route_color ? `#${route.route_color}` : '#3B82F6';
+        const textColor = route?.route_text_color ? `#${route.route_text_color}` : '#ffffff';
+
+        let stateText, nextStopLabelText, nextStopText, etaLabelText, etaText;
+        let statusHtml = ''; // NOUVEAU V5
+
+        const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
+        const destination = tripScheduler.getTripDestination(stopTimes);
+
+        if (bus.segment) {
+            // Cas 1: Bus en mouvement
+            const nextStopName = bus.segment?.toStopInfo?.stop_name || 'Inconnu';
+            const nextStopETA = tripScheduler.getNextStopETA(bus.segment, bus.currentSeconds);
+
+            stateText = `En Ligne (vers ${destination})`;
+            nextStopLabelText = "Prochain arrêt :";
+            nextStopText = nextStopName;
+            etaLabelText = "Arrivée :";
+            etaText = nextStopETA ? nextStopETA.formatted : '...';
+
+        } else {
+            // Cas 2: Bus en attente à un arrêt
+            const stopName = bus.position.stopInfo.stop_name;
+            const departureTime = bus.position.nextDepartureTime;
+            const departureText = this.dataManager.formatTime(departureTime).substring(0, 5);
+            
+            stateText = `À l'arrêt`;
+            nextStopLabelText = "Arrêt actuel :";
+            nextStopText = stopName;
+            etaLabelText = "Départ :";
+            etaText = departureText;
         }
 
-        console.log(`Mise à jour statut: Ligne ${lineShortName} -> ${status.toUpperCase()}`);
-        lineStatuses[route.route_id] = { status, message };
-
-        // Met à jour l'interface
-        renderInfoTraficCard();
-        renderAlertBanner();
-        // (La carte sera mise à jour au prochain 'tick' de updateData)
-    };
-}
-
-/**
- * NOUVEAU: Affiche la carte "Info Trafic"
- */
-function renderInfoTraficCard() {
-    infoTraficList.innerHTML = '';
-    let alertCount = 0;
-
-    dataManager.routes.forEach(route => {
-        const state = lineStatuses[route.route_id] || { status: 'normal', message: '' };
-        const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
-        const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
-
-        let icon, message;
-        switch (state.status) {
-            case 'perturbation':
-                icon = '⚠️';
-                message = state.message || 'Perturbation';
-                alertCount++;
-                break;
-            case 'retard':
-                icon = '🟡'; // Utilise un émoji simple pour l'horloge
-                message = state.message || 'Retard signalé';
-                alertCount++;
-                break;
-            case 'annulation':
-                icon = '🔴'; // Utilise un émoji simple pour la croix
-                message = state.message || 'Service annulé';
-                alertCount++;
-                break;
-            default:
-                icon = '✅';
-                message = 'Service normal';
+        // NOUVEAU V5: Ajoute l'info trafic au popup
+        if (bus.currentStatus && bus.currentStatus !== 'normal') {
+            statusHtml = `<p style="color: var(--color-orange); font-weight: 600;">⚠️ Info: ${bus.currentStatus}</p>`;
         }
 
-        const item = document.createElement('div');
-        item.className = `trafic-item status-${state.status}`;
-        item.innerHTML = `
-            <div class="trafic-info">
-                <span class="line-badge" style="background-color: ${routeColor}; color: ${textColor};">
-                    ${route.route_short_name}
-                </span>
-                <div class="trafic-details">
-                    <div class="trafic-details-line">${route.route_long_name}</div>
-                    <div class="trafic-details-msg">${message}</div>
+        // Structure HTML unifiée (pour les mises à jour atomiques)
+        const detailsHtml = `
+            ${statusHtml}
+            <p><strong>Statut:</strong> <span data-update="state">${stateText}</span></p>
+            <p><strong data-update="next-stop-label">${nextStopLabelText}</strong> <span data-update="next-stop-value">${nextStopText}</span></p>
+            <p><strong data-update="eta-label">${etaLabelText}</strong> <span data-update="eta-value">${etaText}</span></p>
+            <p class="realtime-notice"><em>Mise à jour en temps réel</em></p>
+        `;
+
+        return `
+            <div class="info-popup-content"> 
+                <div class="info-popup-header" style="background: ${routeColor}; color: ${textColor};">
+                    Ligne ${routeShortName}
+                </div>
+                <div class="info-popup-body bus-details">
+                    ${detailsHtml}
                 </div>
             </div>
-            <div class="status-icon">${icon}</div>
         `;
-        infoTraficList.appendChild(item);
-    });
-
-    // Met à jour le compteur d'alertes
-    infoTraficCount.textContent = alertCount;
-    if (alertCount > 0) {
-        infoTraficCount.classList.remove('hidden');
-    } else {
-        infoTraficCount.classList.add('hidden');
-    }
-}
-
-/**
- * NOUVEAU: Affiche le bandeau d'alerte en haut
- */
-function renderAlertBanner() {
-    let alerts = [];
-    for (const route_id in lineStatuses) {
-        const state = lineStatuses[route_id];
-        if (state.status !== 'normal') {
-            const route = dataManager.getRoute(route_id);
-            alerts.push({
-                name: route.route_short_name,
-                status: state.status,
-                message: state.message
-            });
-        }
     }
 
-    if (alerts.length === 0) {
-        alertBanner.classList.add('hidden');
-        return;
-    }
+    /**
+     * Création d'un marqueur avec état initial (MODIFIÉ V5)
+     */
+    createBusMarker(bus, tripScheduler, busId) {
+        const { lat, lon } = bus.position;
+        const route = bus.route;
+        const routeShortName = route?.route_short_name || route?.route_id || '?';
+        const routeColor = route?.route_color ? `#${route.route_color}` : '#FFC107';
+        const textColor = route?.route_text_color ? `#${route.route_text_color}` : '#ffffff';
 
-    // Définit la couleur du bandeau (priorité : annulation > perturbation > retard)
-    if (alerts.some(a => a.status === 'annulation')) {
-        alertBanner.className = 'type-annulation';
-    } else if (alerts.some(a => a.status === 'perturbation')) {
-        alertBanner.className = 'type-perturbation';
-    } else {
-        alertBanner.className = 'type-retard';
-    }
+        // *** MODIFIÉ V5: Ajoute le statut ***
+        const isWaiting = !bus.segment; 
+        const status = bus.currentStatus || 'normal';
+        const iconClassName = `bus-icon-rect bus-status-${status} ${isWaiting ? 'bus-icon-waiting' : ''}`;
+        // *** FIN MODIFIÉ V5 ***
 
-    // Construit le message
-    let alertText = alerts.map(a => 
-        `<strong>Ligne ${a.name}</strong> (${a.status})`
-    ).join(', ');
-    alertBannerContent.innerHTML = `<strong>Infos Trafic:</strong> ${alertText}`;
-    alertBanner.classList.remove('hidden');
-}
+        const icon = L.divIcon({
+            className: iconClassName,
+            html: `<div style="background-color: ${routeColor}; color: ${textColor}; width: 40px; height: 24px; border-radius: 6px; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 10px rgba(0,0,0,0.4); text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${routeShortName}</div>`,
+            iconSize: [40, 24],
+            iconAnchor: [20, 12],
+            popupAnchor: [0, -12]
+        });
 
+        const marker = L.marker([lat, lon], { icon });
+        marker.bindPopup("");
 
-/**
- * NOUVEAU: Fonctions de basculement de vue
- */
-function showMapView() {
-    dashboardContainer.classList.add('hidden');
-    mapContainer.classList.remove('hidden');
-    // Force la carte à se redessiner
-    mapRenderer.map.invalidateSize();
-}
-function showDashboardView() {
-    mapContainer.classList.add('hidden');
-    dashboardContainer.classList.remove('hidden');
-}
-
-
-// --- Fonctions de l'application existante (adaptées) ---
-
-function checkAndSetupTimeMode() {
-    timeManager.setMode('real');
-    timeManager.play();
-    console.log('⏰ Mode TEMPS RÉEL activé.');
-}
-
-function initializeRouteFilter() {
-    const routeCheckboxesContainer = document.getElementById('route-checkboxes');
-    routeCheckboxesContainer.innerHTML = '';
-    
-    visibleRoutes.clear();
-    
-    const routesByCategory = {};
-    Object.keys(LINE_CATEGORIES).forEach(cat => {
-        routesByCategory[cat] = [];
-    });
-    routesByCategory['autres'] = [];
-    
-    dataManager.routes.forEach(route => {
-        visibleRoutes.add(route.route_id);
-        const category = getCategoryForRoute(route.route_short_name);
-        routesByCategory[category].push(route);
-    });
-
-    Object.values(routesByCategory).forEach(routes => {
-        routes.sort((a, b) => {
-            const nameA = a.route_short_name;
-            const nameB = b.route_short_name;
-
-            const isRLineA = nameA.startsWith('R') && !isNaN(parseInt(nameA.substring(1)));
-            const isRLineB = nameB.startsWith('R') && !isNaN(parseInt(nameB.substring(1)));
-
-            if (isRLineA && isRLineB) {
-                return parseInt(nameA.substring(1)) - parseInt(nameB.substring(1));
+        // Génération du contenu au clic
+        marker.on('popupopen', (e) => {
+            const markerData = this.busMarkers[busId];
+            if (!markerData || !markerData.bus) {
+                e.popup.setContent("Informations non disponibles.");
+                return;
             }
-            return nameA.localeCompare(nameB);
-        });
-    });
-    
-    Object.entries(LINE_CATEGORIES).forEach(([categoryId, categoryInfo]) => {
-        const routes = routesByCategory[categoryId];
-        if (routes.length === 0) return;
-        
-        const categoryHeader = document.createElement('div');
-        categoryHeader.className = 'category-header';
-        categoryHeader.innerHTML = `
-            <div class="category-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="${categoryInfo.color}">
-                    <circle cx="12" cy="12" r="10"/>
-                </svg>
-                <strong>${categoryInfo.name}</strong>
-                <span class="category-count">(${routes.length})</span>
-            </div>
-            <div class="category-actions">
-                <button class="btn-category-action" data-category="${categoryId}" data-action="select">Tous</button>
-                <button class="btn-category-action" data-category="${categoryId}" data-action="deselect">Aucun</button>
-            </div>
-        `;
-        routeCheckboxesContainer.appendChild(categoryHeader);
-        
-        const categoryContainer = document.createElement('div');
-        categoryContainer.className = 'category-routes';
-        categoryContainer.id = `category-${categoryId}`;
-        
-        routes.forEach(route => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'route-checkbox-item';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `route-${route.route_id}`;
-            checkbox.checked = true;
-            checkbox.dataset.category = categoryId;
-            checkbox.addEventListener('change', () => handleRouteFilterChange());
-            
-            const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
-            const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
-            
-            const badge = document.createElement('div');
-            badge.className = 'route-badge';
-            badge.style.backgroundColor = routeColor;
-            badge.style.color = textColor;
-            badge.textContent = route.route_short_name || route.route_id;
-            
-            const label = document.createElement('span');
-            label.className = 'route-name';
-            label.textContent = route.route_long_name || route.route_short_name || route.route_id;
-            
-            itemDiv.appendChild(checkbox);
-            itemDiv.appendChild(badge);
-            itemDiv.appendChild(label);
-            categoryContainer.appendChild(itemDiv);
 
-            itemDiv.addEventListener('mouseenter', () => {
-                mapRenderer.highlightRoute(route.route_id, true);
-            });
-            itemDiv.addEventListener('mouseleave', () => {
-                mapRenderer.highlightRoute(route.route_id, false);
-            });
-            itemDiv.addEventListener('click', (e) => {
-                if (e.target.type === 'checkbox') return;
-                mapRenderer.zoomToRoute(route.route_id);
-            });
+            const freshBus = markerData.bus;
+            // Crée le popup avec la NOUVELLE structure HTML unifiée
+            const freshPopupContent = this.createBusPopupContent(freshBus, tripScheduler);
+            e.popup.setContent(freshPopupContent);
+            
+            markerData.lastState = freshBus.segment ? 'moving' : 'stationary';
         });
-        
-        routeCheckboxesContainer.appendChild(categoryContainer);
-    });
-    
-    if (routesByCategory['autres'].length > 0) {
-        const categoryHeader = document.createElement('div');
-        categoryHeader.className = 'category-header';
-        categoryHeader.innerHTML = `
-            <div class="category-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#64748b">
-                    <circle cx="12" cy="12" r="10"/>
-                </svg>
-                <strong>Autres lignes</strong>
-                <span class="category-count">(${routesByCategory['autres'].length})</span>
-            </div>
-            <div class="category-actions">
-                <button class="btn-category-action" data-category="autres" data-action="select">Tous</button>
-                <button class="btn-category-action" data-category="autres" data-action="deselect">Aucun</button>
-            </div>
-        `;
-        routeCheckboxesContainer.appendChild(categoryHeader);
-        
-        const categoryContainer = document.createElement('div');
-        categoryContainer.className = 'category-routes';
-        categoryContainer.id = 'category-autres';
-        
-        routesByCategory['autres'].forEach(route => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'route-checkbox-item';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `route-${route.route_id}`;
-            checkbox.checked = true;
-            checkbox.dataset.category = 'autres';
-            checkbox.addEventListener('change', () => handleRouteFilterChange());
-            
-            const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
-            const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
-            
-            const badge = document.createElement('div');
-            badge.className = 'route-badge';
-            badge.style.backgroundColor = routeColor;
-            badge.style.color = textColor;
-            badge.textContent = route.route_short_name || route.route_id;
-            
-            const label = document.createElement('span');
-            label.className = 'route-name';
-            label.textContent = route.route_long_name || route.route_short_name || route.route_id;
-            
-            itemDiv.appendChild(checkbox);
-            itemDiv.appendChild(badge);
-            itemDiv.appendChild(label);
-            categoryContainer.appendChild(itemDiv);
 
-            itemDiv.addEventListener('mouseenter', () => {
-                mapRenderer.highlightRoute(route.route_id, true);
-            });
-            itemDiv.addEventListener('mouseleave', () => {
-                mapRenderer.highlightRoute(route.route_id, false);
-            });
-            itemDiv.addEventListener('click', (e) => {
-                if (e.target.type === 'checkbox') return;
-                mapRenderer.zoomToRoute(route.route_id);
-            });
-        });
-        
-        routeCheckboxesContainer.appendChild(categoryContainer);
+        return {
+            marker: marker,
+            bus: bus,
+            lastState: bus.segment ? 'moving' : 'stationary' 
+        };
     }
 
-    document.querySelectorAll('.btn-category-action').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const category = e.target.dataset.category;
-            const action = e.target.dataset.action;
-            handleCategoryAction(category, action);
-        });
-    });
-}
-
-function handleCategoryAction(category, action) {
-    const checkboxes = document.querySelectorAll(`input[data-category="${category}"]`);
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = (action === 'select');
-    });
-    handleRouteFilterChange();
-}
-
-function handleRouteFilterChange() {
-    visibleRoutes.clear();
-    
-    dataManager.routes.forEach(route => {
-        const checkbox = document.getElementById(`route-${route.route_id}`);
-        if (checkbox && checkbox.checked) {
-            visibleRoutes.add(route.route_id);
-        }
-    });
-    
-    if (dataManager.geoJson) {
-        mapRenderer.displayMultiColorRoutes(dataManager.geoJson, dataManager, visibleRoutes);
-    }
-    
-    updateData(); // Appelle updateData sans timeInfo
-}
-
-function setupEventListeners() {
-    
-    // Écouteurs pour la VUE CARTE
-    document.getElementById('close-instructions').addEventListener('click', () => {
-        document.getElementById('instructions').classList.add('hidden');
-        localStorage.setItem('gtfsInstructionsShown', 'true');
-    });
-    document.getElementById('btn-toggle-filter').addEventListener('click', () => {
-        document.getElementById('route-filter-panel').classList.toggle('hidden');
-    });
-    document.getElementById('close-filter').addEventListener('click', () => {
-        document.getElementById('route-filter-panel').classList.add('hidden');
-    });
-    document.getElementById('select-all-routes').addEventListener('click', () => {
-        dataManager.routes.forEach(route => {
-            const checkbox = document.getElementById(`route-${route.route_id}`);
-            if (checkbox) checkbox.checked = true;
-        });
-        handleRouteFilterChange();
-    });
-    document.getElementById('deselect-all-routes').addEventListener('click', () => {
-        dataManager.routes.forEach(route => {
-            const checkbox = document.getElementById(`route-${route.route_id}`);
-            if (checkbox) checkbox.checked = false;
-        });
-        handleRouteFilterChange();
-    });
-    
-    timeManager.addListener(updateData);
-
-    // Écouteurs pour la VUE TABLEAU DE BORD (recherche horaires)
-    searchBar.addEventListener('input', handleSearchInput);
-    searchBar.addEventListener('focus', handleSearchInput); 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('#horaires-search-container')) {
-            searchResultsContainer.classList.add('hidden');
-        }
-    });
-
-    // Écouteurs pour la CARTE
-    if (mapRenderer && mapRenderer.map) {
-        mapRenderer.map.on('zoomend', () => {
-            if (dataManager) {
-                mapRenderer.displayStops();
+    /**
+     * Surligne un tracé sur la carte
+     */
+    highlightRoute(routeId, state) {
+        if (!this.routeLayersById || !this.routeLayersById[routeId]) return;
+        const weight = state ? 6 : 4; 
+        const opacity = state ? 1 : 0.85;
+        this.routeLayersById[routeId].forEach(layer => {
+            layer.setStyle({ weight: weight, opacity: opacity });
+            if (state) {
+                layer.bringToFront(); 
             }
         });
     }
-}
 
-function handleSearchInput(e) {
-    const query = e.target.value.toLowerCase();
-    const searchResultsContainer = document.getElementById('search-results');
-
-    if (query.length < 2) {
-        searchResultsContainer.classList.add('hidden');
-        searchResultsContainer.innerHTML = '';
-        return;
-    }
-
-    const matches = dataManager.masterStops // Recherche sur les arrêts maîtres
-        .filter(stop => stop.stop_name.toLowerCase().includes(query))
-        .slice(0, 10); 
-
-    displaySearchResults(matches, query);
-}
-
-function displaySearchResults(stops, query) {
-    const searchResultsContainer = document.getElementById('search-results');
-    searchResultsContainer.innerHTML = '';
-
-    if (stops.length === 0) {
-        searchResultsContainer.innerHTML = `<div class="search-result-item">Aucun arrêt trouvé.</div>`;
-        searchResultsContainer.classList.remove('hidden');
-        return;
-    }
-
-    stops.forEach(stop => {
-        const item = document.createElement('div');
-        item.className = 'search-result-item';
-        
-        const regex = new RegExp(`(${query})`, 'gi');
-        item.innerHTML = stop.stop_name.replace(regex, '<strong>$1</strong>');
-        
-        item.addEventListener('click', () => onSearchResultClick(stop));
-        searchResultsContainer.appendChild(item);
-    });
-
-    searchResultsContainer.classList.remove('hidden');
-}
-
-function onSearchResultClick(stop) {
-    // Au clic sur un résultat, bascule vers la carte et zoome
-    showMapView(); 
-    mapRenderer.zoomToStop(stop);
-    document.getElementById('horaires-search-bar').value = stop.stop_name;
-    document.getElementById('horaires-search-results').classList.add('hidden');
-}
-
-/**
- * Fonction de mise à jour principale, appelée à chaque tick
- * @param {object} [timeInfo] - Objet de timeManager contenant { seconds, date, ... }. Peut être undefined.
- */
-function updateData(timeInfo) {
-    const currentSeconds = timeInfo ? timeInfo.seconds : timeManager.getCurrentSeconds();
-    const currentDate = timeInfo ? timeInfo.date : new Date(); 
-    
-    updateClock(currentSeconds);
-    
-    /* MODIFICATION: Ne récupère QUE les bus en service (en mouvement ou arrêt intermédiaire) */
-    const activeBuses = tripScheduler.getActiveTrips(currentSeconds, currentDate);
-    
-    /* La logique getWaitingBuses (terminus) est supprimée */
-
-    const allBusesWithPositions = busPositionCalculator.calculateAllPositions(activeBuses);
-
-    // MODIFICATION: Ajoute l'état du trafic à chaque bus
-    allBusesWithPositions.forEach(bus => {
-        if (bus && bus.route) {
-            const routeId = bus.route.route_id;
-            bus.currentStatus = (lineStatuses[routeId] && lineStatuses[routeId].status) 
-                                ? lineStatuses[routeId].status 
-                                : 'normal';
+    /**
+     * Zoome sur un tracé de ligne
+     */
+    zoomToRoute(routeId) {
+        if (!this.routeLayersById || !this.routeLayersById[routeId] || this.routeLayersById[routeId].length === 0) {
+            console.warn(`Aucune couche trouvée pour zoomer sur la route ${routeId}`);
+            return;
         }
-    });
-    
-    const visibleBuses = allBusesWithPositions
-        .filter(bus => bus !== null)
-        .filter(bus => bus.route && visibleRoutes.has(bus.route.route_id)); 
-    
-    mapRenderer.updateBusMarkers(visibleBuses, tripScheduler, currentSeconds);
-    
-    const visibleBusCount = visibleBuses.length;
-    updateBusCount(visibleBusCount, visibleBusCount); // Le total est maintenant juste les bus actifs
-}
+        const routeGroup = L.featureGroup(this.routeLayersById[routeId]);
+        const bounds = routeGroup.getBounds();
+        if (bounds && bounds.isValid()) {
+            this.map.fitBounds(bounds, { padding: [50, 50] });
+        }
+    }
 
-function updateClock(seconds) {
-    const hours = Math.floor(seconds / 3600) % 24;
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    
-    const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    document.getElementById('current-time').textContent = timeString;
-    
-    const now = new Date();
-    const dateString = now.toLocaleDateString('fr-FR', { 
-        weekday: 'short', 
-        day: 'numeric', 
-        month: 'short' 
-    });
-    document.getElementById('date-indicator').textContent = dateString;
-}
+    /**
+     * Zoome sur un arrêt
+     */
+    zoomToStop(stop) {
+        const lat = parseFloat(stop.stop_lat);
+        const lon = parseFloat(stop.stop_lon);
+        if (isNaN(lat) || isNaN(lon)) return;
+        this.map.setView([lat, lon], 17);
+        if (this.tempStopMarker) {
+            this.map.removeLayer(this.tempStopMarker);
+        }
+        const stopIcon = L.divIcon({
+            className: 'stop-search-marker',
+            html: `<div></div>`,
+            iconSize: [12, 12],
+            iconAnchor: [6, 6]
+        });
+        this.tempStopMarker = L.marker([lat, lon], { icon: stopIcon }).addTo(this.map);
+        this.tempStopMarker.bindPopup(`<b>${stop.stop_name}</b>`).openPopup();
+    }
 
-function updateBusCount(visible, total) {
-    const busCountElement = document.getElementById('bus-count');
-    // Simplifié car visible et total sont identiques
-    busCountElement.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="12" r="10"/>
-        </svg>
-        ${visible} bus
-    `;
-}
+    /**
+     * Affiche les "master stops" sur la carte, si le zoom est suffisant
+     */
+    displayStops(minZoom = 13) { 
+        this.stopLayer.clearLayers(); 
 
-function updateDataStatus(message, status = '') {
-    const statusElement = document.getElementById('data-status');
-    statusElement.className = status;
-    statusElement.textContent = message;
-}
+        const currentZoom = this.map.getZoom();
+        if (currentZoom < minZoom) {
+            return; 
+        }
 
-initializeApp();
+        const stopIcon = L.divIcon({
+            className: 'stop-marker-icon',
+            iconSize: [10, 10],
+            iconAnchor: [5, 5]
+        });
+
+        const stopsToDisplay = [];
+        this.dataManager.masterStops.forEach(stop => {
+            const lat = parseFloat(stop.stop_lat);
+            const lon = parseFloat(stop.stop_lon);
+            if (isNaN(lat) || isNaN(lon)) return;
+
+            const marker = L.marker([lat, lon], { icon: stopIcon, zIndexOffset: -100 });
+            
+            marker.on('click', () => this.onStopClick(stop));
+            
+            stopsToDisplay.push(marker);
+        });
+
+        stopsToDisplay.forEach(marker => this.stopLayer.addLayer(marker));
+    }
+   
+    /**
+     * Appelé lorsqu'un marqueur d'arrêt est cliqué
+     */
+    onStopClick(masterStop) {
+        const currentSeconds = this.timeManager.getCurrentSeconds();
+        const currentDate = this.timeManager.getCurrentDate();
+
+        const associatedStopIds = this.dataManager.groupedStopMap[masterStop.stop_id] || [masterStop.stop_id];
+
+        const departures = this.dataManager.getUpcomingDepartures(associatedStopIds, currentSeconds, currentDate, 5);
+
+        const popupContent = this.createStopPopupContent(masterStop, departures, currentSeconds);
+        
+        const lat = parseFloat(masterStop.stop_lat);
+        const lon = parseFloat(masterStop.stop_lon);
+        L.popup()
+            .setLatLng([lat, lon])
+            .setContent(popupContent)
+            .openOn(this.map);
+    }
+
+    /**
+     * Formate le contenu HTML pour le popup d'un arrêt
+     */
+    createStopPopupContent(masterStop, departures, currentSeconds) {
+        let html = `<div class="info-popup-content">`;
+        html += `<div class="info-popup-header">${masterStop.stop_name}</div>`;
+        html += `<div class="info-popup-body">`;
+
+        if (departures.length === 0) {
+            html += `<div class="departure-item empty">Aucun prochain passage trouvé.</div>`;
+        } else {
+            departures.forEach(dep => {
+                const waitSeconds = dep.departureSeconds - currentSeconds;
+                let waitTime = "";
+                if (waitSeconds >= 0) {
+                    const waitMinutes = Math.floor(waitSeconds / 60);
+                    if (waitMinutes === 0) {
+                        waitTime = `<span class="wait-time imminent">Imminent</span>`;
+                    } else {
+                        waitTime = `<span class="wait-time">${waitMinutes} min</span>`;
+                    }
+                }
+
+                html += `
+                    <div class="departure-item">
+                        <div class="departure-info">
+                            <span class="departure-badge" style="background-color: ${dep.routeColor}; color: ${dep.routeTextColor};">
+                                ${dep.routeShortName}
+                            </span>
+                            <span class="departure-dest">${dep.destination}</span>
+                        </div>
+                        <div class="departure-time">
+                            <strong>${dep.time.substring(0, 5)}</strong>
+                            ${waitTime}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        html += `</div></div>`;
+        return html;
+    }
+}
