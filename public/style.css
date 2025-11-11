@@ -968,7 +968,7 @@ details[open] .accordion-content {
     }
 
 
-    /* --- VUE CARTE (CORRECTIF FINAL V5 - STABILISÉ) --- */
+    /* --- VUE CARTE (CORRECTIF FINAL V6 - Z-INDEX ET STABILITÉ) --- */
     
     #map-view #top-bar {
         /* 1. Cache la barre de fond sur mobile */
@@ -988,8 +988,10 @@ details[open] .accordion-content {
     #map-container #map-view #top-bar > #clock,
     #map-container #map-view #top-bar > #status-info,
     #map-container #map-view #top-bar > #btn-toggle-filter {
-        display: inline-flex; /* Affiche l'élément */
-        position: fixed; /* Le sort du flux de la barre */
+        /* MODIFIÉ (V6): Ajout de !important pour stabiliser la position */
+        display: inline-flex !important; /* Affiche l'élément (FORCÉ) */
+        position: fixed !important; /* Le sort du flux de la barre (FORCÉ) */
+        
         z-index: 1000;
         /* Style "verre dépoli" */
         background: rgba(255, 255, 255, 0.85);
@@ -1011,7 +1013,8 @@ details[open] .accordion-content {
     
     /* 5. Positionne [Horloge] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #clock {
-        display: flex; /* (override pour flex) */
+        /* MODIFIÉ (V6): Ajout de !important */
+        display: flex !important; /* (override pour flex - FORCÉ) */
         top: 15px; 
         left: 50%;
         transform: translateX(-50%);
@@ -1023,7 +1026,8 @@ details[open] .accordion-content {
     
     /* 6. Positionne [Statut Bus] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #status-info {
-        display: flex; /* (override pour flex) */
+        /* MODIFIÉ (V6): Ajout de !important */
+        display: flex !important; /* (override pour flex - FORCÉ) */
         top: 15px;
         right: 15px;
         margin-left: 0;
@@ -1045,6 +1049,9 @@ details[open] .accordion-content {
         padding: 0;
         justify-content: center;
         color: var(--text-primary);
+        
+        /* MODIFIÉ (V6): Z-index supérieur au panneau de filtre (1500) */
+        z-index: 1501; 
     }
     #map-container #map-view #top-bar > #btn-toggle-filter span { display: none; }
     #map-container #map-view #top-bar > #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
