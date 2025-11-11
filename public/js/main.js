@@ -137,8 +137,8 @@ async function initializeApp() {
         }
 
         mapRenderer.displayStops();
+        setupDashboard(); // CORRECTION: Appel déplacé AVANT setupEventListeners
         setupEventListeners();
-        setupDashboard();
 
         if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
             document.getElementById('instructions').classList.remove('hidden');
@@ -204,10 +204,15 @@ function setupDashboard() {
             showDashboardView(view);
         });
     });
+
+    // *** CORRECTION DU BUG ***
+    // La ligne ci-dessous provoquait l'erreur car 'quick-link-map' n'existe pas dans index.html
+    /*
     document.getElementById('quick-link-map').addEventListener('click', (e) => {
         e.preventDefault();
         showMapView();
     });
+    */
 }
 
 /**
