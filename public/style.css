@@ -52,11 +52,10 @@ html, body {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
-    /* CORRECTION (BUG SWIPE): Règle 'overscroll-behavior: none;' SUPPRIMÉE pour réparer le scroll */
 }
 
-/* NOUVEAU (FIX 2): Verrouille le scroll quand la carte est active */
-body.map-is-active {
+/* NOUVEAU: Verrouille le scroll quand une vue plein écran est active */
+body.view-is-locked {
     overflow: hidden;
     overscroll-behavior: none; 
 }
@@ -67,7 +66,7 @@ body {
     flex-direction: column;
     min-height: 100vh;
 }
-#dashboard-container {
+#dashboard-container, #map-container, #itinerary-results-container {
     flex: 1 0 auto; /* Permet au conteneur de grandir */
 }
 
@@ -80,17 +79,15 @@ body {
  * NOUVELLE EN-TÊTE (Effet "Liquid Glass")
  * ========================================= */
 #main-header {
-    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* Pour Safari */
-    
+    -webkit-backdrop-filter: blur(10px); 
     border-bottom: 1px solid var(--border);
     padding: 0 1.5rem;
     position: sticky;
     top: 0;
     z-index: 1050;
-    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
+    flex-shrink: 0; 
 }
 .header-content {
     display: flex;
@@ -141,7 +138,7 @@ body {
     align-items: center;
     font-size: 0.9rem;
     font-weight: 500;
-    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
+    flex-shrink: 0; 
 }
 #alert-banner.type-perturbation { background: var(--color-orange); color: white; }
 #alert-banner.type-annulation { background: var(--color-red); color: white; }
@@ -176,38 +173,27 @@ body {
 }
 
 /* NOUVELLE STRUCTURE "HUB" */
-
-/* NOUVEAU: Style "Hero" (Page d'accueil) */
 .hero-section {
     background-image: 
-        /* Superposition sombre pour la lisibilité */
         linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
-        /* NOUVELLE IMAGE DE FOND */
         url('https://www.vie-economique.com/wp-content/uploads/sites/13/2024/12/shutterstock_2365894285-scaled.jpg');
     
     background-size: cover;
     background-position: center;
     border-radius: var(--radius-lg);
-    padding: 2.5rem 1.5rem; /* Espacement intérieur équilibré */
+    padding: 2.5rem 1.5rem; 
     box-shadow: var(--shadow-md);
 }
 
-/* On modifie le planificateur pour qu'il s'intègre au "Hero" */
 .hero-section .planner-block-wrapper {
-    /* On retire les styles de carte blanche */
     background: transparent;
     border: none;
     box-shadow: none;
     padding: 0;
-    margin: 0 auto; /* Centré */
+    margin: 0 auto; 
     max-width: 900px;
-
-    /* *** CORRECTION Z-INDEX *** */
-    position: relative;
-    z-index: 2; /* Doit être supérieur au z-index: 1 des boutons de nav */
 }
 
-/* MODIFIÉ: Effet "Liquid Glass" */
 .hero-section .planner-block {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
@@ -218,9 +204,8 @@ body {
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* On rend les titres plus visibles sur le nouveau fond */
 .hero-section .planner-block .planner-title-bar h3 {
-    font-size: 1.5rem; /* Plus grand */
+    font-size: 1.5rem; 
     color: var(--text-primary);
 }
 .hero-section .planner-block .planner-title-bar svg {
@@ -237,7 +222,7 @@ body {
     flex-shrink: 0;
 }
 
-/* *** STYLES MODIFIÉS POUR LE PLANIFICATEUR *** */
+/* STYLES PLANIFICATEUR IDFM */
 .planner-form {
     display: flex;
     gap: 1rem;
@@ -246,7 +231,7 @@ body {
 .planner-inputs {
     display: flex;
     flex: 1;
-    gap: 0.5rem; /* Réduit pour le bouton swap */
+    gap: 0.5rem; 
     align-items: flex-end;
 }
 .planner-inputs .form-group {
@@ -260,31 +245,24 @@ body {
     border-radius: var(--radius-md);
     flex-shrink: 0;
 }
-/* *** FIN DES STYLES MODIFIÉS *** */
 
-
-/* NOUVEAU: 3 Boutons de Nav (MODIFIÉS pour être dans le "Hub") */
 .main-nav-buttons-condensed {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
-    
-    /* CORRIGÉ: Positionnement propre, sans marge négative */
-    margin-top: 2.5rem; /* Espace par rapport au planificateur */
-    max-width: 900px; /* Aligné sur le planificateur */
+    margin-top: 2.5rem; 
+    max-width: 900px; 
     margin-left: auto;
     margin-right: auto;
-    position: relative; /* S'assure qu'il n'y a pas de z-index étrange */
-    z-index: 1; /* S'assure qu'il est au-dessus du fond, mais pas de superposition */
+    position: relative; 
+    z-index: 1; 
 }
 
-/* MODIFIÉ: Boutons "Liquid Glass" */
 .nav-button-condensed {
-    background: rgba(0, 90, 156, 0.75); /* Bleu verre par défaut */
+    background: rgba(0, 90, 156, 0.75); 
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    
     border-radius: var(--radius-md);
     padding: 1.5rem;
     font-size: 1.125rem;
@@ -301,14 +279,12 @@ body {
     justify-content: center;
     gap: 0.75rem;
 }
-
 .nav-button-condensed:hover {
-    background: rgba(0, 74, 128, 0.9); /* Bleu verre plus sombre */
+    background: rgba(0, 74, 128, 0.9); 
     border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-5px);
     box-shadow: 0 10px 15px -3px rgba(0, 90, 156, 0.3); 
 }
-
 .nav-button-condensed svg {
     width: 28px;
     height: 28px;
@@ -319,33 +295,25 @@ body {
     right: 0.75rem;
 }
 
-/* MODIFIÉ: Boutons "Liquid Glass" (Couleurs) */
 .nav-button-condensed[data-view="horaires"] {
-    background: rgba(40, 167, 69, 0.75); /* Vert verre */
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(40, 167, 69, 0.75); 
 }
 .nav-button-condensed[data-view="horaires"]:hover {
-    background: rgba(35, 139, 58, 0.9); /* Vert verre plus sombre */
-    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(35, 139, 58, 0.9); 
     box-shadow: 0 10px 15px -3px rgba(40, 167, 69, 0.4); 
 }
-
 .nav-button-condensed[data-view="info-trafic"] {
-    background: rgba(253, 126, 20, 0.75); /* Orange verre */
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(253, 126, 20, 0.75); 
 }
 .nav-button-condensed[data-view="info-trafic"]:hover {
-    background: rgba(228, 113, 18, 0.9); /* Orange verre plus sombre */
-    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(228, 113, 18, 0.9); 
     box-shadow: 0 10px 15px -3px rgba(253, 126, 20, 0.4); 
 }
 
-
-/* NOUVEAU: Contenu du bas (Chiffres clés) */
 .bottom-content-wrapper {
-    margin-top: 2.5rem; /* Espace après le Hero */
-    margin-bottom: 2rem; /* Espace avant la fin de la page */
-    max-width: 900px; /* Aligné sur le Hero */
+    margin-top: 2.5rem; 
+    margin-bottom: 2rem; 
+    max-width: 900px; 
     margin-left: auto;
     margin-right: auto;
 }
@@ -355,8 +323,7 @@ body {
     gap: 1.5rem;
 }
 .bottom-grid .card {
-    /* Le style .card est déjà défini, on le réutilise */
-    display: flex; /* Permet d'aligner le bouton en bas */
+    display: flex; 
     flex-direction: column;
 }
 .bottom-grid .card h4 {
@@ -368,10 +335,9 @@ body {
     font-size: 0.875rem;
     color: var(--text-secondary);
     line-height: 1.6;
-    flex: 1 0 auto; /* Pousse le bouton en bas */
+    flex: 1 0 auto; 
 }
 
-/* NOUVEAU: Style Chiffres Clés */
 .key-figures-card p {
     margin-bottom: 1.5rem;
 }
@@ -399,13 +365,12 @@ body {
     margin-top: 0.25rem;
 }
 
-/* NOUVEAU: Style Bouton lien-bloc */
 .btn-block-link {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    margin-top: 1.5rem; /* Espace par rapport au texte */
+    margin-top: 1.5rem; 
     padding: 0.75rem 1.25rem;
     font-size: 0.9rem;
     font-weight: 600;
@@ -422,22 +387,18 @@ body {
 /* =========================================
  * VUES INTERNES & TRANSITIONS
  * ========================================= */
-
-/* NOUVEAU: Styles de transition pour le Hall et les Vues */
 #dashboard-hall {
     opacity: 1;
     transform: translateY(0);
     transition: opacity 0.3s ease-out, transform 0.3s ease-out;
     visibility: visible;
 }
-/* État caché pour le Hall */
 #dashboard-hall:not(.view-is-active) {
     opacity: 0;
     transform: translateY(15px);
     pointer-events: none;
     max-height: 0;
     overflow: hidden;
-    /* Correction: Retrait de padding/margin pour un "collapse" complet */
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     margin-top: 0 !important;
@@ -452,12 +413,11 @@ body {
     max-height: 0;
     overflow: hidden;
 }
-/* État visible pour les Vues Internes */
 #dashboard-content-view.view-is-active {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
-    max-height: 5000px; /* Assez grand pour tout contenir */
+    max-height: 5000px; 
 }
 
 #btn-back-to-hall {
@@ -485,26 +445,21 @@ body {
     gap: 1.5rem;
 }
 
-/* MODIFIÉ: Style de carte "Liquid Glass" et transition */
 .card {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.4);
-    
     border-radius: var(--radius-md);
     padding: 1.5rem;
     box-shadow: var(--shadow-sm);
-    
-    /* NOUVEAU: Styles pour la transition des cartes internes */
     opacity: 0;
     transform: scale(0.98);
     transition: all 0.25s ease-in-out;
     max-height: 0;
     overflow: hidden;
-    padding: 0 1.5rem; /* Garde le padding horizontal pendant la transition */
+    padding: 0 1.5rem; 
 }
-/* S'assure que le "collapse" ne s'applique pas aux cartes de la page d'accueil */
 #dashboard-hall .card {
     opacity: 1;
     transform: scale(1);
@@ -514,11 +469,10 @@ body {
 #dashboard-content-view .card.view-active {
     opacity: 1;
     transform: scale(1);
-    max-height: 2000px; /* Assez grand */
-    padding: 1.5rem; /* Rétablit le padding vertical */
+    max-height: 2000px; 
+    padding: 1.5rem; 
 }
 
-/* Formulaires dans les cartes */
 .form-group {
     margin-bottom: 1rem;
 }
@@ -536,7 +490,7 @@ body {
     font-size: 0.9rem;
     font-family: inherit;
     transition: all 0.15s ease;
-    background: var(--bg-main); /* Fond solide pour les inputs */
+    background: var(--bg-main); 
 }
 .form-group input[type="text"]:focus {
     border-color: var(--primary);
@@ -545,7 +499,7 @@ body {
 }
 
 /* =========================================
- * NOUVEAU DESIGN: Carte Horaires
+ * CARTE HORAIRES
  * ========================================= */
 #horaires-search-container {
     position: relative;
@@ -566,9 +520,6 @@ body {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     font-size: 0.9rem;
-    font-family: inherit;
-    transition: all 0.15s ease;
-    position: relative;
 }
 #horaires-search-bar:focus {
     border-color: var(--primary);
@@ -587,11 +538,9 @@ body {
     max-height: 300px;
     overflow-y: auto;
     z-index: 2000;
-    /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
 }
-#horaires-search-results.hidden { display: none; }
 .search-result-item {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
@@ -602,7 +551,6 @@ body {
 .search-result-item:hover { background: var(--bg-secondary); }
 .search-result-item strong { color: var(--primary); }
 
-/* Titre "Fiches Horaires" */
 .fiche-horaire-title {
     font-size: 0.9rem;
     font-weight: 600;
@@ -614,12 +562,11 @@ body {
     padding-bottom: 0.5rem;
 }
 
-/* Accordéon Fiches Horaires */
 #fiche-horaire-container {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     overflow: hidden;
-    background: var(--bg-main); /* Fond solide pour l'accordéon */
+    background: var(--bg-main); 
 }
 .accordion-group details {
     border-bottom: 1px solid var(--border);
@@ -635,24 +582,21 @@ body {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary);
     background: var(--bg-secondary);
-    list-style: none; /* Cache la flèche par défaut */
+    list-style: none; 
     transition: background 0.2s ease;
 }
 .accordion-group summary:hover {
     background: #f1f5f9;
 }
 .accordion-group summary::-webkit-details-marker {
-    display: none; /* Cache la flèche sur Chrome */
+    display: none; 
 }
-/* Flèche personnalisée */
 .accordion-group summary::after {
     content: '+';
     font-size: 1.5rem;
     font-weight: 300;
     color: var(--text-secondary);
-    /* MODIFIÉ (REQ 2): Ajout de la transition */
     transition: transform 0.3s ease-in-out;
 }
 .accordion-group details[open] summary {
@@ -662,27 +606,21 @@ body {
     transform: rotate(45deg);
 }
 
-/* MODIFIÉ (REQ 2): Animation de l'accordéon */
 .accordion-content {
     background: var(--bg-main);
-    /* padding: 1rem 1.25rem; -- ANCIEN */
-    padding: 0 1.25rem; /* Garde le padding horizontal */
+    padding: 0 1.25rem; 
     overflow: hidden;
     max-height: 0;
     transition: max-height 0.35s ease-in-out;
-    /* CORRECTION (BUG SWIPE): */
     overscroll-behavior: contain;
-    /* Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
 }
 details[open] .accordion-content {
-    max-height: 1000px; /* Assez grand pour tout contenu */
+    max-height: 1000px; 
 }
-/* NOUVEAU (REQ 2): Wrapper interne pour le padding vertical */
 .accordion-content-inner {
     padding: 1rem 0;
 }
-/* MODIFIÉ (REQ 2): Cible les liens dans le wrapper interne */
 .accordion-content-inner a {
     display: block;
     padding: 0.75rem 0;
@@ -698,7 +636,6 @@ details[open] .accordion-content {
     text-decoration: underline;
 }
 
-/* NOUVEAU (REQ 2): Raccourci recherche horaires */
 #horaires-search-shortcut {
     margin-top: 2rem;
     padding-top: 1.5rem;
@@ -718,7 +655,7 @@ details[open] .accordion-content {
 
 
 /* =========================================
- * NOUVEAU DESIGN: Carte Info Trafic
+ * CARTE INFO TRAFIC
  * ========================================= */
 .tabs {
     display: flex;
@@ -732,7 +669,7 @@ details[open] .accordion-content {
     flex: 1;
     padding: 0.6rem 1rem;
     border: none;
-    background: transparent; /* Changé */
+    background: transparent; 
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 600;
@@ -745,7 +682,7 @@ details[open] .accordion-content {
     color: white;
 }
 .tab:not(.active):hover {
-    background: rgba(0, 128, 128, 0.1); /* Léger fond au survol */
+    background: rgba(0, 128, 128, 0.1); 
 }
 .tab:first-child {
     border-right: 1px solid var(--color-tab-active);
@@ -753,20 +690,16 @@ details[open] .accordion-content {
 .tab-content {
     max-height: 450px;
     overflow-y: auto;
-    /* CORRECTION (BUG SWIPE): */
     overscroll-behavior: contain;
-    /* Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
 }
 
-/* NOUVEAU: Style Info Trafic (image_a08441.png) */
 .trafic-group {
     margin-bottom: 1.5rem;
 }
 .trafic-group h4 {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--text-primary);
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--border);
@@ -783,7 +716,6 @@ details[open] .accordion-content {
     cursor: pointer;
     min-width: 45px;
 }
-/* Le badge réutilise .line-badge */
 .line-badge {
     display: inline-flex;
     align-items: center;
@@ -803,23 +735,20 @@ details[open] .accordion-content {
     box-shadow: var(--shadow-md);
 }
 
-/* NOUVEAU: Triangle de statut */
 .status-indicator-triangle {
     width: 0; 
     height: 0; 
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     margin-top: 5px;
-    /* La couleur est appliquée en ligne via JS */
 }
 
 /* =========================================
- * VUE CARTE (Ancienne App)
+ * VUE CARTE (PLEIN ÉCRAN)
  * ========================================= */
 #map-container {
     display: flex;
     flex-direction: column;
-    flex: 1 0 auto;
     background: var(--bg-light);
 }
 
@@ -835,37 +764,27 @@ details[open] .accordion-content {
     position: relative;
     z-index: 1; 
     background: #f0f0f0;
-    /* CORRECTION (BUG SWIPE): Laisse Leaflet gérer le tactile */
     touch-action: none;
 }
 
-/* =========================================
- * STYLES EXISTANTS (Nettoyés et conservés)
- * ========================================= */
-
-/* Barre de contrôle unifiée (VUE CARTE) */
 #top-bar {
-    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-
     border-bottom: 1px solid var(--border);
     padding: 0.875rem 1.5rem;
     display: flex;
     align-items: center;
     gap: 1.25rem;
-    /* MODIFICATION: Empêche le retour à la ligne sur PC */
     flex-wrap: nowrap; 
     z-index: 10;
 }
 
-/* Bouton Retour (VUE CARTE) */
-#map-container #btn-back-to-dashboard {
+#map-container #btn-back-to-dashboard-from-map {
     padding-left: 0.75rem;
     padding-right: 1.25rem;
 }
-#map-container #btn-back-to-dashboard svg {
+#map-container #btn-back-to-dashboard-from-map svg {
     margin-right: 0.25rem;
 }
 
@@ -893,7 +812,7 @@ details[open] .accordion-content {
     display: flex;
     gap: 1rem;
     font-size: 0.875rem;
-    margin-left: auto; /* Pousse à droite */
+    margin-left: auto; 
     white-space: nowrap;
 }
 #bus-count {
@@ -907,7 +826,6 @@ details[open] .accordion-content {
 #data-status.loaded { color: #059669; }
 #data-status.error { color: #dc2626; }
 
-/* Panneau de filtre (styles existants conservés) */
 #route-filter-panel {
     position: fixed;
     top: 0;
@@ -915,12 +833,9 @@ details[open] .accordion-content {
     bottom: 0;
     width: 340px;
     max-height: 100vh;
-    
-    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    
     border-left: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
     z-index: 1500;
@@ -934,7 +849,6 @@ details[open] .accordion-content {
 }
 .panel-handle { 
     display: none; 
-    /* CORRECTION (BUG SWIPE): Change le curseur pour indiquer l'action */
     cursor: pointer;
 } 
 
@@ -943,8 +857,6 @@ details[open] .accordion-content {
  * ========================================= */
 @media (max-width: 768px) {
     
-    /* --- Dashboard Hall (styles inchangés) --- */
-    /* *** MODIFICATION : Le planner-form mobile est géré plus bas *** */
     .main-nav-buttons-condensed {
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -956,49 +868,38 @@ details[open] .accordion-content {
         grid-template-columns: 1fr;
     }
     
-    /* --- CORRECTION (REQ 5): Rapproche le contenu du haut --- */
     #dashboard-content-view.view-is-active {
-        padding-top: 0; /* Annule l'ancien padding pour le bouton flottant */
+        padding-top: 0; 
     }
     #btn-back-to-hall {
-        margin-bottom: 1rem; /* Réduit l'espace sous le bouton retour */
+        margin-bottom: 1rem; 
     }
     .content-cards {
-        gap: 1rem; /* Réduit l'espace entre les cartes */
+        gap: 1rem; 
     }
-
-    /* NOUVEAU (MOBILE): Affiche la liste complète des infos trafic sans scroll */
     #info-trafic .tab-content {
         max-height: none;
         overflow-y: visible;
     }
 
 
-    /* --- VUE CARTE (CORRECTIF FINAL V6 - Z-INDEX ET STABILITÉ) --- */
+    /* --- VUE CARTE MOBILE --- */
     
     #map-view #top-bar {
-        /* 1. Cache la barre de fond sur mobile */
         background: none;
         border: none;
         padding: 0;
-        /* Assure que les enfants (même s'ils deviennent 'fixed') sont visibles */
         display: contents; 
         position: relative;
     }
     
-    /* 2. (Supprimé) La règle "display: none" globale est retirée pour éviter les conflits */
-
-    /* 3. Ré-affiche et repositionne les 4 éléments (SPÉCIFICITÉ ACCRUE) */
-    #map-container #map-view #top-bar > #btn-back-to-dashboard,
+    #map-container #map-view #top-bar > #btn-back-to-dashboard-from-map,
     #map-container #map-view #top-bar > #clock,
     #map-container #map-view #top-bar > #status-info,
     #map-container #map-view #top-bar > #btn-toggle-filter {
-        /* MODIFIÉ (V6): Ajout de !important pour stabiliser la position */
-        display: inline-flex !important; /* Affiche l'élément (FORCÉ) */
-        position: fixed !important; /* Le sort du flux de la barre (FORCÉ) */
-        
+        display: inline-flex !important; 
+        position: fixed !important; 
         z-index: 1000;
-        /* Style "verre dépoli" */
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
@@ -1006,20 +907,17 @@ details[open] .accordion-content {
         box-shadow: var(--shadow-md);
     }
     
-    /* 4. Positionne [Retour] (SPÉCIFICITÉ ACCRUE) */
-    #map-container #map-view #top-bar > #btn-back-to-dashboard {
+    #map-container #map-view #top-bar > #btn-back-to-dashboard-from-map {
         top: 15px;
         left: 15px;
         padding: 0.5rem 0.75rem;
-        color: var(--primary); /* Garde la couleur de l'icône */
+        color: var(--primary); 
     }
-    #map-container #map-view #top-bar > #btn-back-to-dashboard span { display: none; }
-    #map-container #map-view #top-bar > #btn-back-to-dashboard svg { margin-right: 0; }
+    #map-container #map-view #top-bar > #btn-back-to-dashboard-from-map span { display: none; }
+    #map-container #map-view #top-bar > #btn-back-to-dashboard-from-map svg { margin-right: 0; }
     
-    /* 5. Positionne [Horloge] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #clock {
-        /* MODIFIÉ (V6): Ajout de !important */
-        display: flex !important; /* (override pour flex - FORCÉ) */
+        display: flex !important; 
         top: 15px; 
         left: 50%;
         transform: translateX(-50%);
@@ -1029,10 +927,8 @@ details[open] .accordion-content {
     }
     #map-container #map-view #top-bar > #clock #date-indicator { display: none; }
     
-    /* 6. Positionne [Statut Bus] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #status-info {
-        /* MODIFIÉ (V6): Ajout de !important */
-        display: flex !important; /* (override pour flex - FORCÉ) */
+        display: flex !important; 
         top: 15px;
         right: 15px;
         margin-left: 0;
@@ -1042,7 +938,6 @@ details[open] .accordion-content {
     }
     #map-container #map-view #top-bar > #status-info #data-status { display: none; }
     
-    /* 7. Positionne [Filtre] (SPÉCIFICITÉ ACCRUE) */
     #map-container #map-view #top-bar > #btn-toggle-filter {
         top: auto;
         left: auto;
@@ -1054,15 +949,11 @@ details[open] .accordion-content {
         padding: 0;
         justify-content: center;
         color: var(--text-primary);
-        
-        /* MODIFIÉ (V6): Z-index supérieur au panneau de filtre (1500) */
         z-index: 1501; 
     }
     #map-container #map-view #top-bar > #btn-toggle-filter span { display: none; }
     #map-container #map-view #top-bar > #btn-toggle-filter svg { margin: 0; width: 20px; height: 20px; }
     
-
-    /* --- Panneau de filtre mobile (inchangé) --- */
     #route-filter-panel {
         top: auto;
         bottom: 0;
@@ -1073,8 +964,6 @@ details[open] .accordion-content {
         border-left: none;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transform: translateY(0); 
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
     }
     #route-filter-panel.hidden { transform: translateY(100%); }
     .panel-handle {
@@ -1089,10 +978,9 @@ details[open] .accordion-content {
 
 
 /* =========================================
- * STYLES COMMUNS (Conservés)
+ * STYLES COMMUNS
  * ========================================= */
 
-/* Boutons */
 .btn {
     padding: 0.5rem 1rem;
     border: 1px solid var(--border);
@@ -1124,7 +1012,6 @@ details[open] .accordion-content {
     border-color: var(--secondary);
 }
 
-/* En-tête panneau de filtre */
 .filter-header {
     display: flex;
     justify-content: space-between;
@@ -1132,7 +1019,7 @@ details[open] .accordion-content {
     padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    background: var(--bg-secondary); /* Fond solide pour l'en-tête */
+    background: var(--bg-secondary); 
 }
 .filter-header h3 { margin: 0; font-size: 1.125rem; font-weight: 600; }
 .btn-close {
@@ -1156,7 +1043,7 @@ details[open] .accordion-content {
     gap: 0.5rem;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    background: var(--bg-secondary); /* Fond solide pour les actions */
+    background: var(--bg-secondary); 
 }
 .btn-small {
     padding: 0.375rem 0.875rem;
@@ -1171,14 +1058,11 @@ details[open] .accordion-content {
 }
 .btn-small:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
-/* Liste des routes */
 .route-list {
     overflow-y: auto;
     flex: 1;
     background: transparent;
-    /* CORRECTION (BUG SWIPE): */
     overscroll-behavior: contain;
-    /* Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
 }
 .category-header {
@@ -1213,7 +1097,7 @@ details[open] .accordion-content {
 }
 .btn-category-action:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
-.category-routes { background: transparent; } /* Laisse passer le fond "glass" */
+.category-routes { background: transparent; } 
 
 .route-checkbox-item {
     display: flex;
@@ -1225,7 +1109,7 @@ details[open] .accordion-content {
     border-bottom: 1px solid var(--border);
 }
 .route-checkbox-item:last-child { border-bottom: none; }
-.route-checkbox-item:hover { background: rgba(0,0,0,0.05); } /* Surbrillance légère */
+.route-checkbox-item:hover { background: rgba(0,0,0,0.05); } 
 
 .route-checkbox-item input[type="checkbox"] {
     width: 18px;
@@ -1249,11 +1133,9 @@ details[open] .accordion-content {
 .route-name {
     flex: 1;
     font-size: 0.875rem;
-    color: var(--text-primary);
     line-height: 1.4;
 }
 
-/* Instructions (styles existants conservés) */
 #instructions {
     position: fixed;
     top: 0;
@@ -1274,11 +1156,9 @@ details[open] .accordion-content {
     pointer-events: none;
 }
 .instruction-content {
-    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    
     padding: 2rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
@@ -1292,8 +1172,8 @@ details[open] .accordion-content {
     margin-bottom: 1.25rem;
 }
 .instruction-header svg { color: var(--primary); }
-.instruction-header h3 { margin: 0; color: var(--text-primary); font-size: 1.125rem; }
-#instructions ol { margin-left: 1.5rem; line-height: 1.8; color: var(--text-primary); }
+.instruction-header h3 { margin: 0; font-size: 1.125rem; }
+#instructions ol { margin-left: 1.5rem; line-height: 1.8; }
 #instructions code {
     background: var(--bg-secondary);
     padding: 0.2rem 0.5rem;
@@ -1322,13 +1202,12 @@ details[open] .accordion-content {
 #close-instructions:hover { background: var(--primary-dark); }
 
 /* =========================================
- * STYLES LEAFLET (Conservés)
+ * STYLES LEAFLET
  * ========================================= */
 .leaflet-popup-content-wrapper {
     border-radius: var(--radius-lg); 
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border);
-    /* MODIFIÉ: Effet "Liquid Glass" */
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
@@ -1337,7 +1216,7 @@ details[open] .accordion-content {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
     margin: 0;
     min-width: 260px;
-    background: transparent; /* Le fond est sur le wrapper */
+    background: transparent; 
 }
 
 .bus-icon-rect div {
@@ -1352,12 +1231,6 @@ details[open] .accordion-content {
     box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
 }
 
-/* =========================================
- * NOUVEAUX STYLES : Statut du bus sur la carte
- * ========================================= */
-.bus-status-normal div {
-    /* (état par défaut) */
-}
 .bus-status-perturbation div {
     border: 3px solid var(--color-orange) !important;
 }
@@ -1369,8 +1242,6 @@ details[open] .accordion-content {
     border: 3px solid var(--color-red) !important;
 }
 
-
-/* (Styles de cluster conservés) */
 .marker-cluster-small { background-color: rgba(181, 226, 140, 0.6); }
 .marker-cluster-small div { background-color: rgba(110, 204, 57, 0.6); }
 .marker-cluster-medium { background-color: rgba(241, 211, 87, 0.6); }
@@ -1381,8 +1252,6 @@ details[open] .accordion-content {
 .marker-cluster div { width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 50%; font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif; }
 .marker-cluster span { line-height: 30px; }
 
-
-/* (Styles d'arrêt conservés) */
 .stop-marker-icon {
     background: var(--secondary);
     border: 2px solid white;
@@ -1407,12 +1276,10 @@ details[open] .accordion-content {
     height: 100%;
 }
 
-/* (Styles de popup unifiés conservés) */
 .info-popup-content {
     width: 100%;
     max-height: 250px;
     overflow-y: auto;
-    /* CORRECTION (BUG SWIPE): Activation du défilement fluide sur iOS */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
 }
@@ -1421,7 +1288,6 @@ details[open] .accordion-content {
     padding: 0.875rem 1.25rem;
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
@@ -1435,10 +1301,8 @@ details[open] .accordion-content {
 .info-popup-body p {
     margin: 0.5rem 0; 
     font-size: 0.875rem; 
-    color: var(--text-primary);
 }
 .info-popup-body p strong {
-    color: var(--text-primary);
     font-weight: 600;
 }
 .info-popup-body .realtime-notice {
@@ -1484,7 +1348,6 @@ details[open] .accordion-content {
 .departure-dest {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1500,7 +1363,6 @@ details[open] .accordion-content {
 .departure-time strong {
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--text-primary);
 }
 .wait-time {
     font-size: 0.8125rem;
@@ -1508,41 +1370,22 @@ details[open] .accordion-content {
     color: var(--text-secondary);
 }
 .wait-time.imminent {
-    color: #059669; /* Vert */
+    color: #059669; 
     font-weight: 600;
 }
 
 
 /* =========================================
- * NOUVEAUX STYLES : PLANIFICATEUR IDFM
- * (Inspiré par image_034b6d.png)
+ * STYLES PLANIFICATEUR IDFM
  * ========================================= */
-
-/* Ajuste le formulaire principal pour aligner les 3 blocs */
-.planner-form {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-end; /* Garde l'alignement en bas */
-}
-
-/* Ajuste le conteneur des inputs (Départ/Arrivée) */
-.planner-inputs {
-    display: flex;
-    flex: 1; /* Prend l'espace disponible */
-    gap: 0.5rem; /* Réduit l'écart pour le bouton swap */
-    align-items: flex-end;
-}
-
-/* Styles pour les labels (plus proche de l'inspiration) */
 .planner-block .form-group label {
-    font-size: 0.75rem; /* Plus petit */
-    font-weight: 700; /* Plus gras */
-    color: var(--text-secondary); /* Grisé */
-    text-transform: uppercase; /* Majuscules */
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    color: var(--text-secondary); 
+    text-transform: uppercase; 
     margin-bottom: 0.375rem;
 }
 
-/* NOUVEAU: Bouton d'inversion */
 .btn-swap-direction {
     background: var(--bg-main);
     border: 1px solid var(--border);
@@ -1555,7 +1398,7 @@ details[open] .accordion-content {
     cursor: pointer;
     color: var(--primary);
     flex-shrink: 0;
-    margin-bottom: 0.125rem; /* Aligne avec les inputs */
+    margin-bottom: 0.125rem; 
     transition: all 0.2s ease;
 }
 .btn-swap-direction:hover {
@@ -1563,19 +1406,17 @@ details[open] .accordion-content {
     transform: rotate(180deg);
 }
 
-/* NOUVEAU: Conteneur "QUAND" */
 .form-group-when {
-    position: relative; /* Ancre pour le popover */
+    position: relative; 
     flex-shrink: 0;
-    margin-bottom: 0; /* Géré par .planner-form align-items */
+    margin-bottom: 0; 
 }
 
-/* NOUVEAU: Bouton "QUAND" (style input) */
 .btn-when {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 180px; /* Largeur fixe comme dans l'image */
+    width: 180px; 
     padding: 0.75rem 1rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -1597,13 +1438,11 @@ details[open] .accordion-content {
     transform: rotate(180deg);
 }
 
-/* NOUVEAU: Popover "QUAND" */
 #planner-options-popover {
     position: absolute;
-    top: calc(100% + 8px); /* Sous le bouton */
-    /* Aligné à droite du bouton qui l'ouvre */
+    top: calc(100% + 8px); 
     right: 0; 
-    width: 320px; /* Largeur fixe */
+    width: 320px; 
     background: var(--bg-main);
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
@@ -1618,7 +1457,6 @@ details[open] .accordion-content {
     pointer-events: none;
 }
 
-/* NOUVEAU: Onglets Partir/Arriver */
 .popover-tabs {
     display: flex;
     background: var(--bg-secondary);
@@ -1643,11 +1481,9 @@ details[open] .accordion-content {
     border-bottom-color: var(--primary);
 }
 
-/* NOUVEAU: Contenu du Popover */
 .popover-content {
     padding: 1rem;
 }
-/* NOUVEAU: Inputs Heure/Minute côte à côte */
 .popover-time-inputs {
     display: flex;
     gap: 1rem;
@@ -1656,9 +1492,7 @@ details[open] .accordion-content {
     flex: 1;
 }
 
-/* NOUVEAU: Simulation de <select> (comme dans l'image) */
 .sim-select {
-    /* Fait ressembler l'input à un select */
     appearance: none;
     -webkit-appearance: none;
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
@@ -1666,10 +1500,9 @@ details[open] .accordion-content {
     background-position: right 1rem center;
     background-size: 12px;
     cursor: pointer;
-    padding-right: 2.5rem; /* Espace pour la flèche */
+    padding-right: 2.5rem; 
 }
 
-/* NOUVEAU: Bouton de soumission dans le popover */
 .btn-popover-submit {
     width: 100%;
     margin-top: 1rem;
@@ -1677,26 +1510,22 @@ details[open] .accordion-content {
     justify-content: center;
 }
 
-/* Ajustements pour le mobile */
-@media (max-width: 900px) { /* Se déclenche plus tôt que 768px */
-    /* On repasse en colonne, mais on garde le "QUAND" */
+@media (max-width: 900px) { 
     .planner-form {
         flex-direction: column;
         align-items: stretch;
     }
     .planner-inputs {
         flex-direction: column;
-        gap: 1rem; /* Rétablit l'écart normal */
+        gap: 1rem; 
     }
     .btn-swap-direction {
-        /* Cache le bouton swap sur mobile, trop complexe */
         display: none; 
     }
     .btn-when {
-        width: 100%; /* Pleine largeur */
+        width: 100%; 
     }
     #planner-options-popover {
-        /* Centre le popover sur mobile */
         left: 0;
         right: 0;
         width: auto;
@@ -1705,172 +1534,163 @@ details[open] .accordion-content {
 
 
 /* =========================================
- * NOUVEAU: VUE RÉSULTATS D'ITINÉRAIRE
+ * NOUVELLE VUE : RÉSULTATS D'ITINÉRAIRE
  * ========================================= */
 
-#itinerary-results-view {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+#itinerary-results-container {
     display: flex;
+    flex-direction: column;
+    height: 100vh; /* Prend toute la hauteur */
     background: var(--bg-light);
-    z-index: 2000; /* Au-dessus de tout */
-
-    /* Gère la transition d'apparition */
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-    pointer-events: none;
-}
-#itinerary-results-view.view-is-active {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
 }
 
-#itinerary-left-panel {
-    width: 380px;
-    height: 100%;
-    background: var(--bg-main);
-    border-right: 1px solid var(--border);
-    box-shadow: var(--shadow-md);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    z-index: 10;
-}
-
-#itinerary-map-panel {
-    flex: 1;
-    height: 100%;
-    position: relative;
-}
-
-#itinerary-map {
-    width: 100%;
-    height: 100%;
-    background: #f0f0f0;
-}
-
-#itinerary-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-shrink: 0;
-}
-#itinerary-header h3 {
-    font-size: 1.25rem;
-    margin: 0;
-}
-#btn-back-to-planner {
-    padding-left: 0.75rem;
-}
-
-#itinerary-summary {
-    padding: 1.5rem;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-}
-#itinerary-summary-from,
-#itinerary-summary-to {
-    font-size: 1rem;
-    font-weight: 600;
-    position: relative;
-    padding-left: 2rem;
-}
-#itinerary-summary-from::before,
-#itinerary-summary-to::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 3px solid var(--text-secondary);
-}
-#itinerary-summary-to::before {
-    background: var(--text-secondary);
-}
-#itinerary-summary-from {
-    margin-bottom: 1rem;
-}
-
-#itinerary-suggestions {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-/* Styles pour les fausses suggestions */
-.suggestion-item {
-    background: var(--bg-main);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.suggestion-item:hover {
-    border-color: var(--primary);
-    box-shadow: var(--shadow-md);
-}
-.suggestion-item.active {
-    border-color: var(--primary);
-    background: #f4f8ff;
-}
-
-.suggestion-header {
-    padding: 1rem;
+.results-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0.875rem 1.5rem;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+    flex-shrink: 0;
 }
-.suggestion-time {
-    font-size: 1.125rem;
-    font-weight: 700;
+.results-header-title {
+    font-weight: 600;
+    font-size: 1.1rem;
 }
-.suggestion-duration {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-.suggestion-cost {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--primary);
-}
-.suggestion-body {
-    padding: 1rem;
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.suggestion-body .line-badge {
-    font-size: 0.9rem;
+#btn-back-to-dashboard-from-results {
+    padding-left: 0.75rem;
 }
 
-/* Responsive pour la vue itinéraire */
+.results-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden; /* Empêche le débordement global */
+}
+
+#results-panel {
+    width: 400px;
+    background: var(--bg-main);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+#results-map {
+    flex: 1;
+    background: #e5e5e5; /* Fond de carte temporaire */
+}
+
+.results-panel-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.results-update-time {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+.results-modes {
+    display: flex;
+    gap: 0.5rem;
+}
+.mode-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.mode-icon.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.results-list {
+    padding: 1rem;
+    flex: 1;
+}
+.route-option-wrapper {
+    margin-bottom: 1.5rem;
+}
+.route-option-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+.route-option {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.route-option:hover {
+    border-color: var(--primary);
+}
+.route-option-left {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+}
+.route-line-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-radius: var(--radius-sm);
+    padding: 0.25rem 0.5rem;
+    min-width: 28px;
+    text-align: center;
+}
+
+.route-option-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+.route-time {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.route-duration {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Styles mobiles pour la vue résultats */
 @media (max-width: 768px) {
-    #itinerary-left-panel {
-        width: 100%;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        /* Sur mobile, le panneau prend tout l'écran, on cache la carte */
+    .results-body {
+        flex-direction: column-reverse; /* Met la carte en haut */
     }
-    #itinerary-map-panel {
-        display: none; /* Caché sur mobile pour l'instant */
+    #results-panel {
+        width: 100%;
+        flex: 1; /* Prend l'espace restant */
+        border-right: none;
+    }
+    #results-map {
+        flex-shrink: 0;
+        height: 250px; /* Hauteur fixe pour la carte en haut */
+        border-bottom: 1px solid var(--border);
+    }
+    .results-header-title {
+        display: none; /* Cache le titre pour faire de la place */
     }
 }
