@@ -391,12 +391,9 @@ function buildFicheHoraireList() {
                     pdfPath = `/data/fichehoraire/${pdfName}`;
                 }
                 
-                // **** CORRECTION BUG (REQ 1) ****
-                // Utilise le route_long_name (qui contient "Ligne A ZAE Marsac...")
-                // ou retombe sur "Ligne [short_name]" s'il est manquant.
+                // MODIFICATION (REQ 3) : Formate le nom du lien
                 const longName = route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '';
-                const displayName = longName || `Ligne ${route.route_short_name}`;
-                // **** FIN CORRECTION ****
+                const displayName = `Ligne ${route.route_short_name} ${longName}`.trim();
 
                 linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
                     ${displayName}
@@ -680,6 +677,25 @@ function setupEventListeners() {
             }
         });
     }
+
+    // NOUVEAU: Logique pour l'accordéon exclusif (REQ 2)
+    const allDetails = document.querySelectorAll('#fiche-horaire-container details');
+    allDetails.forEach(details => {
+        details.addEventListener('toggle', (event) => {
+            // Si l'élément est en train de s'ouvrir
+            if (event.target.open) {
+                // Ferme tous les autres
+                allDetails.forEach(d => {
+                    if (d !== event.target && d.open) {
+                        d.open = false;
+                    }
+                });
+            }
+            // Si l'élément se ferme (event.target.open === false), 
+            // le listener 'toggle' des autres éléments ne sera pas
+            // déclenché en boucle, car on ne fait rien dans ce cas.
+        });
+    });
 }
 
 /**
