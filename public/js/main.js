@@ -391,9 +391,12 @@ function buildFicheHoraireList() {
                     pdfPath = `/data/fichehoraire/${pdfName}`;
                 }
                 
-                // MODIFICATION (REQ 3) : Formate le nom du lien
+                // **** CORRECTION BUG (REQ 1) ****
+                // Utilise le route_long_name (qui contient "Ligne A ZAE Marsac...")
+                // ou retombe sur "Ligne [short_name]" s'il est manquant.
                 const longName = route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '';
-                const displayName = `Ligne ${route.route_short_name} ${longName}`.trim();
+                const displayName = longName || `Ligne ${route.route_short_name}`;
+                // **** FIN CORRECTION ****
 
                 linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
                     ${displayName}
