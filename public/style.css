@@ -981,7 +981,6 @@ details[open] .accordion-content {
         background: none;
         border: none;
         padding: 0;
-        height: 0;
         /* Assure que les enfants (même s'ils deviennent 'fixed') sont visibles */
         display: block; 
         position: relative;
