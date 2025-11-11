@@ -54,7 +54,7 @@ html, body {
     background-color: var(--bg-light); 
 }
 
-/* NOUVEAU (FIX): Verrouille le scroll quand la carte est active */
+/* Verrouille le scroll quand la carte est active */
 body.map-is-active {
     overflow: hidden;
     overscroll-behavior: none; 
@@ -76,19 +76,19 @@ body {
 }
 
 /* =========================================
- * NOUVELLE EN-TÊTE (Effet "Liquid Glass")
+ * EN-TÊTE
  * ========================================= */
 #main-header {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* Pour Safari */
+    -webkit-backdrop-filter: blur(10px);
     
     border-bottom: 1px solid var(--border);
     padding: 0 1.5rem;
     position: sticky;
     top: 0;
     z-index: 1050;
-    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
+    flex-shrink: 0; 
 }
 #main-header.hidden {
     display: none;
@@ -113,60 +113,11 @@ body {
 .header-logo-icon {
     color: var(--primary);
 }
-.header-nav {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
 .btn-admin {
     background: var(--color-orange);
     color: white;
     border-color: var(--color-orange);
 }
-.btn-admin:hover {
-    background: #d96d13;
-    border-color: #d96d13;
-}
-
-/* =========================================
- * NOUVEAU BANDEAU D'ALERTE
- * ========================================= */
-#alert-banner {
-    position: sticky;
-    top: 65px; /* Sous l'en-tête */
-    z-index: 1040;
-    background: var(--color-yellow);
-    color: #111;
-    padding: 0.75rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-    font-weight: 500;
-    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
-}
-#alert-banner.type-perturbation { background: var(--color-orange); color: white; }
-#alert-banner.type-annulation { background: var(--color-red); color: white; }
-#alert-banner.type-retard { background: var(--color-yellow); color: #111; }
-
-#alert-banner-content {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-#alert-banner-content strong {
-    margin-right: 8px;
-}
-#alert-banner-close {
-    background: none;
-    border: none;
-    color: inherit;
-    font-size: 1.5rem;
-    line-height: 1;
-    cursor: pointer;
-    opacity: 0.7;
-}
-#alert-banner-close:hover { opacity: 1; }
 
 /* =========================================
  * NOUVEAU TABLEAU DE BORD (HALL)
@@ -175,92 +126,82 @@ body {
     max-width: 1300px;
     margin: 0 auto;
     padding: 2rem 1.5rem;
+    
     display: flex;
     flex-direction: column;
 }
 
-/* NOUVEAU: Style "Hero" (Page d'accueil) */
+/* Style "Hero" */
 .hero-section {
     background-image: 
-        /* NOUVELLE IMAGE DE FOND */
+        linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
         url('https://www.vie-economique.com/wp-content/uploads/sites/13/2024/12/shutterstock_2365894285-scaled.jpg');
     
     background-size: cover;
     background-position: center;
     border-radius: var(--radius-lg);
+    padding: 2.5rem 1.5rem; 
     box-shadow: var(--shadow-md);
-    /* JUSTE UNE IMAGE BANNIÈRE */
-    height: 250px; 
-    margin-bottom: 1.5rem;
 }
 
 /*
  * ====================================
- * MISE À JOUR DU PLANIFICATEUR (STYLE IDFM)
+ * PLANIFICATEUR D'ITINÉRAIRE (SUR HERO)
  * ====================================
  */
 
-/* NOUVEAU: Wrapper pour le planificateur sur fond blanc */
-.planner-block-wrapper {
-    background: var(--bg-main);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    padding: 1.5rem;
-    max-width: 900px;
-    margin: -100px auto 0 auto; /* Remonte sur la section hero */
-    position: relative;
-    z-index: 10;
-    box-shadow: var(--shadow-lg);
-}
-
-/* Titre (devient noir) */
-.planner-title-bar {
+/* Titre (devient blanc) */
+.hero-section .planner-title-bar {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
 }
-.planner-title-bar h3 {
+.hero-section .planner-title-bar h3 {
     font-size: 1.5rem;
-    color: var(--text-primary); 
-    text-shadow: none;
+    color: white; 
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4); 
 }
-.planner-title-bar svg {
-    color: var(--primary); 
+.hero-section .planner-title-bar svg {
+    color: white; 
     flex-shrink: 0;
 }
 
 /* Formulaire (centré) */
-.planner-form {
+.hero-section .planner-form {
     display: flex;
-    flex-wrap: nowrap; /* Empêche le retour à la ligne sur PC */
+    flex-wrap: nowrap; 
     gap: 1rem;
     align-items: flex-end; 
+    max-width: 900px;
+    margin: 0 auto;
 }
 
 /* Groupes d'input (Départ, Arrivée, Quand) */
-.planner-input-group {
+.hero-section .planner-input-group {
     flex: 1 1 auto; 
     margin-bottom: 0;
 }
 
-/* Labels (deviennent noirs) */
-.form-group label {
-    display: block;
+/* Labels (deviennent blancs) */
+.hero-section .form-group label {
     font-size: 0.875rem;
     font-weight: 500;
     margin-bottom: 0.5rem;
-    color: var(--text-primary); 
-    text-shadow: none;
+    color: white; 
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4); 
 }
-.label-optional {
+.hero-section .label-optional {
     font-weight: 400;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.7); 
     font-size: 0.8em;
 }
 
-/* Inputs (restent blancs) */
-.form-group input[type="text"] {
+/* Inputs Texte (Départ/Arrivée) */
+.hero-section .form-group input[type="text"] {
     background: var(--bg-main);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -269,33 +210,34 @@ body {
     font-size: 0.9rem;
     height: 44px; /* Hauteur fixe pour alignement */
 }
-.form-group input[type="text"]:focus {
+.hero-section .form-group input[type="text"]:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     outline: none;
 }
 
+
 /* Tailles spécifiques pour les groupes */
-.planner-input-depart { flex-grow: 2.5; }
-.planner-input-arrivee { flex-grow: 2.5; }
-.planner-input-quand { 
+.hero-section .planner-input-depart { flex-grow: 2.5; }
+.hero-section .planner-input-arrivee { flex-grow: 2.5; }
+.hero-section .planner-input-quand { 
     flex-grow: 1.5;
     min-width: 210px; 
-    position: relative; /* AJOUT CRUCIAL pour le panneau flottant */
+    position: relative; /* ANCRE le panneau flottant */
 }
 
 /* Bouton Rechercher */
-.planner-search-btn {
+.hero-section .planner-search-btn {
     padding: 0.75rem 1.5rem;
     font-size: 1rem;
     font-weight: 600;
     border-radius: var(--radius-md);
     flex-shrink: 0;
-    height: 44px; /* Hauteur fixe pour alignement */
+    height: 44px; 
 }
 
 /* Bouton Inverser (btn-icon) */
-.btn-icon {
+.hero-section .btn-icon {
     background: var(--bg-main);
     border: 1px solid var(--border);
     border-radius: 50%;
@@ -309,25 +251,27 @@ body {
     transition: all 0.2s ease;
     margin-bottom: 0; 
 }
-.btn-icon:hover {
+.hero-section .btn-icon:hover {
     background: var(--bg-secondary);
     border-color: var(--secondary);
 }
-.btn-icon svg {
+.hero-section .btn-icon svg {
     color: var(--primary); 
     width: 1.25rem;
     height: 1.25rem;
-    transform: none; 
+    transform: none; /* Pas de rotation sur PC */
 }
 
+
 /* * ====================================
- * NOUVEAU: SÉLECTEUR DE TEMPS (STYLE IDFM)
+ * SÉLECTEUR DE TEMPS (BOUTON + PANNEAU)
  * ====================================
  */
 
 /* 1. Bouton "Partir maintenant" */
 .planner-time-selector-wrapper {
     position: relative;
+    width: 100%;
 }
 .planner-time-btn {
     width: 100%;
@@ -337,13 +281,8 @@ body {
     justify-content: space-between;
     font-size: 0.95rem;
     font-weight: 500;
-    /* Style IDFM: fond blanc, bordure standard, texte noir */
-    background: var(--bg-main);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
 }
 .planner-time-btn:hover {
-    border-color: var(--primary);
     background: var(--bg-main);
 }
 .planner-time-btn svg {
@@ -358,63 +297,61 @@ body {
 /* 2. Panneau Flottant (Le style IDFM) */
 .planner-time-panel {
     position: absolute;
-    top: calc(100% + 10px); /* 10px sous le bouton */
+    top: calc(100% + 10px); 
     left: 0;
-    width: 320px; /* Largeur fixe pour le panneau */
-    z-index: 2000;
+    width: 320px; 
+    z-index: 2000; 
     background: var(--bg-main);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
-    /* Le panneau n'a pas de transparence */
-    backdrop-filter: none; 
+    backdrop-filter: none; /* CORRECTION LISIBILITÉ */
     -webkit-backdrop-filter: none;
 }
 
+/* 3. Onglets Partir/Arriver */
 .time-panel-tabs {
     display: flex;
-    border-bottom: 1px solid var(--border);
+    padding: 0.5rem;
 }
 .time-tab {
     flex: 1;
-    padding: 0.75rem;
-    border: none;
+    padding: 0.5rem;
+    border: 1px solid var(--primary); /* Encadrement de l'onglet */
     background: transparent;
     cursor: pointer;
     font-weight: 600;
     font-size: 1rem;
-    color: var(--text-secondary);
+    color: var(--primary);
     transition: all 0.15s ease;
 }
-.time-tab.active {
-    color: var(--primary);
-    position: relative;
-    background: var(--bg-secondary);
+.time-tab:first-child {
+    border-right: none;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
-.time-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    width: 100%;
-    height: 3px;
+.time-tab:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.time-tab.active {
+    color: white;
     background: var(--primary);
 }
 
-/* 3. Contenu du Panneau */
+/* 4. Contenu du Panneau */
 .time-panel-body {
     padding: 1rem;
 }
 
-/* CORRECTION LISIBILITÉ: Labels noirs */
+/* Labels noirs à l'intérieur du panneau blanc */
 .time-panel-body .form-group label {
     color: var(--text-primary); 
     text-shadow: none;
     font-size: 0.8rem;
     font-weight: 700;
-    text-transform: uppercase;
+    text-transform: uppercase; 
 }
-/* CORRECTION: Style du Date Picker */
+
+/* Champ de Date */
 .time-panel-body .date-select input[type="date"] {
     width: 100%;
     height: 44px;
@@ -425,30 +362,32 @@ body {
     font-size: 0.95rem;
     text-align: left;
     
+    /* Icône calendrier */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' r='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
     appearance: none;
     -webkit-appearance: none;
 }
-.time-panel-body .date-select input[type="date"]::-webkit-calendar-picker-indicator {
-    opacity: 0; /* Cache l'icône moche de Chrome */
-    cursor: pointer;
-}
-
 
 /* Champs Heure et Minutes */
 .time-inputs-group {
     display: flex;
     gap: 1rem;
     margin-bottom: 1.5rem;
-    align-items: flex-end; /* Aligne les inputs et le "h" */
+    align-items: flex-start; 
 }
 .time-inputs-group .form-group {
     flex: 1;
 }
-/* Style les inputs numériques */
-.time-inputs-group input[type="number"] {
+
+/* 1. Wrapper pour simuler le SELECT */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-wrapper input[type="text"] {
     width: 100%;
     height: 44px;
     padding: 0 0.75rem;
@@ -457,38 +396,79 @@ body {
     background: var(--bg-main);
     font-size: 1.125rem;
     font-weight: 600;
-    text-align: center;
+    text-align: left; 
+    cursor: pointer;
+    line-height: 44px; 
+    outline: none; 
+    box-shadow: none;
 }
-.time-inputs-group input[type="number"]:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-    outline: none;
-}
-/* Masque les flèches du input[type=number] */
-.time-inputs-group input[type=number]::-webkit-inner-spin-button, 
-.time-inputs-group input[type=number]::-webkit-outer-spin-button { 
-  -webkit-appearance: none;
-  margin: 0;
+.custom-select-wrapper input[type="text"]:hover {
+    border-color: var(--secondary);
 }
 
-/* Style le "h" et "min" (correction alignement) */
-.time-inputs-group .time-select,
-.time-inputs-group .minutes-select {
+/* 2. Les Flèches du sélecteur */
+.select-arrows {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 30px;
     display: flex;
-    align-items: flex-end;
-    gap: 0.5rem;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* MODIFICATION: Pas de bordure pour l'esthétique IDFM */
+    /* border-left: 1px solid var(--border); */
+    background: transparent; 
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    pointer-events: none; 
 }
-.time-inputs-group .time-select::after {
-    content: 'h';
-    font-weight: 600;
+.select-arrows svg {
+    width: 14px;
+    height: 14px;
     color: var(--text-secondary);
-    padding-bottom: 0.7rem; /* Aligne avec le texte de l'input */
+    stroke-width: 3;
+    display: none; /* Cache les flèches individuelles. Nous utiliserons la flèche principale du bouton */
 }
-.time-inputs-group .minutes-select::after {
-    content: 'min';
-    font-weight: 600;
-    color: var(--text-secondary);
-    padding-bottom: 0.7rem; /* Aligne avec le texte de l'input */
+/* NOUVEAU: Ajout de l'icône de dropdown unique */
+.custom-select-wrapper::after {
+    content: '';
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    position: absolute;
+    right: 5px;
+    top: 0;
+    height: 100%;
+    width: 25px;
+    pointer-events: none;
+}
+
+
+/* 3. Styles des listes déroulantes flottantes (qui seront activées en JS) */
+.dropdown-list {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: 1010;
+}
+.dropdown-list div {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center; /* Centrage pour les heures/minutes */
+}
+.dropdown-list div:hover {
+    background: var(--bg-secondary);
+    color: var(--primary);
 }
 
 
@@ -500,6 +480,8 @@ body {
     font-size: 1rem;
     font-weight: 600;
 }
+
+/* ... (Le reste des styles reste inchangé) ... */
 
 /* * ====================================
  * FIN SÉLECTEUR DE TEMPS
