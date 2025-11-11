@@ -28,7 +28,12 @@
     <header id="main-header">
         <div class="header-content">
             <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-logo-icon"><path d="M19 18h-2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M12 18V6"/><path d="M7 18h10"/><path d="m12 6 3 3-3 3"/><path d="M10 15h4"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-logo-icon">
+                    <path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/>
+                    <path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/>
+                    <circle cx="7" cy="17" r="2"/>
+                    <circle cx="17" cy="17" r="2"/>
+                </svg>
                 <span>Mon Réseau</span>
             </div>
             <nav class="header-nav">
@@ -45,7 +50,7 @@
     <div id="dashboard-container">
         <main id="dashboard-main">
 
-            <div id="dashboard-hall">
+            <div id="dashboard-hall" class="view-is-active">
                 
                 <div class="hero-section">
                     
@@ -88,6 +93,7 @@
                     </div>
 
                 </div>
+                
                 <div class="bottom-content-wrapper">
                     <div class="bottom-grid">
                         
@@ -100,12 +106,12 @@
                                     <span class="key-figure-label">Lignes</span>
                                 </div>
                                 <div class="key-figure-item">
-                                    <span class="key-figure-number">5</span>
-                                    <span class="key-figure-label">Types de service</span>
+                                    <span class="key-figure-number">45</span>
+                                    <span class="key-figure-label">Bus & Navettes</span>
                                 </div>
                                 <div class="key-figure-item">
-                                    <span class="key-figure-number">1</span>
-                                    <span class="key-figure-label">Service TAD (Télobus)</span>
+                                    <span class="key-figure-number">2.1M</span>
+                                    <span class="key-figure-label">Voyageurs / an</span>
                                 </div>
                             </div>
                         </div>
@@ -121,9 +127,10 @@
 
                     </div>
                 </div>
-                </div> 
+
+            </div> 
             
-            <div id="dashboard-content-view" class="hidden">
+            <div id="dashboard-content-view">
                 <button id="btn-back-to-hall" class="btn btn-secondary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                     Retour au menu
@@ -131,8 +138,7 @@
 
                 <div class="content-cards">
                     
-                    <div id="horaires" class="card hidden">
-                        <h3>Horaires</h3>
+                    <div id="horaires" class="card"> <h3>Horaires</h3>
                         <div class="search-container" id="horaires-search-container">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             <input type="text" id="horaires-search-bar" placeholder="Rechercher un arrêt...">
@@ -144,8 +150,7 @@
                             </div>
                     </div>
 
-                    <div id="info-trafic" class="card hidden">
-                        <h3>Infos Trafic</h3>
+                    <div id="info-trafic" class="card"> <h3>Infos Trafic</h3>
                         <div class="tabs">
                             <button class="tab active" data-tab="en-cours">en cours</button>
                             <button class="tab" data-tab="a-venir">à venir</button>
