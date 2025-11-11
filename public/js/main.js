@@ -23,9 +23,8 @@ let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
 
 // NOUVELLES ICÔNES SVG
 const ICONS = {
-    // CORRIGÉ: Icône SVG de bus propre
+    // VECTEUR BUS CORRIGÉ
     busSmall: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
-    // NOUVEAU: Triangle de statut (pour image_a08441.png)
     statusTriangle: `<svg width="16" height="8" viewBox="0 0 16 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8 0L16 8H0L8 0Z" /></svg>`,
     statusWarning: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
     statusError: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
@@ -167,10 +166,10 @@ function setupDashboard() {
     buildFicheHoraireList();
     setupAdminConsole();
 
-    // *** CORRECTION ICI ***
     // Attache les écouteurs aux 3 boutons du "Hall"
     document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault(); // Empêche le comportement par défaut
             const view = button.dataset.view;
             showDashboardView(view);
         });
@@ -182,7 +181,6 @@ function setupDashboard() {
     // Boutons de navigation (RETOUR)
     btnBackToDashboard.addEventListener('click', showDashboardHall); // (Depuis la carte)
     btnBackToHall.addEventListener('click', showDashboardHall); // (Depuis une pièce)
-    // *** FIN CORRECTION ***
 
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
 
@@ -196,6 +194,19 @@ function setupDashboard() {
                 content.classList.toggle('hidden', content.dataset.content !== tabContent);
             });
         });
+    });
+
+    // NOUVEAU: Écouteurs pour les "quick links"
+    document.querySelectorAll('.quick-links a[data-view-link]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const view = link.dataset.viewLink;
+            showDashboardView(view);
+        });
+    });
+    document.getElementById('quick-link-map').addEventListener('click', (e) => {
+        e.preventDefault();
+        showMapView();
     });
 }
 
@@ -229,13 +240,13 @@ function setupAdminConsole() {
 }
 
 /**
- * CORRIGÉ: Affiche la carte "Info Trafic" (design image_a08441.png)
+ * Affiche la carte "Info Trafic"
  */
 function renderInfoTraficCard() {
     infoTraficList.innerHTML = '';
     let alertCount = 0;
     
-    // 1. Grouper les lignes par catégorie (CORRIGÉ: 'quartier' et 'navettes' ajoutés)
+    // 1. Grouper les lignes par catégorie
     const groupedRoutes = {
         'majeures': { name: 'Lignes majeures', routes: [] },
         'express': { name: 'Lignes express', routes: [] },
@@ -243,7 +254,6 @@ function renderInfoTraficCard() {
         'navettes': { name: 'Navettes', routes: [] }
     };
     
-    // CORRIGÉ: Ajout de 'quartier' et 'navettes'
     const allowedCategories = ['majeures', 'express', 'quartier', 'navettes'];
 
     dataManager.routes.forEach(route => {
@@ -307,12 +317,12 @@ function renderInfoTraficCard() {
 
 
 /**
- * CORRIGÉ (V3): Construit l'accordéon en gérant les Lignes R manuellement
+ * Construit l'accordéon des fiches horaires
  */
 function buildFicheHoraireList() {
     ficheHoraireContainer.innerHTML = '';
 
-    // 1. Grouper les routes par catégorie (Ajout de 'e' et 'R')
+    // 1. Grouper les routes par catégorie
     const groupedRoutes = {
         'Lignes A, B, C et D': [],
         'Lignes e': [],
@@ -345,10 +355,8 @@ function buildFicheHoraireList() {
 
         let linksHtml = '';
         
-        // *** NOUVELLE LOGIQUE POUR GÉRER LES CAS ***
         if (groupName === 'Lignes R') {
             // CAS SPÉCIAL: Lignes R (fichiers unifiés)
-            // On se base sur la capture d'écran fournie (image_a18fc3.png)
             linksHtml = `
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R4_R5_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R4, R5</a>
@@ -362,7 +370,6 @@ function buildFicheHoraireList() {
 
         } else {
             // CAS NORMAL: (A, B, C, D, e, K, N)
-            // Trie les lignes (ex: e1, e2, e10...)
             routes.sort((a, b) => {
                 return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
             });
@@ -372,9 +379,7 @@ function buildFicheHoraireList() {
                 let pdfPath;
                 
                 if (!pdfName) {
-                    // Si le fichier n'est pas dans la map, on tente de le deviner
                     console.warn(`Nom de fichier PDF non mappé pour ${route.route_short_name}. Tentative avec la convention standard.`);
-                    // On devine le nom basé sur la convention
                     pdfName = `grandperigueux_fiche_horaires_ligne_${route.route_short_name.toLowerCase()}_sept_2025.pdf`;
                     pdfPath = `/data/fichehoraire/${pdfName}`;
                 } else {
@@ -387,7 +392,7 @@ function buildFicheHoraireList() {
             });
         }
 
-        // Ajout au DOM (identique pour tous les cas)
+        // Ajout au DOM
         if (linksHtml) {
             accordionGroup.innerHTML = `
                 <details>
@@ -404,7 +409,7 @@ function buildFicheHoraireList() {
 
 
 /**
- * Affiche le bandeau d'alerte en haut (avec icônes)
+ * Affiche le bandeau d'alerte en haut
  */
 function renderAlertBanner() {
     let alerts = [];
@@ -447,34 +452,45 @@ function renderAlertBanner() {
 
 
 /**
- * NOUVEAU: Fonctions de basculement de vue
+ * NOUVEAU: Fonctions de basculement de vue (MODIFIÉES POUR TRANSITION)
  */
 function showMapView() {
-    dashboardContainer.classList.add('hidden');
+    dashboardContainer.classList.add('hidden'); // La carte est une modale, on la garde en 'hidden'
     mapContainer.classList.remove('hidden');
     mapRenderer.map.invalidateSize();
 }
-function showDashboardHall() {
-    mapContainer.classList.add('hidden');
-    dashboardContainer.classList.remove('hidden');
-    dashboardContentView.classList.add('hidden');
-    dashboardHall.classList.remove('hidden');
-}
-function showDashboardView(viewName) {
-    dashboardHall.classList.add('hidden');
-    dashboardContentView.classList.remove('hidden');
 
-    // Cache toutes les cartes
+function showDashboardHall() {
+    mapContainer.classList.add('hidden'); // Cache la carte si on revient
+    dashboardContainer.classList.remove('hidden');
+
+    // NOUVELLE LOGIQUE DE TRANSITION
+    dashboardContentView.classList.remove('view-is-active');
+    dashboardHall.classList.add('view-is-active');
+    
+    // Cache toutes les cartes internes (pour une transition propre au retour)
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
-        card.classList.add('hidden');
+    });
+}
+
+function showDashboardView(viewName) {
+    // NOUVELLE LOGIQUE DE TRANSITION
+    dashboardHall.classList.remove('view-is-active');
+    dashboardContentView.classList.add('view-is-active');
+
+    // Cache toutes les cartes...
+    document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
+        card.classList.remove('view-active');
     });
 
-    // Affiche la carte demandée
+    // ...puis affiche la carte demandée
     const activeCard = document.getElementById(viewName);
     if (activeCard) {
-        activeCard.classList.add('view-active');
-        activeCard.classList.remove('hidden');
+        // On utilise un petit délai pour laisser le conteneur parent s'afficher d'abord
+        setTimeout(() => {
+            activeCard.classList.add('view-active');
+        }, 50); // 50ms est suffisant pour la transition CSS
     }
 }
 
@@ -488,7 +504,6 @@ function checkAndSetupTimeMode() {
 }
 
 function initializeRouteFilter() {
-    // ... (Code inchangé, gère le panneau de filtre de la carte)
     const routeCheckboxesContainer = document.getElementById('route-checkboxes');
     routeCheckboxesContainer.innerHTML = '';
     visibleRoutes.clear();
@@ -754,5 +769,5 @@ function updateDataStatus(message, status = '') {
 
 // Initialise l'application et affiche le "Hall"
 initializeApp().then(() => {
-    showDashboardHall();
+    // Le Hall est déjà visible par défaut grâce à 'view-is-active' dans le HTML
 });
