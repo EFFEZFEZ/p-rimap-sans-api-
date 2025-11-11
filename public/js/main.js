@@ -36,8 +36,7 @@ const ICONS = {
     }
 };
 
-// NOUVEAU: Mappage des noms de fichiers PDF (basé sur image_a01f3d.png)
-// CORRIGÉ: Ajout des lignes e et R
+// CORRIGÉ: Mappage des noms de fichiers PDF (Lignes R retirées car gérées manuellement)
 const PDF_FILENAME_MAP = {
     'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
     'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
@@ -63,22 +62,6 @@ const PDF_FILENAME_MAP = {
     
     'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
     'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
-    
-    'R1': 'grandperigueux_fiche_horaires_ligne_R1_sept_2025.pdf',
-    'R2': 'grandperigueux_fiche_horaires_ligne_R2_sept_2025.pdf',
-    'R3': 'grandperigueux_fiche_horaires_ligne_R3_sept_2025.pdf',
-    'R4': 'grandperigueux_fiche_horaires_ligne_R4_sept_2025.pdf',
-    'R5': 'grandperigueux_fiche_horaires_ligne_R5_sept_2025.pdf',
-    'R6': 'grandperigueux_fiche_horaires_ligne_R6_sept_2025.pdf',
-    'R7': 'grandperigueux_fiche_horaires_ligne_R7_sept_2025.pdf',
-    'R8': 'grandperigueux_fiche_horaires_ligne_R8_sept_2025.pdf',
-    'R9': 'grandperigueux_fiche_horaires_ligne_R9_sept_2025.pdf',
-    'R10': 'grandperigueux_fiche_horaires_ligne_R10_sept_2025.pdf',
-    'R11': 'grandperigueux_fiche_horaires_ligne_R11_sept_2025.pdf',
-    'R12': 'grandperigueux_fiche_horaires_ligne_R12_sept_2025.pdf',
-    'R13': 'grandperigueux_fiche_horaires_ligne_R13_sept_2025.pdf',
-    'R14': 'grandperigueux_fiche_horaires_ligne_R14_sept_2025.pdf',
-    'R15': 'grandperigueux_fiche_horaires_ligne_R15_sept_2025.pdf',
 };
 
 // ÉLÉMENTS DOM (Tableau de bord)
@@ -324,7 +307,7 @@ function renderInfoTraficCard() {
 
 
 /**
- * CORRIGÉ: Construit l'accordéon des fiches horaires avec les bons noms de fichiers
+ * CORRIGÉ (V3): Construit l'accordéon en gérant les Lignes R manuellement
  */
 function buildFicheHoraireList() {
     ficheHoraireContainer.innerHTML = '';
@@ -362,32 +345,49 @@ function buildFicheHoraireList() {
 
         let linksHtml = '';
         
-        // Trie les lignes (ex: R1, R2, R10...)
-        routes.sort((a, b) => {
-            return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
-        });
-        
-        routes.forEach(route => {
-            // *** CORRECTION DE LA LOGIQUE ICI ***
-            let pdfName = PDF_FILENAME_MAP[route.route_short_name];
-            let pdfPath;
-            
-            if (!pdfName) {
-                // Si le fichier n'est pas dans la map, on tente de le deviner
-                console.warn(`Nom de fichier PDF non mappé pour ${route.route_short_name}. Tentative avec la convention standard.`);
-                // On devine le nom basé sur la convention
-                pdfName = `grandperigueux_fiche_horaires_ligne_${route.route_short_name.toLowerCase()}_sept_2025.pdf`;
-                pdfPath = `/data/fichehoraire/${pdfName}`;
-                // On NE 'return' PAS, on affiche le lien quand même
-            } else {
-                pdfPath = `/data/fichehoraire/${pdfName}`;
-            }
-            
-            linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
-                ${route.route_long_name || `Ligne ${route.route_short_name}`}
-            </a>`;
-        });
+        // *** NOUVELLE LOGIQUE POUR GÉRER LES CAS ***
+        if (groupName === 'Lignes R') {
+            // CAS SPÉCIAL: Lignes R (fichiers unifiés)
+            // On se base sur la capture d'écran fournie (image_a18fc3.png)
+            linksHtml = `
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R4_R5_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R4, R5</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R6_R7_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R6, R7</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R8_R9_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R8, R9</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R10_R11_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R10, R11</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R12_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Ligne R12</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R13_R14_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R13, R14</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R15_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Ligne R15</a>
+            `;
 
+        } else {
+            // CAS NORMAL: (A, B, C, D, e, K, N)
+            // Trie les lignes (ex: e1, e2, e10...)
+            routes.sort((a, b) => {
+                return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
+            });
+            
+            routes.forEach(route => {
+                let pdfName = PDF_FILENAME_MAP[route.route_short_name];
+                let pdfPath;
+                
+                if (!pdfName) {
+                    // Si le fichier n'est pas dans la map, on tente de le deviner
+                    console.warn(`Nom de fichier PDF non mappé pour ${route.route_short_name}. Tentative avec la convention standard.`);
+                    // On devine le nom basé sur la convention
+                    pdfName = `grandperigueux_fiche_horaires_ligne_${route.route_short_name.toLowerCase()}_sept_2025.pdf`;
+                    pdfPath = `/data/fichehoraire/${pdfName}`;
+                } else {
+                    pdfPath = `/data/fichehoraire/${pdfName}`;
+                }
+                
+                linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
+                    ${route.route_long_name || `Ligne ${route.route_short_name}`}
+                </a>`;
+            });
+        }
+
+        // Ajout au DOM (identique pour tous les cas)
         if (linksHtml) {
             accordionGroup.innerHTML = `
                 <details>
