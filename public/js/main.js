@@ -102,6 +102,9 @@ let mapContainer;
 let btnShowMap, btnBackToDashboard;
 let searchBar, searchResultsContainer;
 
+// *** NOUVEAUX ÉLÉMENTS DOM (PLANIFICATEUR) ***
+let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
+
 // Catégories de lignes
 const LINE_CATEGORIES = {
     'majeures': { name: 'Lignes majeures', lines: ['A', 'B', 'C', 'D'], color: '#2563eb' },
@@ -142,6 +145,11 @@ async function initializeApp() {
 
     searchBar = document.getElementById('horaires-search-bar');
     searchResultsContainer = document.getElementById('horaires-search-results');
+
+    // *** NOUVELLES SÉLECTIONS DOM (PLANIFICATEUR) ***
+    plannerWhenBtn = document.getElementById('planner-when-btn');
+    plannerOptionsPopover = document.getElementById('planner-options-popover');
+    plannerSubmitBtn = document.getElementById('planner-submit-btn'); // Le bouton "Rechercher"
 
     dataManager = new DataManager();
     
@@ -680,9 +688,12 @@ function setupEventListeners() {
     });
 
     // CORRECTION (BUG SWIPE): Ajout d'un écouteur de clic sur la poignée
-    document.querySelector('.panel-handle').addEventListener('click', () => {
-        document.getElementById('route-filter-panel').classList.add('hidden');
-    });
+    const panelHandle = document.querySelector('.panel-handle');
+    if (panelHandle) {
+        panelHandle.addEventListener('click', () => {
+            document.getElementById('route-filter-panel').classList.add('hidden');
+        });
+    }
 
     document.getElementById('select-all-routes').addEventListener('click', () => {
         dataManager.routes.forEach(route => {
@@ -719,11 +730,6 @@ function setupEventListeners() {
     // Écouteurs pour la VUE TABLEAU DE BORD (recherche horaires)
     searchBar.addEventListener('input', handleSearchInput);
     searchBar.addEventListener('focus', handleSearchInput); 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('#horaires-search-container')) {
-            searchResultsContainer.classList.add('hidden');
-        }
-    });
 
     // Écouteurs pour la CARTE
     if (mapRenderer && mapRenderer.map) {
@@ -749,6 +755,92 @@ function setupEventListeners() {
             }
         });
     });
+
+    // *** DÉBUT DES NOUVEAUX ÉCOUTEURS (PLANIFICATEUR) ***
+
+    // NOUVEAU: Transition vers la carte au clic sur "Rechercher"
+    // C'est ici que la "transition vers la nouvelle interface" se produit
+    if (plannerSubmitBtn) {
+        plannerSubmitBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Empêche la soumission de formulaire
+            
+            // On ferme le popover s'il est ouvert
+            if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
+                plannerOptionsPopover.classList.add('hidden');
+                plannerWhenBtn.classList.remove('popover-active');
+            }
+            
+            console.log("Recherche lancée, transition vers la carte...");
+            showMapView();
+            
+            // ÉTAPE FUTURE (Le "sang"):
+            // C'est ici qu'on récupérera les valeurs des inputs
+            // const depart = document.getElementById('hall-planner-from').value;
+            // const arrivee = document.getElementById('hall-planner-to').value;
+            // Et qu'on lancera la recherche d'itinéraire de l'API.
+        });
+    }
+
+    // NOUVEAU: Gestion du popover "QUAND"
+    if (plannerWhenBtn && plannerOptionsPopover) {
+        // Ouvre/ferme le popover
+        plannerWhenBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Empêche le 'click outside' de se déclencher
+            plannerOptionsPopover.classList.toggle('hidden');
+            plannerWhenBtn.classList.toggle('popover-active');
+        });
+
+        // Gestion des onglets Partir/Arriver dans le popover
+        document.querySelectorAll('.popover-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                // Désactive l'autre onglet
+                document.querySelectorAll('.popover-tab').forEach(t => t.classList.remove('active'));
+                // Active l'onglet cliqué
+                e.currentTarget.classList.add('active');
+                
+                // Met à jour le texte du bouton principal et du bouton du popover
+                const mainBtnText = document.querySelector('#planner-when-btn span');
+                const popoverSubmitBtn = document.getElementById('popover-submit-btn');
+                if (e.currentTarget.dataset.tab === 'arriver') {
+                    mainBtnText.textContent = 'Arriver à...';
+                    popoverSubmitBtn.textContent = 'Valider l'arrivée';
+                } else {
+                    mainBtnText.textContent = 'Partir maintenant';
+                    popoverSubmitBtn.textContent = 'Partir maintenant';
+                }
+            });
+        });
+
+        // Ferme le popover si on clique sur son bouton "Valider"
+        document.getElementById('popover-submit-btn').addEventListener('click', () => {
+             plannerOptionsPopover.classList.add('hidden');
+             plannerWhenBtn.classList.remove('popover-active');
+             // (On pourrait aussi mettre à jour le texte du bouton principal ici)
+        });
+
+        // Empêche le 'click outside' si on clique DANS le popover
+        plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    // MODIFICATION de l'écouteur 'click outside' existant
+    document.addEventListener('click', (e) => {
+        // Fermeture recherche horaires
+        if (!e.target.closest('#horaires-search-container')) {
+            searchResultsContainer.classList.add('hidden');
+        }
+        
+        // NOUVEAU: Fermeture popover "QUAND"
+        if (!e.target.closest('.form-group-when')) {
+            if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
+                plannerOptionsPopover.classList.add('hidden');
+                if (plannerWhenBtn) {
+                    plannerWhenBtn.classList.remove('popover-active');
+                }
+            }
+        }
+    });
+
+    // *** FIN DES NOUVEAUX ÉCOUTEURS ***
 }
 
 /**
