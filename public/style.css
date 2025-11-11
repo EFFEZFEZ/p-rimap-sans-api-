@@ -52,7 +52,7 @@ html, body {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
-    /* CORRECTION (BUG SWIPE): Règle 'overscroll-behavior: none;' SUPPRIMÉE pour rétablir le scroll */
+    /* CORRECTION: La ligne "overscroll-behavior: none;" a été SUPPRIMÉE pour réparer le scroll mobile */
 }
 
 /* Ajout pour s'assurer que le contenu pousse le bas de page */
@@ -950,7 +950,7 @@ details[open] .accordion-content {
         grid-template-columns: 1fr;
     }
     
-    /* --- NOUVEAU (REQ 1): Bouton retour flottant (Horaires, Info Trafic) --- */
+    /* --- CORRECTION: Bouton retour flottant (Horaires, Info Trafic) --- */
     #dashboard-content-view.view-is-active {
         /* Ajoute de l'espace en haut pour le bouton fixe */
         padding-top: 60px; 
