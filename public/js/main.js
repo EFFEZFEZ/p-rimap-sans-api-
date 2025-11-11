@@ -2,10 +2,13 @@
  * main.js
  * Point d'entrée principal de l'application
  * Gère le tableau de bord, la vue carte et l'état du trafic.
- *
- * CORRECTION: Retrait des 'import' (chargement global)
- * CORRECTION: Renommage de 'initApp' en 'googleMapsApiLoaded' pour correspondre à index.html
  */
+
+import { DataManager } from './dataManager.js';
+import { TimeManager } from './timeManager.js';
+import { TripScheduler } from './tripScheduler.js';
+import { BusPositionCalculator } from './busPositionCalculator.js';
+import { MapRenderer } from './mapRenderer.js';
 
 // Modules
 let dataManager;
@@ -14,12 +17,9 @@ let tripScheduler;
 let busPositionCalculator;
 let mapRenderer;
 let visibleRoutes = new Set();
-let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
 
-// NOUVEAU: ÉLÉMENTS DOM DU PLANIFICATEUR
-let plannerFromInput, plannerToInput, plannerInvertBtn, plannerSearchBtn;
-let plannerResultsView, btnBackFromResults, plannerResultsMapEl;
-let resultsMap = null; // Carte Leaflet pour les résultats
+// NOUVEL ÉTAT GLOBAL
+let lineStatuses = {}; // Stocke l'état de chaque ligne (par route_id)
 
 // NOUVELLES ICÔNES SVG
 const ICONS = {
@@ -35,18 +35,20 @@ const ICONS = {
     }
 };
 
-// CORRIGÉ: Mappage des noms de fichiers PDF
+// CORRIGÉ: Mappage des noms de fichiers PDF (Lignes R retirées car gérées manuellement)
 const PDF_FILENAME_MAP = {
     'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
     'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
     'C': 'grandperigueux_fiche_horaires_ligne_C_sept_2025.pdf',
     'D': 'grandperigueux_fiche_horaires_ligne_D_sept_2025.pdf',
+    
     'e1': 'grandperigueux_fiche_horaires_ligne_e1_sept_2025.pdf',
     'e2': 'grandperigueux_fiche_horaires_ligne_e2_sept_2025.pdf',
     'e4': 'grandperigueux_fiche_horaires_ligne_e4_sept_2025.pdf',
     'e5': 'grandperigueux_fiche_horaires_ligne_e5_sept_2025.pdf',
     'e6': 'grandperigueux_fiche_horaires_ligne_e6_sept_2025.pdf',
     'e7': 'grandperigueux_fiche_horaires_ligne_e7_sept_2025.pdf',
+
     'K1A': 'grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf',
     'K1B': 'grandperigueux_fiche_horaires_ligne_K1B_sept_2025.pdf',
     'K2': 'grandperigueux_fiche_horaires_ligne_K2_sept_2025.pdf',
@@ -56,11 +58,12 @@ const PDF_FILENAME_MAP = {
     'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
     'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
     'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
+    
     'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
     'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
 };
 
-// Mappage des noms longs (terminus) fournis par l'utilisateur
+// NOUVEAU (REQ 1): Mappage des noms longs (terminus) fournis par l'utilisateur
 const ROUTE_LONG_NAME_MAP = {
     'A': 'ZAE Marsac <> Centre Hospitalier',
     'B': 'Les Tournesols <> Gare SNCF',
@@ -117,10 +120,7 @@ function getCategoryForRoute(routeShortName) {
     return 'autres';
 }
 
-/**
- * CORRECTION: Fonction renommée pour correspondre au callback de index.html
- */
-async function googleMapsApiLoaded() {
+async function initializeApp() {
     // Sélection des éléments DOM
     dashboardContainer = document.getElementById('dashboard-container');
     dashboardHall = document.getElementById('dashboard-hall');
@@ -129,7 +129,7 @@ async function googleMapsApiLoaded() {
     
     mapContainer = document.getElementById('map-container');
     btnShowMap = document.getElementById('btn-show-map');
-    btnBackToDashboard = document.getElementById('btn-back-to-dashboard'); 
+    btnBackToDashboard = document.getElementById('btn-back-to-dashboard'); // Bouton dans la vue carte
     
     infoTraficList = document.getElementById('info-trafic-list');
     infoTraficAvenir = document.getElementById('info-trafic-avenir');
@@ -142,22 +142,6 @@ async function googleMapsApiLoaded() {
 
     searchBar = document.getElementById('horaires-search-bar');
     searchResultsContainer = document.getElementById('horaires-search-results');
-
-    // NOUVEAU: Sélection des éléments du planificateur
-    plannerFromInput = document.getElementById('hall-planner-from');
-    plannerToInput = document.getElementById('hall-planner-to');
-    plannerInvertBtn = document.getElementById('planner-invert-btn');
-    plannerSearchBtn = document.getElementById('planner-search-btn');
-    plannerResultsView = document.getElementById('planner-results-view');
-    btnBackFromResults = document.getElementById('btn-back-to-hall-from-results');
-    plannerResultsMapEl = document.getElementById('planner-results-map');
-
-    // Vérifie si les classes des modules sont chargées
-    if (typeof DataManager === 'undefined' || typeof TimeManager === 'undefined' || typeof MapRenderer === 'undefined' || typeof TripScheduler === 'undefined' || typeof BusPositionCalculator === 'undefined') {
-        console.error("ERREUR CRITIQUE: Les fichiers de modules JS (dataManager.js, timeManager.js, etc.) ne sont pas chargés ou sont dans le mauvais ordre. Ils doivent être chargés AVANT main.js dans index.html.");
-        alert("Erreur de chargement de l'application. Vérifiez la console.");
-        return;
-    }
 
     dataManager = new DataManager();
     
@@ -179,7 +163,7 @@ async function googleMapsApiLoaded() {
         }
 
         mapRenderer.displayStops();
-        setupDashboard(); 
+        setupDashboard(); // CORRECTION: Appel déplacé AVANT setupEventListeners
         setupEventListeners();
 
         if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
@@ -190,17 +174,11 @@ async function googleMapsApiLoaded() {
         checkAndSetupTimeMode();
         updateData(); // Appel initial
         
-        console.log("✅ Application initialisée et prête.");
-        
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
         updateDataStatus('Erreur de chargement', 'error');
     }
 }
-
-// CORRECTION: Assure que la fonction est globale pour le callback Google
-window.googleMapsApiLoaded = googleMapsApiLoaded;
-
 
 /**
  * Configure le tableau de bord (état du trafic, admin, fiches horaires)
@@ -213,13 +191,11 @@ function setupDashboard() {
     renderInfoTraficCard();
     buildFicheHoraireList();
     setupAdminConsole();
-    
-    initPlanner(); // ACTIVE LE PLANIFICATEUR
 
     // Attache les écouteurs aux 3 boutons du "Hall"
     document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
         button.addEventListener('click', (e) => {
-            e.preventDefault(); 
+            e.preventDefault(); // Empêche le comportement par défaut
             const view = button.dataset.view;
             showDashboardView(view);
         });
@@ -229,8 +205,8 @@ function setupDashboard() {
     btnShowMap.addEventListener('click', showMapView);
 
     // Boutons de navigation (RETOUR)
-    btnBackToDashboard.addEventListener('click', showDashboardHall); 
-    btnBackToHall.addEventListener('click', showDashboardHall); 
+    btnBackToDashboard.addEventListener('click', showDashboardHall); // (Depuis la carte)
+    btnBackToHall.addEventListener('click', showDashboardHall); // (Depuis une pièce)
 
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
 
@@ -243,6 +219,15 @@ function setupDashboard() {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.toggle('hidden', content.dataset.content !== tabContent);
             });
+        });
+    });
+
+    // NOUVEAU: Écouteurs pour les "quick links"
+    document.querySelectorAll('.quick-links a[data-view-link]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const view = link.dataset.viewLink;
+            showDashboardView(view);
         });
     });
 }
@@ -276,251 +261,21 @@ function setupAdminConsole() {
     };
 }
 
-
-/**
- * NOUVEAU: Initialise le planificateur "Où allons-nous ?" (Logique du panneau de temps)
- */
-function initPlanner() {
-    const plannerTimeBtn = document.getElementById('planner-time-btn');
-    const plannerTimePanel = document.getElementById('planner-time-panel');
-    const timePanelConfirmBtn = document.getElementById('time-panel-confirm-btn'); 
-    const dateSelectInput = document.getElementById('date-select-input');
-    const hourSelectInput = document.getElementById('hour-select-input');
-    const minutesSelectInput = document.getElementById('minutes-select-input');
-    const hourDropdown = document.getElementById('hour-dropdown');
-    const minutesDropdown = document.getElementById('minutes-dropdown');
-    
-    let isPartirMaintenant = true;
-
-    // --- Fonctions de base du Panneau ---
-    
-    // Initialise les valeurs du panneau
-    function updatePanelTime() {
-        const now = timeManager.getCurrentDate();
-        dateSelectInput.value = now.toISOString().slice(0, 10);
-        
-        const currentHour = now.getHours();
-        const currentMins = now.getMinutes();
-        const roundedMins = Math.ceil(currentMins / 5) * 5;
-        const finalHour = (roundedMins === 60) ? (currentHour + 1) % 24 : currentHour;
-        const finalMins = roundedMins % 60;
-        
-        hourSelectInput.value = `${String(finalHour).padStart(2, '0')} h`;
-        minutesSelectInput.value = `${String(finalMins).padStart(2, '0')} min`;
-    }
-    updatePanelTime();
-    
-    // Génère les listes déroulantes (heures et minutes par 5)
-    function generateDropdowns() {
-        hourDropdown.innerHTML = '';
-        for (let h = 0; h < 24; h++) {
-            const div = document.createElement('div');
-            div.textContent = `${String(h).padStart(2, '0')} h`;
-            div.dataset.value = h;
-            div.addEventListener('click', () => selectDropdownValue(hourSelectInput, h, ' h', hourDropdown));
-            hourDropdown.appendChild(div);
-        }
-
-        minutesDropdown.innerHTML = '';
-        for (let m = 0; m < 60; m += 5) {
-            const div = document.createElement('div');
-            div.textContent = `${String(m).padStart(2, '0')} min`;
-            div.dataset.value = m;
-            div.addEventListener('click', () => selectDropdownValue(minutesSelectInput, m, ' min', minutesDropdown));
-            minutesDropdown.appendChild(div);
-        }
-    }
-    generateDropdowns();
-
-    // Logique de sélection d'une valeur
-    function selectDropdownValue(inputEl, value, suffix, dropdownEl) {
-        inputEl.value = `${String(value).padStart(2, '0')}${suffix}`;
-        dropdownEl.classList.add('hidden');
-        
-        // Change le texte du bouton de confirmation
-        timePanelConfirmBtn.textContent = 'Confirmer';
-        timePanelConfirmBtn.classList.remove('btn-primary');
-        timePanelConfirmBtn.classList.add('btn-secondary');
-    }
-    
-    // --- Événements du Panneau ---
-    
-    // Ouvre/ferme le panneau principal
-    plannerTimeBtn.addEventListener('click', (e) => {
-        const isHidden = plannerTimePanel.classList.toggle('hidden');
-        plannerTimeBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
-        
-        const btnRect = plannerTimeBtn.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        if (btnRect.right + 320 > viewportWidth) {
-            plannerTimePanel.style.left = 'auto';
-            plannerTimePanel.style.right = '0';
-        } else {
-             plannerTimePanel.style.left = '0';
-             plannerTimePanel.style.right = 'auto';
-        }
-        
-        hourDropdown.classList.add('hidden');
-        minutesDropdown.classList.add('hidden');
-    });
-    
-    // Ouvre/ferme les dropdowns d'heure/minute
-    hourSelectInput.addEventListener('click', (e) => {
-        e.stopPropagation(); 
-        hourDropdown.classList.toggle('hidden');
-        minutesDropdown.classList.add('hidden');
-    });
-    minutesSelectInput.addEventListener('click', (e) => {
-        e.stopPropagation(); 
-        minutesDropdown.classList.toggle('hidden');
-        hourDropdown.classList.add('hidden');
-    });
-
-    // Fermeture du panneau et des dropdowns si on clique ailleurs
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.planner-time-selector-wrapper')) {
-            plannerTimePanel.classList.add('hidden');
-            plannerTimeBtn.setAttribute('aria-expanded', 'false');
-            hourDropdown.classList.add('hidden');
-            minutesDropdown.classList.add('hidden');
-        }
-    });
-
-    // Confirmation du panneau
-    timePanelConfirmBtn.addEventListener('click', () => {
-        if (timePanelConfirmBtn.textContent.includes('Partir maintenant')) {
-            isPartirMaintenant = true;
-            plannerTimeBtn.innerHTML = `Partir maintenant <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
-            
-        } else {
-            isPartirMaintenant = false;
-            const date = new Date(dateSelectInput.value);
-            const hour = hourSelectInput.value.replace(' h', '');
-            const min = minutesSelectInput.value.replace(' min', '');
-            const formattedDate = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-            plannerTimeBtn.innerHTML = `${formattedDate} à ${hour}:${min} <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
-        }
-        
-        plannerTimePanel.classList.add('hidden');
-        plannerTimeBtn.setAttribute('aria-expanded', 'false');
-    });
-    
-    // Mettre à jour le bouton de confirmation si la date change
-    dateSelectInput.addEventListener('input', () => {
-        timePanelConfirmBtn.textContent = 'Confirmer';
-        timePanelConfirmBtn.classList.remove('btn-primary');
-        timePanelConfirmBtn.classList.add('btn-secondary');
-    });
-    
-    // Gérer les onglets "Partir" / "Arriver"
-    document.querySelectorAll('.time-tab').forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
-            e.target.classList.add('active');
-            
-            if (e.target.dataset.type === 'depart') {
-                timePanelConfirmBtn.textContent = 'Partir maintenant';
-            } else {
-                timePanelConfirmBtn.textContent = 'Arriver avant';
-            }
-            timePanelConfirmBtn.classList.add('btn-primary');
-            timePanelConfirmBtn.classList.remove('btn-secondary');
-        });
-    });
-
-    // 7. Attacher les écouteurs du planificateur principal
-    plannerInvertBtn.addEventListener('click', invertPlannerInputs);
-    plannerSearchBtn.addEventListener('click', executePlannerSearch);
-
-    // Le bouton retour sur la page de résultats
-    btnBackFromResults.addEventListener('click', showDashboardHall);
-}
-
-/**
- * NOUVEAU: Inverse les champs Départ et Arrivée
- */
-function invertPlannerInputs() {
-    plannerFromInput = plannerFromInput || document.getElementById('hall-planner-from');
-    plannerToInput = plannerToInput || document.getElementById('hall-planner-to');
-    const fromVal = plannerFromInput.value;
-    plannerFromInput.value = plannerToInput.value;
-    plannerToInput.value = fromVal;
-}
-
-/**
- * NOUVEAU: Logique de recherche (transition de vue)
- */
-function executePlannerSearch() {
-    plannerFromInput = plannerFromInput || document.getElementById('hall-planner-from');
-    plannerToInput = plannerToInput || document.getElementById('hall-planner-to');
-    
-    const from = plannerFromInput.value;
-    const to = plannerToInput.value;
-    
-    if (!from || !to) {
-        alert("Veuillez remplir un point de départ et d'arrivée.");
-        return;
-    }
-    
-    console.log(`Recherche d'itinéraire: De ${from} à ${to}`);
-    
-    const resultsList = document.getElementById('planner-results-list');
-    resultsList.innerHTML = `<p class="card-note">Recherche de De <strong>${from}</strong> à <strong>${to}</strong>...</p><p class="card-note">Intégration de l'API Google en cours...</p>`;
-
-    // --- Basculement de la Vue ---
-    dashboardHall = dashboardHall || document.getElementById('dashboard-hall');
-    dashboardContentView = dashboardContentView || document.getElementById('dashboard-content-view');
-    plannerResultsView = plannerResultsView || document.getElementById('planner-results-view');
-
-    dashboardHall.classList.remove('view-is-active');
-    dashboardContentView.classList.remove('view-is-active');
-    plannerResultsView.classList.remove('hidden');
-
-    if (!resultsMap) {
-        initResultsMap();
-    } else {
-        resultsMap.invalidateSize(); 
-    }
-}
-
-
-/**
- * NOUVEAU: Initialise la carte Leaflet sur la page de résultats
- */
-function initResultsMap() {
-    try {
-        const centerCoordinates = [45.1833, 0.7167]; // Périgueux
-        const zoomLevel = 13;
-
-        resultsMap = L.map('planner-results-map').setView(centerCoordinates, zoomLevel);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(resultsMap);
-        
-        resultsMap.invalidateSize();
-    } catch (e) {
-        console.error("Erreur d'initialisation de la carte des résultats:", e);
-        if (plannerResultsMapEl) {
-            plannerResultsMapEl.innerHTML = "Erreur: Impossible de charger la carte.";
-        }
-    }
-}
-
 /**
  * Affiche la carte "Info Trafic"
  */
 function renderInfoTraficCard() {
-    infoTraficList = infoTraficList || document.getElementById('info-trafic-list');
-    infoTraficCount = infoTraficCount || document.getElementById('info-trafic-count');
-    
     infoTraficList.innerHTML = '';
     let alertCount = 0;
     
+    // 1. Grouper les lignes par catégorie
     const groupedRoutes = {
-        'majeures': { name: 'Lignes majeures', routes: [] }, 'express': { name: 'Lignes express', routes: [] }, 'quartier': { name: 'Lignes de quartier', routes: [] }, 'navettes': { name: 'Navettes', routes: [] }
+        'majeures': { name: 'Lignes majeures', routes: [] },
+        'express': { name: 'Lignes express', routes: [] },
+        'quartier': { name: 'Lignes de quartier', routes: [] },
+        'navettes': { name: 'Navettes', routes: [] }
     };
+    
     const allowedCategories = ['majeures', 'express', 'quartier', 'navettes'];
 
     dataManager.routes.forEach(route => {
@@ -530,6 +285,7 @@ function renderInfoTraficCard() {
         }
     });
 
+    // 2. Construire l'HTML pour chaque groupe
     for (const [categoryId, categoryData] of Object.entries(groupedRoutes)) {
         if (categoryData.routes.length === 0) continue;
 
@@ -537,7 +293,7 @@ function renderInfoTraficCard() {
         groupDiv.className = 'trafic-group';
         
         let badgesHtml = '';
-        categoryData.routes.sort((a, b) => { 
+        categoryData.routes.sort((a, b) => { // Trie les lignes
              return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
         });
 
@@ -547,12 +303,13 @@ function renderInfoTraficCard() {
             const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
 
             let statusIcon = '';
-            let statusColor = 'transparent'; 
+            let statusColor = 'transparent'; // Couleur par défaut
             if (state.status !== 'normal') {
                 alertCount++;
                 if (state.status === 'annulation') statusColor = 'var(--color-red)';
                 else if (state.status === 'retard') statusColor = 'var(--color-yellow)';
                 else statusColor = 'var(--color-orange)';
+                
                 statusIcon = `<div class="status-indicator-triangle type-${state.status}" style="border-bottom-color: ${statusColor};"></div>`;
             }
 
@@ -566,10 +323,16 @@ function renderInfoTraficCard() {
             `;
         });
 
-        groupDiv.innerHTML = `<h4>${categoryData.name}</h4><div class="trafic-badge-list">${badgesHtml}</div>`;
+        groupDiv.innerHTML = `
+            <h4>${categoryData.name}</h4>
+            <div class="trafic-badge-list">
+                ${badgesHtml}
+            </div>
+        `;
         infoTraficList.appendChild(groupDiv);
     }
 
+    // Met à jour le compteur d'alertes
     infoTraficCount.textContent = alertCount;
     infoTraficCount.classList.toggle('hidden', alertCount === 0);
 }
@@ -579,28 +342,44 @@ function renderInfoTraficCard() {
  * Construit l'accordéon des fiches horaires
  */
 function buildFicheHoraireList() {
-    ficheHoraireContainer = ficheHoraireContainer || document.getElementById('fiche-horaire-container');
     ficheHoraireContainer.innerHTML = '';
+
+    // 1. Grouper les routes par catégorie
     const groupedRoutes = {
-        'Lignes A, B, C et D': [], 'Lignes e': [], 'Lignes K': [], 'Lignes N': [], 'Lignes R': [],
+        'Lignes A, B, C et D': [],
+        'Lignes e': [],
+        'Lignes K': [],
+        'Lignes N': [],
+        'Lignes R': [],
     };
 
     dataManager.routes.forEach(route => {
         const name = route.route_short_name;
-        if (['A', 'B', 'C', 'D'].includes(name)) groupedRoutes['Lignes A, B, C et D'].push(route);
-        else if (name.startsWith('e')) groupedRoutes['Lignes e'].push(route);
-        else if (name.startsWith('K')) groupedRoutes['Lignes K'].push(route);
-        else if (name.startsWith('N')) groupedRoutes['Lignes N'].push(route);
-        else if (name.startsWith('R')) groupedRoutes['Lignes R'].push(route);
+        if (['A', 'B', 'C', 'D'].includes(name)) {
+            groupedRoutes['Lignes A, B, C et D'].push(route);
+        } else if (name.startsWith('e')) {
+            groupedRoutes['Lignes e'].push(route);
+        } else if (name.startsWith('K')) {
+            groupedRoutes['Lignes K'].push(route);
+        } else if (name.startsWith('N')) {
+            groupedRoutes['Lignes N'].push(route);
+        } else if (name.startsWith('R')) {
+            groupedRoutes['Lignes R'].push(route);
+        }
     });
 
+    // 2. Construire l'HTML
     for (const [groupName, routes] of Object.entries(groupedRoutes)) {
         if (routes.length === 0) continue;
+
         const accordionGroup = document.createElement('div');
         accordionGroup.className = 'accordion-group';
+
         let linksHtml = '';
         
         if (groupName === 'Lignes R') {
+            // CAS SPÉCIAL: Lignes R (fichiers unifiés)
+            // MODIFIÉ (REQ 1): Utilise les noms longs fournis par l'utilisateur
             linksHtml = `
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3 La Feuilleraie &lt;&gt; ESAT / Les Gourdoux &lt;&gt; Trélissac Les Garennes / Les Pinots &lt;&gt; P+R Aquacap</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R4_R5_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R4, R5 Route de Payenché &lt;&gt; Collège Jean Moulin / Les Mondines / Clément Laval &lt;&gt; Collège Jean Moulin</a>
@@ -611,22 +390,48 @@ function buildFicheHoraireList() {
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R13_R14_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R13, R14 Coursac &lt;&gt; Razac sur l’Isle / La Chapelle Gonaguet &lt;&gt;Razac sur l’Isle</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R15_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Ligne R15 Boulazac Isle Manoire &lt;&gt; Halte ferroviaire Niversac</a>
             `;
+
         } else {
-            routes.sort((a, b) => a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true}));
+            // CAS NORMAL: (A, B, C, D, e, K, N)
+            routes.sort((a, b) => {
+                return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
+            });
+            
             routes.forEach(route => {
                 let pdfName = PDF_FILENAME_MAP[route.route_short_name];
-                let pdfPath = pdfName ? `/data/fichehoraire/${pdfName}` : `/data/fichehoraire/grandperigueux_fiche_horaires_ligne_${route.route_short_name.toLowerCase()}_sept_2025.pdf`;
-                const longName = ROUTE_LONG_NAME_MAP[route.route_short_name] || (route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '');
+                let pdfPath;
+                
+                if (!pdfName) {
+                    console.warn(`Nom de fichier PDF non mappé pour ${route.route_short_name}. Tentative avec la convention standard.`);
+                    pdfName = `grandperigueux_fiche_horaires_ligne_${route.route_short_name.toLowerCase()}_sept_2025.pdf`;
+                    pdfPath = `/data/fichehoraire/${pdfName}`;
+                } else {
+                    pdfPath = `/data/fichehoraire/${pdfName}`;
+                }
+                
+                // MODIFICATION (REQ 1) : Utilise le mappage statique pour les noms longs
+                const longName = ROUTE_LONG_NAME_MAP[route.route_short_name] || 
+                                 (route.route_long_name ? route.route_long_name.replace(/<->/g, '<=>') : '');
+                
                 const displayName = `Ligne ${route.route_short_name} ${longName}`.trim();
-                linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">${displayName}</a>`;
+
+                linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
+                    ${displayName}
+                </a>`;
             });
         }
 
+        // Ajout au DOM
         if (linksHtml) {
+            // MODIFIÉ (REQ 2): Ajout d'un wrapper pour l'animation
             accordionGroup.innerHTML = `
                 <details>
                     <summary>${groupName}</summary>
-                    <div class="accordion-content"><div class="accordion-content-inner">${linksHtml}</div></div>
+                    <div class="accordion-content">
+                        <div class="accordion-content-inner">
+                            ${linksHtml}
+                        </div>
+                    </div>
                 </details>
             `;
             ficheHoraireContainer.appendChild(accordionGroup);
@@ -646,7 +451,11 @@ function renderAlertBanner() {
         const state = lineStatuses[route_id];
         if (state.status !== 'normal') {
             const route = dataManager.getRoute(route_id);
-            alerts.push({ name: route.route_short_name, status: state.status, message: state.message });
+            alerts.push({
+                name: route.route_short_name,
+                status: state.status,
+                message: state.message
+            });
         }
     }
 
@@ -655,61 +464,92 @@ function renderAlertBanner() {
         return;
     }
 
-    if (alerts.some(a => a.status === 'annulation')) firstAlertStatus = 'annulation';
-    else if (alerts.some(a => a.status === 'perturbation')) firstAlertStatus = 'perturbation';
-    else firstAlertStatus = 'retard';
-    
+    if (alerts.some(a => a.status === 'annulation')) {
+        firstAlertStatus = 'annulation';
+    } else if (alerts.some(a => a.status === 'perturbation')) {
+        firstAlertStatus = 'perturbation';
+    } else {
+        firstAlertStatus = 'retard';
+    }
     alertBanner.className = `type-${firstAlertStatus}`;
-    let alertIcon = ICONS.alertBanner(firstAlertStatus);
-    let alertText = alerts.map(a => `<strong>Ligne ${a.name}</strong>`).join(', ');
     
-    document.getElementById('alert-banner-content').innerHTML = `${alertIcon} <strong>Infos Trafic:</strong> ${alertText}`;
+    let alertIcon = ICONS.alertBanner(firstAlertStatus);
+    let alertText = alerts.map(a => 
+        `<strong>Ligne ${a.name}</strong>`
+    ).join(', ');
+    
+    alertBannerContent.innerHTML = `${alertIcon} <strong>Infos Trafic:</strong> ${alertText}`;
     alertBanner.classList.remove('hidden');
 }
 
 
 /**
- * Fonctions de basculement de vue
+ * NOUVEAU: Fonctions de basculement de vue (MODIFIÉES POUR CORRIGER LE SCROLL MOBILE)
  */
 function showMapView() {
+    // Cache les éléments du dashboard
     dashboardContainer.classList.add('hidden');
     document.getElementById('main-header').classList.add('hidden');
     document.getElementById('alert-banner').classList.add('hidden');
+    
+    // Affiche la carte
     mapContainer.classList.remove('hidden');
+    
+    // Verrouille le body
     document.body.classList.add('map-is-active'); 
+    
     mapRenderer.map.invalidateSize();
 }
 
 function showDashboardHall() {
+    // Cache la carte
     mapContainer.classList.add('hidden');
-    if (plannerResultsView) { 
-        plannerResultsView.classList.add('hidden');
-    }
+    
+    // Déverrouille le body
     document.body.classList.remove('map-is-active'); 
+    
+    // Affiche les éléments du dashboard
     document.getElementById('main-header').classList.remove('hidden');
     dashboardContainer.classList.remove('hidden');
-    // renderAlertBanner(); 
+    
+    // (La logique de la bannière d'alerte la ré-affichera si besoin)
+    renderAlertBanner(); 
+
+    // Logique de transition interne du dashboard
     dashboardContentView.classList.remove('view-is-active');
     dashboardHall.classList.add('view-is-active');
+    
+    // Cache toutes les cartes internes (pour une transition propre au retour)
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
     });
 }
 
 function showDashboardView(viewName) {
+    // NOUVELLE LOGIQUE DE TRANSITION
     dashboardHall.classList.remove('view-is-active');
     dashboardContentView.classList.add('view-is-active');
 
+    // *** CORRECTION (REQ 4) : Scrolle en haut de la vue ***
     const mainDashboard = document.getElementById('dashboard-main');
     if (mainDashboard) {
+        // Utilise 'auto' au lieu de 'smooth' pour un repositionnement instantané
         mainDashboard.scrollTo({ top: 0, behavior: 'auto' });
     }
+    // ******************************************************
+
+    // Cache toutes les cartes...
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
     });
+
+    // ...puis affiche la carte demandée
     const activeCard = document.getElementById(viewName);
     if (activeCard) {
-        setTimeout(() => { activeCard.classList.add('view-active'); }, 50); 
+        // On utilise un petit délai pour laisser le conteneur parent s'afficher d'abord
+        setTimeout(() => {
+            activeCard.classList.add('view-active');
+        }, 50); // 50ms est suffisant pour la transition CSS
     }
 }
 
@@ -729,16 +569,16 @@ function initializeRouteFilter() {
     const routesByCategory = {};
     Object.keys(LINE_CATEGORIES).forEach(cat => { routesByCategory[cat] = []; });
     routesByCategory['autres'] = [];
-    
     dataManager.routes.forEach(route => {
         visibleRoutes.add(route.route_id);
         const category = getCategoryForRoute(route.route_short_name);
         routesByCategory[category].push(route);
     });
     Object.values(routesByCategory).forEach(routes => {
-        routes.sort((a, b) => a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true}));
+        routes.sort((a, b) => {
+            return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
+        });
     });
-    
     Object.entries(LINE_CATEGORIES).forEach(([categoryId, categoryInfo]) => {
         const routes = routesByCategory[categoryId];
         if (routes.length === 0) return;
@@ -761,16 +601,26 @@ function initializeRouteFilter() {
         routes.forEach(route => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'route-checkbox-item';
-            itemDiv.innerHTML = `
-                <input type="checkbox" id="route-${route.route_id}" data-category="${categoryId}" checked>
-                <div class="route-badge" style="background-color: ${route.route_color ? `#${route.route_color}` : '#3388ff'}; color: ${route.route_text_color ? `#${route.route_text_color}` : '#ffffff'};">
-                    ${route.route_short_name || route.route_id}
-                </div>
-                <span class="route-name">${route.route_long_name || route.route_short_name || route.route_id}</span>
-            `;
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `route-${route.route_id}`;
+            checkbox.checked = true;
+            checkbox.dataset.category = categoryId;
+            checkbox.addEventListener('change', () => handleRouteFilterChange());
+            const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
+            const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
+            const badge = document.createElement('div');
+            badge.className = 'route-badge';
+            badge.style.backgroundColor = routeColor;
+            badge.style.color = textColor;
+            badge.textContent = route.route_short_name || route.route_id;
+            const label = document.createElement('span');
+            label.className = 'route-name';
+            label.textContent = route.route_long_name || route.route_short_name || route.route_id;
+            itemDiv.appendChild(checkbox);
+            itemDiv.appendChild(badge);
+            itemDiv.appendChild(label);
             categoryContainer.appendChild(itemDiv);
-            
-            itemDiv.querySelector('input').addEventListener('change', () => handleRouteFilterChange());
             itemDiv.addEventListener('mouseenter', () => mapRenderer.highlightRoute(route.route_id, true));
             itemDiv.addEventListener('mouseleave', () => mapRenderer.highlightRoute(route.route_id, false));
             itemDiv.addEventListener('click', (e) => {
@@ -780,7 +630,9 @@ function initializeRouteFilter() {
         });
         routeCheckboxesContainer.appendChild(categoryContainer);
     });
-    
+    if (routesByCategory['autres'].length > 0) {
+        // ... (code pour 'autres' inchangé)
+    }
     document.querySelectorAll('.btn-category-action').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const category = e.target.dataset.category;
@@ -813,6 +665,8 @@ function handleRouteFilterChange() {
  */
 function setupEventListeners() {
     
+    // (Les écouteurs pour la nav du tableau de bord sont dans setupDashboard)
+
     // Écouteurs pour la VUE CARTE
     document.getElementById('close-instructions').addEventListener('click', () => {
         document.getElementById('instructions').classList.add('hidden');
@@ -824,37 +678,45 @@ function setupEventListeners() {
     document.getElementById('close-filter').addEventListener('click', () => {
         document.getElementById('route-filter-panel').classList.add('hidden');
     });
+
+    // CORRECTION (BUG SWIPE): Ajout d'un écouteur de clic sur la poignée
     document.querySelector('.panel-handle').addEventListener('click', () => {
         document.getElementById('route-filter-panel').classList.add('hidden');
     });
 
     document.getElementById('select-all-routes').addEventListener('click', () => {
-        document.querySelectorAll('#route-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = true);
+        dataManager.routes.forEach(route => {
+            const checkbox = document.getElementById(`route-${route.route_id}`);
+            if (checkbox) checkbox.checked = true;
+        });
         handleRouteFilterChange();
     });
     document.getElementById('deselect-all-routes').addEventListener('click', () => {
-        document.querySelectorAll('#route-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+        dataManager.routes.forEach(route => {
+            const checkbox = document.getElementById(`route-${route.route_id}`);
+            if (checkbox) checkbox.checked = false;
+        });
         handleRouteFilterChange();
     });
     
     timeManager.addListener(updateData);
 
-    // Bouton raccourci recherche
+    // NOUVEAU (REQ 2): Bouton raccourci recherche
     document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
+        // Fait défiler la carte "Horaires" en haut
         const horairesCard = document.getElementById('horaires');
         if (horairesCard) {
+            // Fait défiler le conteneur principal (dashboard-main)
             const mainDashboard = document.getElementById('dashboard-main');
             if (mainDashboard) {
                  mainDashboard.scrollTo({ top: horairesCard.offsetTop - 80, behavior: 'smooth' });
             }
         }
+        // Met le focus sur la barre de recherche
         searchBar.focus();
     });
 
     // Écouteurs pour la VUE TABLEAU DE BORD (recherche horaires)
-    searchBar = searchBar || document.getElementById('horaires-search-bar');
-    searchResultsContainer = searchResultsContainer || document.getElementById('horaires-search-results');
-
     searchBar.addEventListener('input', handleSearchInput);
     searchBar.addEventListener('focus', handleSearchInput); 
     document.addEventListener('click', (e) => {
@@ -872,11 +734,13 @@ function setupEventListeners() {
         });
     }
 
-    // Logique pour l'accordéon exclusif
+    // NOUVEAU: Logique pour l'accordéon exclusif (REQ 2)
     const allDetails = document.querySelectorAll('#fiche-horaire-container details');
     allDetails.forEach(details => {
         details.addEventListener('toggle', (event) => {
+            // Si l'élément est en train de s'ouvrir
             if (event.target.open) {
+                // Ferme tous les autres
                 allDetails.forEach(d => {
                     if (d !== event.target && d.open) {
                         d.open = false;
@@ -926,11 +790,12 @@ function displaySearchResults(stops, query) {
 
 /**
  * Clic sur résultat (corrigée)
+ * MODIFIÉ : Appelle zoomToStop PUIS onStopClick
  */
 function onSearchResultClick(stop) {
     showMapView(); 
     mapRenderer.zoomToStop(stop);
-    mapRenderer.onStopClick(stop); 
+    mapRenderer.onStopClick(stop); // <<< CORRECTION DU BUG
     searchBar.value = stop.stop_name;
     searchResultsContainer.classList.add('hidden');
 }
@@ -947,6 +812,7 @@ function updateData(timeInfo) {
     const activeBuses = tripScheduler.getActiveTrips(currentSeconds, currentDate);
     const allBusesWithPositions = busPositionCalculator.calculateAllPositions(activeBuses);
 
+    // MODIFICATION: Ajoute l'état du trafic à chaque bus
     allBusesWithPositions.forEach(bus => {
         if (bus && bus.route) {
             const routeId = bus.route.route_id;
@@ -998,3 +864,8 @@ function updateDataStatus(message, status = '') {
     statusElement.className = status;
     statusElement.textContent = message;
 }
+
+// Initialise l'application et affiche le "Hall"
+initializeApp().then(() => {
+    // Le Hall est déjà visible par défaut grâce à 'view-is-active' dans le HTML
+});
