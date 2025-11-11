@@ -135,7 +135,7 @@ body {
     align-items: center;
     font-size: 0.9rem;
     font-weight: 500;
-    flex-shrink: 0; /* Empêche le bandeau de rétrécir */
+    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
 }
 #alert-banner.type-perturbation { background: var(--color-orange); color: white; }
 #alert-banner.type-annulation { background: var(--color-red); color: white; }
