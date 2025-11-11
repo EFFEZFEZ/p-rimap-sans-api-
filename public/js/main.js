@@ -26,7 +26,7 @@ const ICONS = {
     // CORRIGÉ: Icône SVG de bus propre
     busSmall: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
     // NOUVEAU: Triangle de statut (pour image_a08441.png)
-    statusTriangle: `<svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 0L16 8H0L8 0Z" /></svg>`,
+    statusTriangle: `<svg width="16" height="8" viewBox="0 0 16 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8 0L16 8H0L8 0Z" /></svg>`,
     statusWarning: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
     statusError: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`,
     alertBanner: (type) => {
@@ -37,7 +37,7 @@ const ICONS = {
 };
 
 // ÉLÉMENTS DOM (Tableau de bord)
-let dashboardContainer;
+let dashboardContainer, dashboardHall, dashboardContentView, btnBackToHall;
 let infoTraficList, infoTraficAvenir;
 let infoTraficCount;
 let alertBanner, alertBannerContent, alertBannerClose;
@@ -70,9 +70,14 @@ function getCategoryForRoute(routeShortName) {
 async function initializeApp() {
     // Sélection des éléments DOM
     dashboardContainer = document.getElementById('dashboard-container');
+    dashboardHall = document.getElementById('dashboard-hall');
+    dashboardContentView = document.getElementById('dashboard-content-view');
+    btnBackToHall = document.getElementById('btn-back-to-hall');
+    
     mapContainer = document.getElementById('map-container');
     btnShowMap = document.getElementById('btn-show-map');
-    btnBackToDashboard = document.getElementById('btn-back-to-dashboard');
+    btnBackToDashboard = document.getElementById('btn-back-to-dashboard'); // Bouton dans la vue carte
+    
     infoTraficList = document.getElementById('info-trafic-list');
     infoTraficAvenir = document.getElementById('info-trafic-avenir');
     infoTraficCount = document.getElementById('info-trafic-count');
@@ -134,9 +139,21 @@ function setupDashboard() {
     buildFicheHoraireList();
     setupAdminConsole();
 
-    // Boutons de navigation
+    // Boutons de navigation (HALL -> PIÈCE)
+    document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
+        button.addEventListener('click', () => {
+            const view = button.dataset.view;
+            showDashboardView(view);
+        });
+    });
+
+    // Bouton de navigation (CARTE)
     btnShowMap.addEventListener('click', showMapView);
-    btnBackToDashboard.addEventListener('click', showDashboardView); // Renommé pour plus de clarté
+
+    // Boutons de navigation (RETOUR)
+    btnBackToDashboard.addEventListener('click', showDashboardHall); // (Depuis la carte)
+    btnBackToHall.addEventListener('click', showDashboardHall); // (Depuis une pièce)
+
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
 
     // Gère les onglets "en cours" / "à venir"
@@ -188,14 +205,16 @@ function renderInfoTraficCard() {
     infoTraficList.innerHTML = '';
     let alertCount = 0;
     
-    // 1. Grouper les lignes par catégorie (majeures, express, quartier)
+    // 1. Grouper les lignes par catégorie (CORRIGÉ: 'quartier' et 'navettes' ajoutés)
     const groupedRoutes = {
         'majeures': { name: 'Lignes majeures', routes: [] },
         'express': { name: 'Lignes express', routes: [] },
-        'quartier': { name: 'Lignes de quartier', routes: [] }
+        'quartier': { name: 'Lignes de quartier', routes: [] },
+        'navettes': { name: 'Navettes', routes: [] }
     };
     
-    const allowedCategories = ['majeures', 'express', 'de quartier'];
+    // CORRIGÉ: Ajout de 'quartier' et 'navettes'
+    const allowedCategories = ['majeures', 'express', 'quartier', 'navettes'];
 
     dataManager.routes.forEach(route => {
         const category = getCategoryForRoute(route.route_short_name);
@@ -212,16 +231,24 @@ function renderInfoTraficCard() {
         groupDiv.className = 'trafic-group';
         
         let badgesHtml = '';
+        categoryData.routes.sort((a, b) => { // Trie les lignes
+             return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
+        });
+
         categoryData.routes.forEach(route => {
             const state = lineStatuses[route.route_id] || { status: 'normal', message: '' };
             const routeColor = route.route_color ? `#${route.route_color}` : '#3388ff';
             const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
 
             let statusIcon = '';
+            let statusColor = '';
             if (state.status !== 'normal') {
                 alertCount++;
-                // NOUVEAU: Utilise un triangle
-                statusIcon = `<div class="status-indicator-triangle type-${state.status}" style="border-bottom-color: ${state.status === 'annulation' ? 'var(--color-red)' : 'var(--color-orange)'};"></div>`;
+                if (state.status === 'annulation') statusColor = 'var(--color-red)';
+                else if (state.status === 'retard') statusColor = 'var(--color-yellow)';
+                else statusColor = 'var(--color-orange)';
+                
+                statusIcon = `<div class="status-indicator-triangle type-${state.status}" style="border-bottom-color: ${statusColor};">${ICONS.statusTriangle}</div>`;
             }
 
             badgesHtml += `
@@ -290,16 +317,13 @@ function buildFicheHoraireList() {
         
         // Trie les lignes (ex: R1, R2, R10...)
         routes.sort((a, b) => {
-            const numA = parseInt(a.route_short_name.replace(/[^0-9a-zA-Z]/g, '').replace(/[a-zA-Z]/g, ''));
-            const numB = parseInt(b.route_short_name.replace(/[^0-9a-zA-Z]/g, '').replace(/[a-zA-Z]/g, ''));
-            if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
-                return numA - numB;
-            }
             return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
         });
         
         routes.forEach(route => {
             // CORRECTION: Génère le nom de fichier basé sur le pattern (image_a01f3d.png)
+            // ex: grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf
+            // ex: grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf
             const pdfName = `grandperigueux_fiche_horaires_ligne_${route.route_short_name}_sept_2025.pdf`;
             const pdfPath = `/data/fichehoraire/${pdfName}`;
             
@@ -367,16 +391,35 @@ function renderAlertBanner() {
 
 
 /**
- * Fonctions de basculement de vue
+ * NOUVEAU: Fonctions de basculement de vue
  */
 function showMapView() {
     dashboardContainer.classList.add('hidden');
     mapContainer.classList.remove('hidden');
     mapRenderer.map.invalidateSize();
 }
-function showDashboardView() { // Renommé (anciennement showDashboardHall)
+function showDashboardHall() {
     mapContainer.classList.add('hidden');
     dashboardContainer.classList.remove('hidden');
+    dashboardContentView.classList.add('hidden');
+    dashboardHall.classList.remove('hidden');
+}
+function showDashboardView(viewName) {
+    dashboardHall.classList.add('hidden');
+    dashboardContentView.classList.remove('hidden');
+
+    // Cache toutes les cartes
+    document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
+        card.classList.remove('view-active');
+        card.classList.add('hidden');
+    });
+
+    // Affiche la carte demandée
+    const activeCard = document.getElementById(viewName);
+    if (activeCard) {
+        activeCard.classList.add('view-active');
+        activeCard.classList.remove('hidden');
+    }
 }
 
 
@@ -403,11 +446,7 @@ function initializeRouteFilter() {
     });
     Object.values(routesByCategory).forEach(routes => {
         routes.sort((a, b) => {
-            const nameA = a.route_short_name; const nameB = b.route_short_name;
-            const isRLineA = nameA.startsWith('R') && !isNaN(parseInt(nameA.substring(1)));
-            const isRLineB = nameB.startsWith('R') && !isNaN(parseInt(nameB.substring(1)));
-            if (isRLineA && isRLineB) { return parseInt(nameA.substring(1)) - parseInt(nameB.substring(1)); }
-            return a.route_short_name.localeCompare(nameB, undefined, {numeric: true});
+            return a.route_short_name.localeCompare(b.route_short_name, undefined, {numeric: true});
         });
     });
     Object.entries(LINE_CATEGORIES).forEach(([categoryId, categoryInfo]) => {
@@ -492,21 +531,11 @@ function handleRouteFilterChange() {
 }
 
 /**
- * CORRIGÉ: Attache tous les écouteurs d'événements
+ * Attache tous les écouteurs d'événements
  */
 function setupEventListeners() {
     
-    // NOUVEAU: Scroll pour les boutons de navigation (corrige le bug de la vidéo)
-    document.querySelectorAll('.nav-button[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            const targetElement = document.querySelector(targetId);
-            if (targetElement) {
-                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    });
+    // (Les écouteurs pour la nav du tableau de bord sont dans setupDashboard)
 
     // Écouteurs pour la VUE CARTE
     document.getElementById('close-instructions').addEventListener('click', () => {
@@ -667,5 +696,7 @@ function updateDataStatus(message, status = '') {
     statusElement.textContent = message;
 }
 
-// Initialise l'application
-initializeApp();
+// Initialise l'application et affiche le "Hall"
+initializeApp().then(() => {
+    showDashboardHall();
+});
