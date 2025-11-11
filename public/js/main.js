@@ -651,6 +651,12 @@ function setupEventListeners() {
     document.getElementById('close-filter').addEventListener('click', () => {
         document.getElementById('route-filter-panel').classList.add('hidden');
     });
+
+    // CORRECTION (BUG SWIPE): Ajout d'un écouteur de clic sur la poignée
+    document.querySelector('.panel-handle').addEventListener('click', () => {
+        document.getElementById('route-filter-panel').classList.add('hidden');
+    });
+
     document.getElementById('select-all-routes').addEventListener('click', () => {
         dataManager.routes.forEach(route => {
             const checkbox = document.getElementById(`route-${route.route_id}`);
