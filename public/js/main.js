@@ -36,6 +36,28 @@ const ICONS = {
     }
 };
 
+// NOUVEAU: Mappage des noms de fichiers PDF (basé sur image_a01f3d.png)
+const PDF_FILENAME_MAP = {
+    'A': 'grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf',
+    'B': 'grandperigueux_fiche_horaires_ligne_B_sept_2025.pdf',
+    'C': 'grandperigueux_fiche_horaires_ligne_C_sept_2025.pdf',
+    'D': 'grandperigueux_fiche_horaires_ligne_D_sept_2025.pdf',
+    'K1A': 'grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf',
+    'K1B': 'grandperigueux_fiche_horaires_ligne_K1B_sept_2025.pdf',
+    'K2': 'grandperigueux_fiche_horaires_ligne_K2_sept_2025.pdf',
+    'K3A': 'grandperigueux_fiche_horaires_ligne_K3A_sept_2025.pdf',
+    'K3B': 'grandperigueux_fiche_horaires_ligne_K3B_sept_2025.pdf',
+    'K4A': 'grandperigueux_fiche_horaires_ligne_K4A_sept_2025.pdf',
+    'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
+    'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
+    'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
+    'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
+    // Ajoutez les autres (e, R, N1) ici au fur et à mesure
+    // 'e1': 'nom_fichier_e1.pdf',
+    // 'N1': 'nom_fichier_N1.pdf',
+    // 'R1': 'nom_fichier_R1.pdf',
+};
+
 // ÉLÉMENTS DOM (Tableau de bord)
 let dashboardContainer, dashboardHall, dashboardContentView, btnBackToHall;
 let infoTraficList, infoTraficAvenir;
@@ -139,7 +161,8 @@ function setupDashboard() {
     buildFicheHoraireList();
     setupAdminConsole();
 
-    // Boutons de navigation (HALL -> PIÈCE)
+    // *** CORRECTION ICI ***
+    // Attache les écouteurs aux 3 boutons du "Hall"
     document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
         button.addEventListener('click', () => {
             const view = button.dataset.view;
@@ -153,6 +176,7 @@ function setupDashboard() {
     // Boutons de navigation (RETOUR)
     btnBackToDashboard.addEventListener('click', showDashboardHall); // (Depuis la carte)
     btnBackToHall.addEventListener('click', showDashboardHall); // (Depuis une pièce)
+    // *** FIN CORRECTION ***
 
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
 
@@ -199,7 +223,7 @@ function setupAdminConsole() {
 }
 
 /**
- * NOUVEAU DESIGN: Affiche la carte "Info Trafic" (inspiré de image_a08441.png)
+ * CORRIGÉ: Affiche la carte "Info Trafic" (design image_a08441.png)
  */
 function renderInfoTraficCard() {
     infoTraficList.innerHTML = '';
@@ -241,14 +265,14 @@ function renderInfoTraficCard() {
             const textColor = route.route_text_color ? `#${route.route_text_color}` : '#ffffff';
 
             let statusIcon = '';
-            let statusColor = '';
+            let statusColor = 'transparent'; // Couleur par défaut
             if (state.status !== 'normal') {
                 alertCount++;
                 if (state.status === 'annulation') statusColor = 'var(--color-red)';
                 else if (state.status === 'retard') statusColor = 'var(--color-yellow)';
                 else statusColor = 'var(--color-orange)';
                 
-                statusIcon = `<div class="status-indicator-triangle type-${state.status}" style="border-bottom-color: ${statusColor};">${ICONS.statusTriangle}</div>`;
+                statusIcon = `<div class="status-indicator-triangle type-${state.status}" style="border-bottom-color: ${statusColor};"></div>`;
             }
 
             badgesHtml += `
@@ -321,12 +345,19 @@ function buildFicheHoraireList() {
         });
         
         routes.forEach(route => {
-            // CORRECTION: Génère le nom de fichier basé sur le pattern (image_a01f3d.png)
-            // ex: grandperigueux_fiche_horaires_ligne_A_sept_2025.pdf
-            // ex: grandperigueux_fiche_horaires_ligne_K1A_sept_2025.pdf
-            const pdfName = `grandperigueux_fiche_horaires_ligne_${route.route_short_name}_sept_2025.pdf`;
-            const pdfPath = `/data/fichehoraire/${pdfName}`;
+            // CORRECTION: Utilise le mappage de noms de fichiers
+            // (Note: j'utilise les noms de l'image 'image_a01f3d.png' comme base)
+            const pdfName = PDF_FILENAME_MAP[route.route_short_name];
             
+            if (!pdfName) {
+                // Si le fichier n'est pas dans la map, on tente de le deviner
+                // (au cas où vous ajouteriez 'e1.pdf' etc. plus tard)
+                console.warn(`Nom de fichier PDF non mappé pour ${route.route_short_name}. Tentative avec le nom simple.`);
+                // pdfName = `${route.route_short_name}.pdf`; // Décommentez pour activer le fallback
+                return; // Pour l'instant, on saute s'il n'est pas mappé
+            }
+            
+            const pdfPath = `/data/fichehoraire/${pdfName}`;
             linksHtml += `<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">
                 ${route.route_long_name || `Ligne ${route.route_short_name}`}
             </a>`;
