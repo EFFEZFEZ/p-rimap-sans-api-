@@ -88,6 +88,24 @@
                     </div>
 
                 </div>
+                <div class="bottom-content-wrapper">
+                    <div class="bottom-grid">
+                        <div class="card">
+                            <h4>Explorer le réseau</h4>
+                            <p>Accédez rapidement aux sections principales de l'application.</p>
+                            <ul class="quick-links">
+                                <li><a href="#" data-view-link="horaires">Consulter les horaires</a></li>
+                                <li><a href="#" data-view-link="info-trafic">Voir l'état du trafic</a></li>
+                                <li><a href="#" id="quick-link-map">Ouvrir la carte</a></li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h4>À propos de ce projet</h4>
+                            <p>Ce site est une démonstration non-officielle réalisée dans le but de visualiser les données GTFS d'un réseau de transport en temps réel.</p>
+                            <p>Il ne s'agit pas d'un site officiel et les données peuvent ne pas refléter la réalité.</p>
+                        </div>
+                    </div>
+                </div>
                 </div> 
             
             <div id="dashboard-content-view" class="hidden">
@@ -198,53 +216,6 @@
 
     </div> 
 
-    <footer id="main-footer">
-        <div class="footer-content">
-            <div class="footer-col">
-                <div class="logo">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-logo-icon"><path d="M19 18h-2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M12 18V6"/><path d="M7 18h10"/><path d="m12 6 3 3-3 3"/><path d="M10 15h4"/></svg>
-                    <span>Mon Réseau</span>
-                </div>
-                <p class="footer-description">Votre partenaire mobilité pour tous vos déplacements sur le territoire.</p>
-                <div class="footer-socials">
-                    <a href="#" title="Facebook"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>
-                    <a href="#" title="X (Twitter)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25c.012 1.54-1.248 3.038-2.68 3.652 1.018 1.12 1.764 2.186 2.21 3.538 1.18-.79 2.542-1.22 3.81-1.22.162 0 .324.01.484.022-1.312 1.63-3.232 2.766-5.46 3.234.1 1.63-.44 3.012-1.5 4.148-1.57 1.704-3.61 2.65-5.83 2.65-2.02 0-3.87-.75-5.28-2.06.38.03.75.044 1.11.044 1.77 0 3.37-.61 4.66-1.81-1.63-.03-3.01-1.11-3.48-2.59.23.04.45.06.69.06.34 0 .67-.04 1-.13-1.7-.34-2.99-1.84-2.99-3.6v-.04c.5.28 1.08.45 1.7.47C3.39 12.02 2.7 10.32 2.7 8.5c0-.95.25-1.85.7-2.65 1.83 2.25 4.54 3.73 7.6 3.85C10.87 9.3 11.1 8.8 11.22 8.3c.36-1.5 1.6-2.6 3.15-2.6 1.73 0 3.18 1.48 3.18 3.2 0 .02 0 .04-.002.06.94-.04 1.83-.28 2.65-.78-.3.98-.94 1.8-1.8 2.32.83-.1 1.62-.3 2.34-.62-.55.8-1.24 1.5-2.05 2.04z"></path></svg></a>
-                    <a href="#" title="Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c2.717 0 3.056.01 4.122.06c1.065.05 1.79.217 2.428.465c.66.254 1.216.598 1.772 1.153c.557.557.9 1.112 1.153 1.772c.248.637.415 1.363.465 2.428c.047 1.066.06 1.405.06 4.122c0 2.717-.01 3.056-.06 4.122c-.05 1.065-.217 1.79-.465 2.428a3.898 3.898 0 0 1-1.153 1.772a3.898 3.898 0 0 1-1.772 1.153c-.637.248-1.363.415-2.428.465c-1.066.047-1.405.06-4.122.06c-2.717 0-3.056-.01-4.122-.06c-1.065-.05-1.79-.217-2.428-.465a3.898 3.898 0 0 1-1.772-1.153a3.898 3.898 0 0 1-1.153-1.772c-.248-.637-.415-1.363-.465-2.428C2.013 15.056 2 14.717 2 12c0-2.717.01-3.056.06-4.122c.05-1.065.217-1.79.465-2.428a3.898 3.898 0 0 1 1.153-1.772A3.898 3.898 0 0 1 5.45 2.525c.637-.248 1.363-.415 2.428-.465C8.944 2.013 9.283 2 12 2zm0 1.8c-2.649 0-2.984.01-4.042.058c-.975.045-1.504.207-1.857.344c-.457.18-.764.39-.98.607c-.218.218-.426.524-.607.98c-.137.353-.3.882-.344 1.857C4.013 8.016 4 8.351 4 12c0 3.649.01 3.984.058 4.042c.045.975.207 1.504.344 1.857c.18.457.39.764.607.98c.218.218.524.426.98.607c.353.137.882.3 1.857.344c1.057.048 1.393.058 4.042.058c2.649 0 2.984-.01 4.042-.058c.975-.045 1.504-.207 1.857-.344c.457-.18.764-.39.98-.607c.218-.218.426-.524.607-.98c.137-.353.3-.882.344-1.857c.048-1.057.058-1.393.058-4.042c0-3.649-.01-3.984-.058-4.042c-.045-.975-.207-1.504-.344-1.857c-.18-.457-.39-.764-.607-.98c-.218-.218-.524-.426-.98-.607c-.353-.137-.882-.3-1.857-.344C14.984 4.013 14.649 4 12 4zm0 2.88a5.12 5.12 0 1 0 0 10.24a5.12 5.12 0 0 0 0-10.24zM12 15a3 3 0 1 1 0-6a3 3 0 0 1 0 6zm6.406-6.88a1.2 1.2 0 1 1-2.4 0a1.2 1.2 0 0 1 2.4 0z"></path></svg></a>
-                </div>
-            </div>
-            <div class="footer-col">
-                <h4>Se déplacer</h4>
-                <ul>
-                    <li><a href="#">Horaires & Lignes</a></li>
-                    <li><a href="#">État du Réseau</a></li>
-                    <li><a href="#">Carte Interactive</a></li>
-                    <li><a href="#">Calculateur d'itinéraire</a></li>
-                    <li><a href="#">Transport Scolaire</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>Informations</h4>
-                <ul>
-                    <li><a href="#">Tarifs</a></li>
-                    <li><a href="#">Actualités</a></li>
-                    <li><a href="#">Objets trouvés</a></li>
-                    <li><a href="#">Contactez-nous</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>À propos</h4>
-                <ul>
-                    <li><a href="#">Qui sommes-nous ?</a></li>
-                    <li><a href="#">Recrutement</a></li>
-                    <li><a href="#">Mentions légales</a></li>
-                    <li><a href="#">Politique de confidentialité</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>© 2025 Mon Réseau. Tous droits réservés.</p>
-        </div>
-    </footer>
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
