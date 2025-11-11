@@ -185,6 +185,7 @@ body {
     box-shadow: var(--shadow-md);
 }
 
+/* *** MODIFICATION ICI *** */
 .hero-section .planner-block-wrapper {
     background: transparent;
     border: none;
@@ -192,7 +193,10 @@ body {
     padding: 0;
     margin: 0 auto; 
     max-width: 900px;
+    position: relative; /* Ajouté */
+    z-index: 2; /* Ajouté (plus élevé que les boutons) */
 }
+/* *** FIN DE LA MODIFICATION *** */
 
 .hero-section .planner-block {
     background: rgba(255, 255, 255, 0.85);
@@ -255,7 +259,7 @@ body {
     margin-left: auto;
     margin-right: auto;
     position: relative; 
-    z-index: 1; 
+    z-index: 1; /* Inférieur au planificateur */
 }
 
 .nav-button-condensed {
@@ -1447,7 +1451,7 @@ details[open] .accordion-content {
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
-    z-index: 1100;
+    z-index: 1100; /* Z-index élevé pour le popover lui-même */
     overflow: hidden;
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
