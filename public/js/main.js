@@ -147,15 +147,20 @@ async function initializeApp() {
     searchResultsContainer = document.getElementById('horaires-search-results');
 
     // NOUVEAU: Sélection des éléments du planificateur
+    // NOUVEAU: Sélection des éléments du planificateur
     plannerFromInput = document.getElementById('hall-planner-from');
     plannerToInput = document.getElementById('hall-planner-to');
     plannerInvertBtn = document.getElementById('planner-invert-btn');
-    plannerDateInput = document.getElementById('hall-planner-date');
-    plannerTimeInput = document.getElementById('hall-planner-time');
+    // plannerDateInput et plannerTimeInput NE SONT PLUS UTILISÉS EN TANT QU'INPUTS DIRECTS
     plannerSearchBtn = document.getElementById('planner-search-btn');
     plannerResultsView = document.getElementById('planner-results-view');
     btnBackFromResults = document.getElementById('btn-back-to-hall-from-results');
     plannerResultsMapEl = document.getElementById('planner-results-map');
+    
+    // NOUVEAU: Éléments du sélecteur de temps
+    const plannerTimeBtn = document.getElementById('planner-time-btn');
+    const plannerTimePanel = document.getElementById('planner-time-panel');
+    const timePanelConfirmBtn = document.getElementById('time-panel-confirm-btn');
 
     dataManager = new DataManager();
     
@@ -273,18 +278,101 @@ function setupAdminConsole() {
  * NOUVEAU: Initialise le planificateur "Où allons-nous ?"
  */
 function initPlanner() {
-    // 1. Initialiser la date et l'heure
-    initPlannerDateTime();
+    const plannerTimeBtn = document.getElementById('planner-time-btn');
+    const plannerTimePanel = document.getElementById('planner-time-panel');
+    const timePanelConfirmBtn = document.getElementById('time-panel-confirm-btn'); 
+    const dateSelectInput = document.getElementById('date-select-input');
+    const hourSelectInput = document.getElementById('hour-select-input');
+    const minutesSelectInput = document.getElementById('minutes-select-input');
+    
+    let isPartirMaintenant = true;
 
-    // 2. Attacher les écouteurs
+    // 1. Initialiser la date et l'heure dans le panneau
+    function updatePanelTime() {
+        const now = timeManager.getCurrentDate();
+        dateSelectInput.value = now.toISOString().slice(0, 10);
+        hourSelectInput.value = String(now.getHours()).padStart(2, '0');
+        minutesSelectInput.value = String(now.getMinutes()).padStart(2, '0');
+    }
+    updatePanelTime();
+
+
+    // 2. Logique du bouton "Partir maintenant"
+    plannerTimeBtn.addEventListener('click', (e) => {
+        // Aligne le panneau à la droite du conteneur si nécessaire
+        const btnRect = plannerTimeBtn.getBoundingClientRect();
+        const wrapperRect = plannerTimePanel.parentElement.getBoundingClientRect();
+        if (btnRect.right + 320 > wrapperRect.right) {
+            plannerTimePanel.style.left = 'auto';
+            plannerTimePanel.style.right = '0';
+        }
+        
+        plannerTimePanel.classList.toggle('hidden');
+        plannerTimeBtn.setAttribute('aria-expanded', plannerTimePanel.classList.contains('hidden') ? 'false' : 'true');
+        updatePanelTime(); // Met à jour l'heure avant d'ouvrir
+    });
+    
+    // Fermeture si on clique ailleurs
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.planner-time-selector-wrapper') && !plannerTimePanel.classList.contains('hidden')) {
+            plannerTimePanel.classList.add('hidden');
+            plannerTimeBtn.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+
+    // 3. Logique de confirmation du panneau
+    timePanelConfirmBtn.addEventListener('click', () => {
+        if (timePanelConfirmBtn.textContent === 'Partir maintenant') {
+            isPartirMaintenant = true;
+            plannerTimeBtn.innerHTML = `Partir maintenant <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+        } else {
+            isPartirMaintenant = false;
+            const date = new Date(dateSelectInput.value);
+            const hour = String(hourSelectInput.value).padStart(2, '0');
+            const min = String(minutesSelectInput.value).padStart(2, '0');
+            const formattedDate = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+            
+            // Met à jour le texte du bouton principal
+            plannerTimeBtn.innerHTML = `${formattedDate} à ${hour}:${min} <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+        }
+        
+        plannerTimePanel.classList.add('hidden');
+        plannerTimeBtn.setAttribute('aria-expanded', 'false');
+    });
+    
+    // 4. Mettre à jour le bouton de confirmation si les inputs changent
+    document.querySelectorAll('.time-panel-body input').forEach(input => {
+        input.addEventListener('input', () => {
+            timePanelConfirmBtn.textContent = 'Confirmer';
+            timePanelConfirmBtn.classList.add('btn-secondary');
+            timePanelConfirmBtn.classList.remove('btn-primary');
+        });
+    });
+    
+    // 5. Gérer les onglets "Partir" / "Arriver" (uniquement le style pour l'instant)
+    document.querySelectorAll('.time-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            // Simule le changement du bouton de confirmation
+            if (tab.dataset.type === 'depart') {
+                timePanelConfirmBtn.innerHTML = `Partir maintenant`;
+                timePanelConfirmBtn.classList.remove('btn-secondary');
+                timePanelConfirmBtn.classList.add('btn-primary');
+            } else {
+                timePanelConfirmBtn.innerHTML = `Arriver avant`;
+            }
+        });
+    });
+
+    // 6. Attacher les écouteurs du planificateur principal
     plannerInvertBtn.addEventListener('click', invertPlannerInputs);
     plannerSearchBtn.addEventListener('click', executePlannerSearch);
 
     // Le bouton retour sur la page de résultats
     btnBackFromResults.addEventListener('click', showDashboardHall);
-    
-    // TODO: Étape 2 - Initialiser l'autocomplétion Google Places ici
-    // initGooglePlaces();
 }
 
 /**
