@@ -101,7 +101,7 @@ let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
 let mapContainer, btnShowMap, btnBackToDashboardFromMap;
 
 // ÉLÉMENTS DOM (VUE 3: RÉSULTATS)
-let itineraryResultsContainer, btnBackToDashboardFromResults;
+let itineraryResultsContainer, btnBackToDashboardFromResults, resultsListContainer;
 
 
 // Catégories de lignes
@@ -149,6 +149,9 @@ async function initializeApp() {
     
     itineraryResultsContainer = document.getElementById('itinerary-results-container');
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
+    // *** NOUVEL ÉLÉMENT SÉLECTIONNÉ ***
+    resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
+
 
     // --- 2. ATTACHER LES ÉCOUTEURS STATIQUES ---
     setupStaticEventListeners();
@@ -238,7 +241,7 @@ function setupStaticEventListeners() {
             plannerWhenBtn.classList.remove('popover-active');
         }
         console.log("Recherche lancée, transition vers la vue RÉSULTATS...");
-        showResultsView(); // *** CORRECTION DE LOGIQUE ***
+        showResultsView(); 
     });
 
     // Boutons de retour
@@ -645,17 +648,27 @@ function showDashboardHall() {
     });
 }
 
+// *** FONCTION MODIFIÉE ***
 function showResultsView() {
     dashboardContainer.classList.add('hidden');
     itineraryResultsContainer.classList.remove('hidden');
     mapContainer.classList.add('hidden');
     document.body.classList.add('view-is-locked');
+
+    // Invalide la taille de la carte des résultats
     if (resultsMapRenderer && resultsMapRenderer.map) {
         resultsMapRenderer.map.invalidateSize();
     }
-    // C'est ici qu'on lancera la recherche d'itinéraire
-    // et qu'on affichera la trace sur `resultsMapRenderer`
+
+    // Vide la liste des résultats et affiche un message de chargement
+    if (resultsListContainer) {
+        resultsListContainer.innerHTML = '<p class="results-message">Recherche d\'itinéraire en cours...</p>';
+    }
+
+    // C'est ici qu'on lancera l'appel à l'API
+    // fetchItinerary(); 
 }
+// *** FIN DE LA MODIFICATION ***
 
 function showDashboardView(viewName) {
     dashboardHall.classList.remove('view-is-active');
@@ -729,9 +742,11 @@ function initializeRouteFilter() {
         routes.forEach(route => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'route-checkbox-item';
+            const routeColor = route.route_color ? `#${route.route_color}` : '3388ff';
+            const textColor = route.route_text_color ? `#${route.route_text_color}` : 'ffffff';
             itemDiv.innerHTML = `
                 <input type="checkbox" id="route-${route.route_id}" data-category="${categoryId}" checked>
-                <div class="route-badge" style="background-color: #${route.route_color || '3388ff'}; color: #${route.route_text_color || 'ffffff'};">
+                <div class="route-badge" style="background-color: #${routeColor}; color: #${textColor};">
                     ${route.route_short_name || route.route_id}
                 </div>
                 <span class="route-name">${route.route_long_name || route.route_short_name || route.route_id}</span>
@@ -858,7 +873,8 @@ function updateClock(seconds) {
     const secs = Math.floor(seconds % 60);
     const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     
-    document.getElementById('current-time').textContent = timeString;
+    const currentTimeEl = document.getElementById('current-time');
+    if (currentTimeEl) currentTimeEl.textContent = timeString;
     
     const now = new Date();
     const dateString = now.toLocaleDateString('fr-FR', { 
@@ -866,23 +882,28 @@ function updateClock(seconds) {
         day: 'numeric', 
         month: 'short' 
     });
-    document.getElementById('date-indicator').textContent = dateString;
+    const dateIndicatorEl = document.getElementById('date-indicator');
+    if (dateIndicatorEl) dateIndicatorEl.textContent = dateString;
 }
 
 function updateBusCount(visible, total) {
     const busCountElement = document.getElementById('bus-count');
-    busCountElement.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="12" r="10"/>
-        </svg>
-        ${visible} bus
-    `;
+    if (busCountElement) {
+        busCountElement.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+            </svg>
+            ${visible} bus
+        `;
+    }
 }
 
 function updateDataStatus(message, status = '') {
     const statusElement = document.getElementById('data-status');
-    statusElement.className = status;
-    statusElement.textContent = message;
+    if (statusElement) {
+        statusElement.className = status;
+        statusElement.textContent = message;
+    }
 }
 
 // Initialise l'application
