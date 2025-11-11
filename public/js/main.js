@@ -511,6 +511,13 @@ function showDashboardView(viewName) {
     dashboardHall.classList.remove('view-is-active');
     dashboardContentView.classList.add('view-is-active');
 
+    // *** CORRECTION (REQ 4) : Scrolle en haut de la vue ***
+    const mainDashboard = document.getElementById('dashboard-main');
+    if (mainDashboard) {
+        mainDashboard.scrollTo(0, 0);
+    }
+    // ******************************************************
+
     // Cache toutes les cartes...
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
