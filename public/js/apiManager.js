@@ -4,8 +4,8 @@
  * Ce module nécessitera l'activation des API "Places API" et "Routes API"
  * dans votre console Google Cloud, ainsi qu'une clé d'API.
  *
- * CORRECTION : Charge la v=beta de l'API Google Maps
- * et utilise le constructeur "PlaceAutocompleteService" moderne.
+ * CORRECTION FINALE : Charge "v=beta" ET "libraries=places,places-new"
+ * pour accéder au constructeur "PlaceAutocompleteService".
  */
 
 export class ApiManager {
@@ -39,8 +39,8 @@ export class ApiManager {
             const script = document.createElement('script');
             
             // *** CORRECTION ICI ***
-            // Ajout de "v=beta" pour charger les nouveaux services
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places&v=beta&callback=onGoogleMapsApiLoaded`;
+            // Ajout de "places-new" à la liste des bibliothèques
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places,places-new&v=beta&callback=onGoogleMapsApiLoaded`;
             
             script.async = true;
             script.defer = true;
@@ -48,7 +48,7 @@ export class ApiManager {
             
             // Le script ci-dessus appellera cette fonction globale
             window.onGoogleMapsApiLoaded = () => {
-                console.log("API Google Maps (v=beta) chargée avec succès.");
+                console.log("API Google Maps (v=beta, places-new) chargée avec succès.");
                 this.initServices();
                 resolve();
             };
@@ -68,8 +68,8 @@ export class ApiManager {
             return;
         }
         
-        // *** CORRECTION ICI ***
         // Utilise le service moderne "PlaceAutocompleteService"
+        // (Maintenant que "places-new" est chargé, cela devrait fonctionner)
         this.autocompleteService = new window.google.maps.places.PlaceAutocompleteService();
         
         // Crée un jeton de session pour l'autocomplétion (meilleure facturation)
@@ -93,16 +93,16 @@ export class ApiManager {
         return new Promise((resolve, reject) => {
             this.autocompleteService.getPlacePredictions({
                 input: inputString,
-                sessionToken: this.sessionToken, // *** Ajout du jeton de session ***
+                sessionToken: this.sessionToken, 
                 componentRestrictions: { country: 'fr' },
                 // Biais vers la zone de la Dordogne
                 bounds: this.dordogneBounds, 
-                strictBounds: false, // Ne pas limiter *strictement* à la Dordogne, juste préférer
+                strictBounds: false, 
             }, (predictions, status) => {
                 // Le statut de la nouvelle API est juste une chaîne, pas un objet enum
                 if (status !== "OK" || !predictions) {
                     console.warn("Échec de l'autocomplétion Places:", status);
-                    resolve([]); // Renvoyer une liste vide en cas d'échec
+                    resolve([]); 
                 } else {
                     // Formate les résultats
                     const results = predictions.map(p => ({
@@ -135,7 +135,6 @@ export class ApiManager {
             // --- Vos spécifications ---
             transitPreferences: {
                 allowedTravelModes: ["BUS", "WALK"], // Autorise BUS et MARCHE
-                // 'TRAIN' est exclu par défaut car non listé
             },
         };
 
@@ -145,7 +144,6 @@ export class ApiManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
-                    // Champ important pour ne renvoyer que les champs nécessaires
                     'X-Goog-FieldMask': 'routes.legs,routes.duration,routes.distanceMeters,routes.polyline,routes.steps' 
                 },
                 body: JSON.stringify(body)
@@ -168,7 +166,7 @@ export class ApiManager {
 
         } catch (error) {
             console.error("Erreur lors de l'appel à fetchItinerary:", error);
-            throw error; // Propage l'erreur pour que l'UI puisse la gérer
+            throw error; 
         }
     }
 }
