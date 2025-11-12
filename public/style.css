@@ -1620,6 +1620,45 @@ details[open] .accordion-content {
     padding-left: 0.75rem;
 }
 
+/* NOUVEAU : Barre de récapitulatif */
+#itinerary-summary-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--bg-main);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 1rem;
+}
+.itinerary-summary-inputs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow: hidden; /* Pour l'ellipsis */
+}
+.summary-line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+.summary-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+.summary-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
 .results-body {
     display: flex;
     flex: 1;
@@ -1853,5 +1892,19 @@ details[open] .accordion-content {
     }
     .results-header-title {
         display: none; /* Cache le titre pour faire de la place */
+    }
+
+    /* NOUVEAU : Media query pour la barre de récapitulatif */
+    #itinerary-summary-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+    }
+    .itinerary-summary-inputs {
+        gap: 0.25rem;
+    }
+    #btn-modify-search-summary {
+        margin-top: 0.5rem;
     }
 }
