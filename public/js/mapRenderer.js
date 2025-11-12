@@ -7,7 +7,7 @@
  * - Unifie la logique de mise à jour atomique du DOM pour tous les états
  * (moving/stationary) afin d'éliminer le clignotement.
  *
- * *** CORRECTION 2 (basée sur retour utilisateur) ***
+ * *** CORRECTION (V6 - basée sur retour utilisateur) ***
  * - Suppression de la logique 'reopenPopupAt' (transfert au terminus)
  * car les fichiers GTFS fournis n'utilisent pas de 'block_id'.
  */
@@ -209,7 +209,7 @@ export class MapRenderer {
     }
 
     /**
-     * MODIFIÉ (Section 6.2 de l'audit ET suppression logique 'block_id')
+     * MODIFIÉ (Suppression logique 'block_id')
      * Logique de mise à jour unifiée pour éliminer setContent()
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
@@ -253,7 +253,6 @@ export class MapRenderer {
                     iconElement.classList.toggle('bus-icon-waiting', isWaiting);
                 }
                 
-                // *** LOGIQUE DE L'AUDIT (Section 6.2) ***
                 if (markerData.marker.isPopupOpen()) {
                     const popup = markerData.marker.getPopup();
                     
@@ -265,7 +264,6 @@ export class MapRenderer {
                         const currentState = bus.segment ? 'moving' : 'stationary';
 
                         // NOUVELLE LOGIQUE UNIFIÉE :
-                        // Mettre à jour atomiquement le DOM quel que soit le dernier état.
                         if (currentState === 'moving') {
                             this.updateMovingBusPopup(popupElement, bus, tripScheduler);
                         } else {
@@ -279,7 +277,6 @@ export class MapRenderer {
                     // Mettre à jour l'état même si fermé
                     markerData.lastState = bus.segment ? 'moving' : 'stationary';
                 }
-                // *** FIN DE LA LOGIQUE DE L'AUDIT ***
 
             } else {
                 // Nouveau marqueur
@@ -302,7 +299,6 @@ export class MapRenderer {
     }
 
     /**
-     * MODIFIÉ (Section 5.1 de l'audit)
      * Mise à jour atomique pour un bus en mouvement
      */
     updateMovingBusPopup(popupElement, bus, tripScheduler) {
@@ -336,7 +332,6 @@ export class MapRenderer {
     }
 
     /**
-     * NOUVEAU (Section 6.1 de l'audit)
      * Mise à jour atomique pour un bus à l'arrêt (intermédiaire)
      */
     updateStationaryBusPopup(popupElement, bus, tripScheduler) {
@@ -344,7 +339,6 @@ export class MapRenderer {
             // 'bus.position' contient les infos de l'arrêt (cf tripScheduler)
             const stopName = bus.position.stopInfo.stop_name;
             const departureTime = bus.position.nextDepartureTime;
-            // *** CORRECTION *** : Utilisation de dataManager.formatTime
             const departureText = tripScheduler.dataManager.formatTime(departureTime).substring(0, 5);
             
             const stateText = `À l'arrêt`;
@@ -372,7 +366,6 @@ export class MapRenderer {
 
 
     /**
-     * MODIFIÉ (Section 5.1 de l'audit)
      * Crée le contenu popup avec une structure HTML unifiée
      */
     createBusPopupContent(bus, tripScheduler) {
@@ -401,7 +394,6 @@ export class MapRenderer {
             // Cas 2: Bus en attente à un arrêt
             const stopName = bus.position.stopInfo.stop_name;
             const departureTime = bus.position.nextDepartureTime;
-            // *** CORRECTION *** : Utilisation de dataManager.formatTime
             const departureText = tripScheduler.dataManager.formatTime(departureTime).substring(0, 5);
             
             stateText = `À l'arrêt`;
@@ -510,7 +502,6 @@ export class MapRenderer {
 
     /**
      * Zoome sur un arrêt
-     * MODIFIÉ : Ne crée plus le popup simple.
      */
     zoomToStop(stop) {
         const lat = parseFloat(stop.stop_lat);
@@ -527,9 +518,6 @@ export class MapRenderer {
             iconAnchor: [6, 6]
         });
         this.tempStopMarker = L.marker([lat, lon], { icon: stopIcon }).addTo(this.map);
-        
-        // *** LIGNE SUPPRIMÉE (CORRECTION DU BUG) ***
-        // this.tempStopMarker.bindPopup(`<b>${stop.stop_name}</b>`).openPopup();
     }
 
     /**
@@ -574,10 +562,8 @@ export class MapRenderer {
         const currentSeconds = this.timeManager.getCurrentSeconds();
         const currentDate = this.timeManager.getCurrentDate();
 
-        // CORRECTION 1: Récupérer le tableau des quais via groupedStopMap
         const associatedStopIds = this.dataManager.groupedStopMap[masterStop.stop_id] || [masterStop.stop_id];
 
-        // CORRECTION 2: Appeler "getUpcomingDepartures" (et non "getNextDepartures") avec le tableau
         const departures = this.dataManager.getUpcomingDepartures(associatedStopIds, currentSeconds, currentDate, 5);
 
         const popupContent = this.createStopPopupContent(masterStop, departures, currentSeconds);
@@ -594,10 +580,9 @@ export class MapRenderer {
      * Formate le contenu HTML pour le popup d'un arrêt
      */
     createStopPopupContent(masterStop, departures, currentSeconds) {
-        // Utilise les classes uniformisées
         let html = `<div class="info-popup-content">`;
         html += `<div class="info-popup-header">${masterStop.stop_name}</div>`;
-        html += `<div class="info-popup-body">`; // Anciennement departures-list
+        html += `<div class="info-popup-body">`; 
 
         if (departures.length === 0) {
             html += `<div class="departure-item empty">Aucun prochain passage trouvé.</div>`;
@@ -614,7 +599,6 @@ export class MapRenderer {
                     }
                 }
 
-                // *** CORRECTION DE LA FAUTE DE FRAPPE ICI (c'était class.) ***
                 html += `
                     <div class="departure-item">
                         <div class="departure-info">
