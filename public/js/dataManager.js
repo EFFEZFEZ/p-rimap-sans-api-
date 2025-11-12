@@ -1,11 +1,6 @@
 /**
- * dataManager.js
- * * Gère le chargement et le parsing des données GTFS et GeoJSON
- *
- * CORRECTION V5:
- * - Implémente la logique GTFS complète pour getServiceId (gère type 1 et 2)
- * - CORRIGE l'incohérence des service_id ('.timetable:' vs ':Timetable:')
- * en normalisant les ID dans getActiveTrips et getUpcomingDepartures.
+ * dataManager.js - CORRECTION V5 (Nettoyage des guillemets CSV)
+ * Corrige le bug des service_id avec guillemets parasites
  */
 
 export class DataManager {
@@ -24,13 +19,29 @@ export class DataManager {
         this.groupedStopMap = {}; 
 
         this.stopTimesByStop = {}; 
-        this.tripsByTripId = {}; // Stocke les trips par ID
-        this.stopTimesByTrip = {}; // Stocke les stop_times par trip_id
+        this.tripsByTripId = {};
+        this.stopTimesByTrip = {};
     }
 
     /**
-     * Charge tous les fichiers GTFS et GeoJSON
+     * 🆕 Nettoie les guillemets parasites des fichiers CSV
      */
+    cleanCSVValue(value) {
+        if (typeof value !== 'string') return value;
+        return value.replace(/^["']|["']$/g, '').trim();
+    }
+
+    /**
+     * 🆕 Nettoie récursivement tous les champs d'un objet
+     */
+    cleanObject(obj) {
+        const cleaned = {};
+        for (const key in obj) {
+            cleaned[key] = this.cleanCSVValue(obj[key]);
+        }
+        return cleaned;
+    }
+
     async loadAllData() {
         try {
             console.log('📦 Chargement des données GTFS et GeoJSON...');
@@ -45,35 +56,37 @@ export class DataManager {
                 this.loadGeoJSON()
             ]);
 
-            this.routes = routes;
-            this.trips = trips;
-            this.stopTimes = stopTimes;
-            this.stops = stops;
-            this.calendar = calendar;
-            this.calendarDates = calendarDates;
+            // 🔧 CORRECTION: Nettoyer les guillemets parasites
+            this.routes = routes.map(r => this.cleanObject(r));
+            this.trips = trips.map(t => this.cleanObject(t));
+            this.stopTimes = stopTimes.map(st => this.cleanObject(st));
+            this.stops = stops.map(s => this.cleanObject(s));
+            this.calendar = calendar.map(c => this.cleanObject(c));
+            this.calendarDates = calendarDates.map(cd => this.cleanObject(cd));
             this.geoJson = geoJson;
 
             console.log('🛠️  Pré-traitement des données...');
 
-            // Indexer les routes pour un accès rapide
+            // Indexer les routes
             this.routesById = this.routes.reduce((acc, route) => {
                 acc[route.route_id] = route;
                 return acc;
             }, {});
 
-            // Indexer les arrêts pour un accès rapide
+            // Indexer les arrêts
             this.stopsById = this.stops.reduce((acc, stop) => {
                 acc[stop.stop_id] = stop;
                 return acc;
             }, {});
 
-            // Regrouper les stop_times par trip_id (TRÈS IMPORTANT)
+            // Regrouper les stop_times par trip_id
             this.stopTimes.forEach(st => {
                 if (!this.stopTimesByTrip[st.trip_id]) {
                     this.stopTimesByTrip[st.trip_id] = [];
                 }
                 this.stopTimesByTrip[st.trip_id].push(st);
             });
+            
             // Trier les stop_times par sequence
             for (const tripId in this.stopTimesByTrip) {
                 this.stopTimesByTrip[tripId].sort((a, b) => parseInt(a.stop_sequence) - parseInt(b.stop_sequence));
@@ -87,20 +100,32 @@ export class DataManager {
             this.groupNearbyStops();
             this.preprocessStopTimesByStop();
 
-            console.log('✅ Données chargées et traitées.');
+            // 🔍 DEBUG: Afficher des exemples de service_id
+            console.log('✅ Données chargées:');
+            console.log(`  - ${this.routes.length} routes`);
+            console.log(`  - ${this.trips.length} trips`);
+            console.log(`  - ${this.stopTimes.length} stop_times`);
+            console.log(`  - ${this.stops.length} stops`);
+            console.log(`  - ${this.calendar.length} entrées calendar`);
+            console.log(`  - ${this.calendarDates.length} entrées calendar_dates`);
+            
+            if (this.calendar.length > 0) {
+                console.log(`📋 Exemple service_id (calendar): "${this.calendar[0].service_id}"`);
+            }
+            if (this.trips.length > 0) {
+                console.log(`📋 Exemple service_id (trips): "${this.trips[0].service_id}"`);
+            }
+
             this.isLoaded = true;
 
         } catch (error) {
-            console.error('Erreur fatale lors du chargement des données:', error);
-            this.showError('Erreur de chargement des données', 'Vérifiez que les fichiers GTFS sont présents dans /public/data/gtfs/ et que map.geojson est dans /public/data/.');
+            console.error('❌ Erreur fatale lors du chargement:', error);
+            this.showError('Erreur de chargement des données', 'Vérifiez que les fichiers GTFS sont présents dans /public/data/gtfs/');
             this.isLoaded = false;
         }
         return this.isLoaded;
     }
 
-    /**
-     * Charge un fichier GTFS (CSV)
-     */
     async loadGTFSFile(filename) {
         const response = await fetch(`/data/gtfs/${filename}`);
         if (!response.ok) {
@@ -118,21 +143,15 @@ export class DataManager {
         });
     }
 
-    /**
-     * Charge le fichier GeoJSON
-     */
     async loadGeoJSON() {
         const response = await fetch('/data/map.geojson');
         if (!response.ok) {
-            console.warn(`map.geojson non trouvé ou invalide: ${response.statusText}. Les tracés de route ne seront pas disponibles.`);
-            return null; // N'est pas une erreur fatale
+            console.warn(`⚠️  map.geojson non trouvé: ${response.statusText}`);
+            return null;
         }
         return await response.json();
     }
 
-    /**
-     * Affiche une erreur non-bloquante
-     */
     showError(title, message) {
         const errorElement = document.getElementById('instructions');
         if (errorElement) {
@@ -146,9 +165,6 @@ export class DataManager {
         }
     }
 
-    /**
-     * Regroupe les arrêts basés sur parent_station (logique V4)
-     */
     groupNearbyStops() {
         this.masterStops = [];
         this.groupedStopMap = {};
@@ -181,12 +197,9 @@ export class DataManager {
             }
         });
 
-        console.log(`Arrêts regroupés: ${this.masterStops.length} arrêts maîtres.`);
+        console.log(`📍 ${this.masterStops.length} arrêts maîtres créés`);
     }
 
-    /**
-     * Prétraite les stop_times par stop_id pour des recherches rapides
-     */
     preprocessStopTimesByStop() {
         this.stopTimes.forEach(st => {
             if (!this.stopTimesByStop[st.stop_id]) {
@@ -196,16 +209,15 @@ export class DataManager {
         });
     }
 
-    /**
-     * Récupère les prochains départs pour une liste d'arrêts (V4)
-     */
     getUpcomingDepartures(stopIds, currentSeconds, date, limit = 5) {
-        const serviceId = this.getServiceId(date);
+        const serviceIdSet = this.getServiceIds(date);
         
-        // *** CORRECTION INCOHÉRENCE GTFS ***
-        // Normalise l'ID pour correspondre à trips.txt
-        const normalizedServiceId = serviceId ? serviceId.replace(".timetable:", ":Timetable:") : null;
-        if (!normalizedServiceId) return [];
+        if (serviceIdSet.size === 0) {
+            console.warn('⚠️  Aucun service actif trouvé pour cette date');
+            return [];
+        }
+
+        console.log(`🔍 Recherche départs pour ${stopIds.length} arrêts à ${this.formatTime(currentSeconds)}`);
 
         let allDepartures = [];
 
@@ -213,10 +225,13 @@ export class DataManager {
             const stops = this.stopTimesByStop[stopId] || [];
             stops.forEach(st => {
                 const trip = this.tripsByTripId[st.trip_id];
+                if (!trip) return;
 
-                // *** CORRECTION APPLIQUÉE ICI AUSSI (par sécurité) ***
-                // Compare avec l'ID normalisé en utilisant startsWith
-                if (trip && trip.service_id.startsWith(normalizedServiceId)) {
+                const isServiceActive = Array.from(serviceIdSet).some(activeServiceId => {
+                    return this.serviceIdsMatch(trip.service_id, activeServiceId);
+                });
+
+                if (isServiceActive) {
                     const departureSeconds = this.timeToSeconds(st.departure_time);
                     if (departureSeconds >= currentSeconds) {
                         allDepartures.push({
@@ -232,6 +247,8 @@ export class DataManager {
 
         allDepartures.sort((a, b) => a.departureSeconds - b.departureSeconds);
         allDepartures = allDepartures.slice(0, limit);
+
+        console.log(`✅ ${allDepartures.length} départs trouvés`);
 
         return allDepartures.map(dep => {
             const trip = this.tripsByTripId[dep.tripId];
@@ -250,29 +267,30 @@ export class DataManager {
     }
 
     /**
-     * Récupère les informations d'une route par ID
+     * Compare deux service IDs (gère préfixes et variations)
      */
+    serviceIdsMatch(tripServiceId, activeServiceId) {
+        // Correspondance exacte
+        if (tripServiceId === activeServiceId) return true;
+        
+        // Correspondance avec préfixe (ex: :Timetable:9:1 correspond à :Timetable:9)
+        if (tripServiceId.startsWith(activeServiceId + ':')) return true;
+        
+        return false;
+    }
+
     getRoute(routeId) {
         return this.routesById[routeId] || null;
     }
 
-    /**
-     * Récupère les informations d'un arrêt par ID
-     */
     getStop(stopId) {
         return this.stopsById[stopId] || null;
     }
 
-    /**
-     * Récupère les stop_times pour un tripId
-     */
     getStopTimes(tripId) {
         return this.stopTimesByTrip[tripId] || [];
     }
     
-    /**
-     * Récupère la géométrie (GeoJSON) d'une route
-     */
     getRouteGeometry(routeId) {
         if (!this.geoJson || !this.geoJson.features) {
             return null;
@@ -285,17 +303,11 @@ export class DataManager {
         return feature ? feature.geometry : null;
     }
 
-    /**
-     * Convertit le temps HH:MM:SS en secondes
-     */
     timeToSeconds(timeStr) {
         const [hours, minutes, seconds] = timeStr.split(':').map(Number);
         return hours * 3600 + minutes * 60 + seconds;
     }
     
-    /**
-     * Formate les secondes en HH:MM:SS
-     */
     formatTime(seconds) {
         const hours = Math.floor(seconds / 3600) % 24;
         const minutes = Math.floor((seconds % 3600) / 60);
@@ -303,101 +315,108 @@ export class DataManager {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    /**
-     * Convertit les degrés en radians
-     */
     toRad(value) {
         return value * Math.PI / 180;
     }
 
     /**
-     * *** FONCTION CORRIGÉE (LOGIQUE GTFS COMPLÈTE) ***
-     * Récupère le service_id pour la date donnée en respectant 
-     * la priorité de calendar_dates sur calendar.
+     * Récupère tous les service_id actifs pour une date
      */
-    getServiceId(date) {
+    getServiceIds(date) {
         const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
         const dateString = date.getFullYear() +
                            String(date.getMonth() + 1).padStart(2, '0') +
                            String(date.getDate()).padStart(2, '0');
 
-        // Étape 1: Vérifier les AJOUTS (type 1) dans calendar_dates.txt
-        const addedService = this.calendarDates.find(d => 
-            d.date === dateString && d.exception_type === '1'
-        );
+        console.log(`📅 Analyse du ${dateString} (${dayOfWeek})`);
 
-        if (addedService) {
-            console.log(`[getServiceId] Service AJOUTÉ trouvé (type 1): ${addedService.service_id}`);
-            return addedService.service_id;
-        }
+        const activeServiceIds = new Set();
 
-        // Étape 2: Si aucun ajout, trouver les SUPPRESSIONS (type 2) pour aujourd'hui
+        // Étape 1: Suppressions (exception_type = 2)
         const removedServiceIds = new Set();
         this.calendarDates.forEach(d => {
             if (d.date === dateString && d.exception_type === '2') {
                 removedServiceIds.add(d.service_id);
+                console.log(`  ❌ Service supprimé: ${d.service_id}`);
             }
         });
 
-        if (removedServiceIds.size > 0) {
-            console.log(`[getServiceId] Services SUPPRIMÉS (type 2) trouvés:`, Array.from(removedServiceIds));
+        // Étape 2: Services réguliers (calendar.txt)
+        let debugCount = 0;
+        this.calendar.forEach(s => {
+            const isActiveDay = s[dayOfWeek] === '1';
+            const isInDateRange = s.start_date <= dateString && s.end_date >= dateString;
+            const isNotRemoved = !removedServiceIds.has(s.service_id);
+            
+            if (debugCount < 3) { // Afficher les 3 premiers pour debug
+                console.log(`  🔍 Service ${s.service_id}:`, {
+                    day: dayOfWeek,
+                    active: isActiveDay,
+                    dateRange: `${s.start_date}-${s.end_date}`,
+                    inRange: isInDateRange,
+                    notRemoved: isNotRemoved
+                });
+                debugCount++;
+            }
+            
+            if (isActiveDay && isInDateRange && isNotRemoved) {
+                activeServiceIds.add(s.service_id);
+                console.log(`  ✅ Service régulier actif: ${s.service_id}`);
+            }
+        });
+
+        // Étape 3: Ajouts spéciaux (exception_type = 1)
+        this.calendarDates.forEach(d => {
+            if (d.date === dateString && d.exception_type === '1') {
+                activeServiceIds.add(d.service_id);
+                console.log(`  ➕ Service ajouté: ${d.service_id}`);
+            }
+        });
+
+        if (activeServiceIds.size === 0) {
+            console.error(`❌ AUCUN SERVICE ACTIF pour ${dateString} (${dayOfWeek})`);
+            console.log('📋 Vérifiez calendar.txt - Premiers services:');
+            this.calendar.slice(0, 3).forEach(s => {
+                console.log(`  - ${s.service_id}: ${dayOfWeek}=${s[dayOfWeek]}, dates=${s.start_date}-${s.end_date}`);
+            });
+        } else {
+            console.log(`✅ ${activeServiceIds.size} service(s) actif(s):`, Array.from(activeServiceIds));
         }
-
-        // Étape 3: Vérifier le calendrier régulier (calendar.txt)
-        const regularService = this.calendar.find(s => 
-            s[dayOfWeek] === '1' &&
-            s.start_date <= dateString &&
-            s.end_date >= dateString &&
-            !removedServiceIds.has(s.service_id) // IMPORTANT: Ne doit pas être supprimé
-        );
-
-        if (regularService) {
-            console.log(`[getServiceId] Service régulier (calendar.txt) trouvé: ${regularService.service_id}`);
-            return regularService.service_id;
-        }
-
-        // Étape 4: Aucun service trouvé
-        console.warn(`[getServiceId] Aucun service valide trouvé pour ${dateString}.`);
-        return null;
+        
+        return activeServiceIds;
     }
 
     /**
-     * Récupère tous les trips actifs pour un temps et une date (V4)
+     * Récupère tous les trips actifs à l'instant T
      */
     getActiveTrips(currentSeconds, date) {
+        const serviceIdSet = this.getServiceIds(date);
         
-        const serviceId = this.getServiceId(date); // Ex: .timetable:8
-        
-        // *** CORRECTION DE L'INCOHÉRENCE GTFS ***
-        // Normalise l'ID pour correspondre au format de trips.txt (ex: :Timetable:8)
-        const normalizedServiceId = serviceId ? serviceId.replace(".timetable:", ":Timetable:") : null;
-
-        console.log(`[getActiveTrips] Service ID original (calendar): ${serviceId}`);
-        console.log(`[getActiveTrips] Service ID normalisé (trips): ${normalizedServiceId}`);
-        
-        if (!normalizedServiceId) {
-            console.warn("[getActiveTrips] Aucun Service ID trouvé pour aujourd'hui. Aucun bus ne sera affiché.");
+        if (serviceIdSet.size === 0) {
+            console.warn("⚠️  Aucun service → Aucun bus affiché");
             return [];
         }
 
+        console.log(`🚌 Recherche des trips actifs à ${this.formatTime(currentSeconds)}`);
+        console.log(`   Services recherchés:`, Array.from(serviceIdSet));
+
         const activeTrips = [];
+        let matchedTrips = 0;
+        let totalTrips = this.trips.length;
 
         this.trips.forEach(trip => {
-            
-            // *** CORRECTION APPLIQUÉE ICI ***
-            // Au lieu de (trip.service_id === normalizedServiceId),
-            // nous vérifions si l'ID du voyage COMMENCE PAR l'ID de base.
-            // Cela inclut ":Timetable:8" ET ":Timetable:8:1" (Lignes K, R, etc.)
-            if (trip.service_id.startsWith(normalizedServiceId)) {
-                
+            const isServiceActive = Array.from(serviceIdSet).some(activeServiceId => {
+                return this.serviceIdsMatch(trip.service_id, activeServiceId);
+            });
+
+            if (isServiceActive) {
+                matchedTrips++;
                 const stopTimes = this.stopTimesByTrip[trip.trip_id];
                 if (!stopTimes || stopTimes.length < 2) return;
 
                 const firstStop = stopTimes[0];
                 const lastStop = stopTimes[stopTimes.length - 1];
                 
-                // *** CORRECTION (V2) *** // Utilise arrival_time pour le début (pour inclure l'attente au terminus)
-                // et arrival_time pour la fin.
                 const startTime = this.timeToSeconds(firstStop.arrival_time);
                 const endTime = this.timeToSeconds(lastStop.arrival_time);
 
@@ -412,14 +431,20 @@ export class DataManager {
             }
         });
 
-        console.log(`[getActiveTrips] ${activeTrips.length} voyages actifs trouvés (Corrigé).`);
+        console.log(`📊 Statistiques trips:`);
+        console.log(`   - Total trips: ${totalTrips}`);
+        console.log(`   - Trips avec service actif: ${matchedTrips}`);
+        console.log(`   - Trips actifs maintenant: ${activeTrips.length}`);
+
+        if (matchedTrips === 0 && totalTrips > 0) {
+            console.error(`❌ AUCUN TRIP ne correspond aux services actifs!`);
+            console.log(`🔍 Exemple de service_id dans trips.txt: "${this.trips[0].service_id}"`);
+            console.log(`🔍 Services actifs recherchés:`, Array.from(serviceIdSet));
+        }
 
         return activeTrips;
     }
     
-    /**
-     * Récupère la destination finale d'un trip (V4)
-     */
     getTripDestination(stopTimes) {
         if (!stopTimes || stopTimes.length === 0) {
             return 'Destination inconnue';
@@ -431,9 +456,6 @@ export class DataManager {
         return stopInfo ? stopInfo.stop_name : 'Destination inconnue';
     }
 
-    /**
-     * Récupère les bornes de service (début/fin) pour la journée
-     */
     getDailyServiceBounds() {
         let earliestStart = Infinity;
         let latestEnd = -Infinity;
@@ -447,7 +469,7 @@ export class DataManager {
             const endTime = this.timeToSeconds(lastStop.arrival_time || lastStop.departure_time);
 
             if (startTime < earliestStart) earliestStart = startTime;
-            if (endTime > latestEnd) latestEnd = latestEnd;
+            if (endTime > latestEnd) latestEnd = endTime;
         });
 
         if (earliestStart === Infinity) earliestStart = 0;
@@ -456,17 +478,11 @@ export class DataManager {
         return { earliestStart, latestEnd };
     }
 
-    /**
-     * Trouve la première seconde où il y a au moins un bus actif
-     */
     findFirstActiveSecond() {
         const bounds = this.getDailyServiceBounds();
         return bounds.earliestStart;
     }
 
-    /**
-     * Trouve la prochaine seconde active après currentSeconds
-     */
     findNextActiveSecond(currentSeconds) {
         let nextActiveTime = Infinity;
 
@@ -488,9 +504,6 @@ export class DataManager {
         return nextActiveTime;
     }
 
-    /**
-     * Convertit un nombre de secondes en chaîne de caractères "X h Y min"
-     */
     formatDuration(totalSeconds) {
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -499,7 +512,7 @@ export class DataManager {
         if (hours > 0) {
             str += `${hours} h `;
         }
-        if (minutes > 0 || hours === 0) { // Affiche "0 min" si 0s
+        if (minutes > 0 || hours === 0) {
             str += `${minutes} min`;
         }
         return str.trim();
