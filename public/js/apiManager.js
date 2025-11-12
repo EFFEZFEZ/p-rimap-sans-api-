@@ -1,15 +1,13 @@
 /**
- * apiManager.js
+ * apiManager.js - VERSION CORRIGÉE
  * Gère tous les appels aux API externes (Google Places & Google Routes).
  * Utilise la NOUVELLE API Places (AutocompleteSuggestion) recommandée depuis mars 2025.
  *
- * MODES DE TRANSPORT:
- * - BUS uniquement (pas de train/métro/tramway)
- * - MARCHE automatiquement incluse pour rejoindre les arrêts
- * - Pour le vélo, une requête séparée sera nécessaire
- *
- * CORRECTION: Le FieldMask de fetchItinerary est élargi pour inclure 
- * tous les champs de "steps" (y compris .name) requis par main.js.
+ * CORRECTIONS APPLIQUÉES:
+ * 1. FieldMask corrigé selon la documentation officielle Google
+ * 2. Utilisation de 'routes.legs.steps.transitDetails' (validé par la doc)
+ * 3. Ajout de tous les champs nécessaires pour l'affichage
+ * 4. Gestion d'erreurs améliorée
  */
 
 export class ApiManager {
@@ -170,9 +168,15 @@ export class ApiManager {
     }
 
     /**
-     * Calcule un itinéraire en transport en commun (BUS uniquement, pas de train)
+     * Calcule un itinéraire en transport en commun (BUS uniquement)
+     * 
+     * FieldMask basé sur la documentation officielle:
+     * https://developers.google.com/maps/documentation/routes/transit-route
+     * 
+     * Exemple de FieldMask validé par Google pour TRANSIT:
+     * 'X-Goog-FieldMask: routes.legs.steps.transitDetails'
      */
-    async fetchItinerary(fromPlaceId, toPlaceId) {
+    async fetchItinerary(fromPlaceId, toPlaceId, searchTime = null) {
         console.log(`🚍 API Google Routes: Calcul de ${fromPlaceId} à ${toPlaceId}`);
 
         const API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
@@ -189,6 +193,16 @@ export class ApiManager {
             units: "METRIC"
         };
 
+        // Ajout du temps de départ/arrivée si spécifié
+        if (searchTime) {
+            const dateTime = this._buildDateTime(searchTime);
+            if (searchTime.type === 'arriver') {
+                body.arrivalTime = dateTime;
+            } else {
+                body.departureTime = dateTime;
+            }
+        }
+
         console.log("📤 Requête envoyée:", JSON.stringify(body, null, 2));
 
         try {
@@ -198,10 +212,18 @@ export class ApiManager {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
                     
-                    // *** CORRECTION ICI ***
-                    // Demande 'routes.legs' en entier pour obtenir tous les sous-champs
-                    // (y compris departureStop.name) dont main.js a besoin.
-                    'X-Goog-FieldMask': 'routes.duration,routes.legs.startTime,routes.legs.endTime,routes.legs.steps.travelMode,routes.legs.steps.duration,routes.legs.steps.navigationInstruction,routes.legs.steps.localizedValues,routes.legs.steps.transitDetails.transitLine.nameShort,routes.legs.steps.transitDetails.transitLine.color,routes.legs.steps.transitDetails.transitLine.textColor,routes.legs.steps.transitDetails.headsign,routes.legs.steps.transitDetails.departureStop.name,routes.legs.steps.transitDetails.departureTime,routes.legs.steps.transitDetails.arrivalStop.name,routes.legs.steps.transitDetails.arrivalTime,routes.legs.steps.transitDetails.stopCount'
+                    // ✅ FIELDMASK CORRIGÉ - Basé sur la documentation officielle
+                    // Source: https://developers.google.com/maps/documentation/routes/transit-route
+                    // 
+                    // Format validé: routes.legs.steps.transitDetails récupère:
+                    // - transitDetails.stopDetails (arrivalStop, departureStop avec .name)
+                    // - transitDetails.transitLine (nameShort, color, textColor, etc.)
+                    // - transitDetails.headsign
+                    // - arrivalTime, departureTime, stopCount
+                    //
+                    // Note: En spécifiant "transitDetails" sans sous-champs, l'API
+                    // retourne TOUS les sous-champs de transitDetails automatiquement.
+                    'X-Goog-FieldMask': 'routes.duration,routes.legs.steps.transitDetails,routes.legs.steps.travelMode,routes.legs.steps.localizedValues,routes.legs.steps.navigationInstruction'
                 },
                 body: JSON.stringify(body)
             });
@@ -211,18 +233,49 @@ export class ApiManager {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error("❌ Texte d'erreur brut:", errorText);
+                
+                let errorMessage = `Erreur ${response.status}`;
+                
                 try {
                     const errorData = JSON.parse(errorText);
                     console.error("❌ Erreur de l'API Routes:", errorData);
-                    throw new Error(`API Routes a échoué: ${errorData.error?.message || response.statusText}`);
+                    
+                    if (errorData.error?.message) {
+                        errorMessage = errorData.error.message;
+                    }
+                    
+                    // Erreur spécifique: pas de trajet en bus trouvé
+                    if (response.status === 404 || errorMessage.includes("NOT_FOUND")) {
+                        throw new Error("Aucun trajet en bus disponible pour cet itinéraire.");
+                    }
+                    
+                    // Erreur de FieldMask
+                    if (errorData.error?.details?.[0]?.fieldViolations) {
+                        const violations = errorData.error.details[0].fieldViolations;
+                        console.error("❌ Violations de champs:", violations);
+                        throw new Error(`Erreur de configuration API: ${violations[0]?.description || 'FieldMask invalide'}`);
+                    }
+                    
                 } catch (parseError) {
-                    throw new Error(`API Routes a échoué (${response.status}): ${errorText}`);
+                    // Si le JSON ne peut pas être parsé, utiliser le texte brut
+                    if (parseError instanceof SyntaxError) {
+                        throw new Error(`${errorMessage}: ${errorText.substring(0, 200)}`);
+                    }
+                    throw parseError;
                 }
+                
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
             console.log("✅ Réponse de l'API Routes:", data);
             
+            // Vérifier si des routes ont été trouvées
+            if (!data.routes || data.routes.length === 0) {
+                throw new Error("Aucun itinéraire en bus trouvé pour ces lieux.");
+            }
+            
+            // Régénérer le token de session après une requête réussie
             if (window.google && window.google.maps && window.google.maps.places) {
                 this.sessionToken = new google.maps.places.AutocompleteSessionToken();
             }
@@ -233,6 +286,17 @@ export class ApiManager {
             console.error("❌ Erreur lors de l'appel à fetchItinerary:", error);
             throw error;
         }
+    }
+
+    /**
+     * Construit un objet DateTime ISO 8601 pour l'API Google Routes
+     * @private
+     */
+    _buildDateTime(searchTime) {
+        const { date, hour, minute } = searchTime;
+        const dateObj = new Date(date);
+        dateObj.setHours(parseInt(hour), parseInt(minute), 0, 0);
+        return dateObj.toISOString();
     }
 
     /**
@@ -265,9 +329,18 @@ export class ApiManager {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error("❌ Erreur de l'API Routes (vélo):", errorData);
-                throw new Error(`API Routes (vélo) a échoué: ${errorData.error?.message || response.statusText}`);
+                const errorText = await response.text();
+                console.error("❌ Erreur de l'API Routes (vélo):", errorText);
+                
+                try {
+                    const errorData = JSON.parse(errorText);
+                    throw new Error(`API Routes (vélo) a échoué: ${errorData.error?.message || response.statusText}`);
+                } catch (parseError) {
+                    if (parseError instanceof SyntaxError) {
+                        throw new Error(`API Routes (vélo) a échoué (${response.status}): ${errorText}`);
+                    }
+                    throw parseError;
+                }
             }
 
             const data = await response.json();
