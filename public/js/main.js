@@ -13,7 +13,7 @@ import { ApiManager } from './apiManager.js';
 
 // *** ACTION REQUISE ***
 // Remplacez cette chaîne par votre clé d'API Google Cloud
-const GOOGLE_API_KEY = "AIzaSyBYDN_8hSHSx_irp_fxLw--XyxuLiixaW4";
+const GOOGLE_API_KEY = "VOTRE_CLE_API_GOOGLE_ICI";
 
 // Modules
 let dataManager;
@@ -113,8 +113,7 @@ let itineraryResultsContainer, btnBackToDashboardFromResults, resultsListContain
 let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
 let fromInput, toInput;
 let fromSuggestions, toSuggestions;
-let popoverDate, popoverHour, popoverMinute; // NOUVEAUX sélecteurs
-// Variables pour stocker les IDs de lieu Google
+let popoverDate, popoverHour, popoverMinute; 
 let fromPlaceId = null;
 let toPlaceId = null;
 
@@ -163,7 +162,6 @@ async function initializeApp() {
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
     resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
 
-    // NOUVELLES SÉLECTIONS DOM
     plannerWhenBtn = document.getElementById('planner-when-btn');
     plannerOptionsPopover = document.getElementById('planner-options-popover');
     plannerSubmitBtn = document.getElementById('planner-submit-btn');
@@ -238,15 +236,13 @@ function setupDashboardContent() {
 function populateTimeSelects() {
     const now = new Date();
     const currentHour = now.getHours();
-    // Arrondit à l'intervalle de 5 minutes le plus proche
     const currentMinute = Math.round(now.getMinutes() / 5) * 5; 
 
-    // Gère le cas où 58 minutes arrondit à 60
     let selectedHour = currentHour;
     let selectedMinute = currentMinute;
     if (currentMinute === 60) {
         selectedMinute = 0;
-        selectedHour = (currentHour + 1) % 24; // Passe à l'heure suivante
+        selectedHour = (currentHour + 1) % 24; 
     }
 
     // Remplir les heures (0-23)
@@ -274,14 +270,12 @@ function populateTimeSelects() {
 
 
 function setupStaticEventListeners() {
-    // Tente de charger l'API Google Maps dès que possible
     try {
         apiManager.loadGoogleMapsAPI();
     } catch (error) {
         console.error("Impossible de charger l'API Google:", error);
     }
 
-    // NOUVEAU : Remplit les sélecteurs de temps
     populateTimeSelects();
 
     // --- Navigation principale ---
@@ -314,7 +308,6 @@ function setupStaticEventListeners() {
     });
 
     // --- Filtres et Instructions (pour la carte temps réel) ---
-    // (Ce code ne change pas)
     document.getElementById('close-instructions').addEventListener('click', () => {
         document.getElementById('instructions').classList.add('hidden');
         localStorage.setItem('gtfsInstructionsShown', 'true');
@@ -351,7 +344,6 @@ function setupStaticEventListeners() {
     });
 
     // --- Recherche d'horaires (Système GTFS local) ---
-    // (Ce code ne change pas)
     document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
         const horairesCard = document.getElementById('horaires');
         if (horairesCard) {
@@ -381,9 +373,8 @@ function setupStaticEventListeners() {
             return;
         }
 
-        // NOUVEAU: Récupérer les infos de temps
         const searchTime = {
-            type: document.querySelector('.popover-tab.active').dataset.tab, // 'partir' ou 'arriver'
+            type: document.querySelector('.popover-tab.active').dataset.tab, 
             date: popoverDate.value,
             hour: popoverHour.value,
             minute: popoverMinute.value
@@ -393,7 +384,6 @@ function setupStaticEventListeners() {
         showResultsView(); 
 
         try {
-            // Transmet les infos de temps à l'API Manager
             const results = await apiManager.fetchItinerary(fromPlaceId, toPlaceId, searchTime); 
             const itineraries = processGoogleRoutesResponse(results);
             renderItineraryResults(itineraries);
@@ -401,7 +391,7 @@ function setupStaticEventListeners() {
         } catch (error) {
             console.error("Échec de la recherche d'itinéraire:", error);
             if (resultsListContainer) {
-                resultsListContainer.innerHTML = `<p class="results-message error">Impossible de calculer l'itinéraire. ${error.message}</p>`;
+                resultsListContainer.innerHTML = `<p class="results-message error">Impossible de calculer l'itinéraire. L'API n'a pas trouvé de trajet en bus.</p>`;
             }
         }
     });
@@ -443,16 +433,13 @@ function setupStaticEventListeners() {
             });
         });
         
-        // --- ÉCOUTEUR MIS À JOUR ---
         document.getElementById('popover-submit-btn').addEventListener('click', () => { 
-             // 1. Lire les valeurs sélectionnées
              const dateText = popoverDate.options[popoverDate.selectedIndex].text;
              const hourText = String(popoverHour.value).padStart(2, '0');
              const minuteText = String(popoverMinute.value).padStart(2, '0');
              const tab = document.querySelector('.popover-tab.active').dataset.tab;
              const mainBtnSpan = document.querySelector('#planner-when-btn span');
              
-             // 2. Mettre à jour le bouton principal
              let prefix = (tab === 'arriver') ? "Arrivée" : "Départ";
              if (dateText === "Aujourd'hui") {
                  mainBtnSpan.textContent = `${prefix} à ${hourText} h ${minuteText}`;
@@ -460,7 +447,6 @@ function setupStaticEventListeners() {
                  mainBtnSpan.textContent = `${prefix} ${dateText.toLowerCase()} à ${hourText} h ${minuteText}`;
              }
 
-             // 3. Fermer le popover
              plannerOptionsPopover.classList.add('hidden');
              plannerWhenBtn.classList.remove('popover-active');
         });
@@ -524,7 +510,7 @@ async function handleAutocomplete(query, container, onSelect) {
     if (query.length < 3) {
         container.innerHTML = '';
         container.style.display = 'none';
-        onSelect(null); // Réinitialise l'ID si la recherche est effacée
+        onSelect(null); 
         return;
     }
 
@@ -576,20 +562,18 @@ function processGoogleRoutesResponse(data) {
         return [];
     }
 
-    // Mappe chaque "route" de Google en un "itinéraire" simple
     return data.routes.map(route => {
-        // La réponse peut contenir plusieurs "legs", mais pour un trajet A->B simple, on prend le premier.
         const leg = route.legs[0]; 
         
         const itinerary = {
             departureTime: formatGoogleTime(leg.startTime),
             arrivalTime: formatGoogleTime(leg.endTime),
             duration: formatGoogleDuration(route.duration),
-            summaryIcons: [], // Pour les icônes [WALK] [BUS 24] [BUS A]
-            steps: [] // Pour les détails [Marcher 5min...] [Prendre Bus 24...]
+            summaryIcons: [], 
+            steps: [] 
         };
 
-        // Construit les listes de "legs" et de "summary"
+        // *** DÉBUT DE LA MODIFICATION (CORRECTION DU BUG) ***
         leg.steps.forEach(step => {
             const duration = formatGoogleDuration(step.duration);
             
@@ -598,42 +582,46 @@ function processGoogleRoutesResponse(data) {
                 itinerary.steps.push({
                     type: 'WALK',
                     icon: ICONS.WALK,
-                    // L'instruction peut être dans "navigationInstruction" ou "localizedValues"
                     instruction: step.navigationInstruction?.instructions || step.localizedValues?.staticDuration?.text || "Marcher",
                     duration: duration
                 });
-            } else if (step.travelMode === 'TRANSIT') {
+            } else if (step.travelMode === 'TRANSIT' && step.transitDetails) {
+                // Ajout de la vérification "&& step.transitDetails"
+                
                 const transit = step.transitDetails;
                 const line = transit.transitLine;
-                
-                const shortName = line.nameShort || 'BUS';
-                const color = line.color || '#3388ff';
-                const textColor = line.textColor || '#ffffff';
 
-                itinerary.summaryIcons.push({
-                    type: 'BUS',
-                    name: shortName,
-                    color: color,
-                    textColor: textColor
-                });
-                itinerary.steps.push({
-                    type: 'BUS',
-                    icon: ICONS.BUS,
-                    routeShortName: shortName,
-                    routeColor: color,
-                    routeTextColor: textColor,
-                    instruction: `Prendre le <b>${shortName}</b> direction <b>${transit.headsign}</b>`,
-                    departureStop: transit.departureStop.name,
-                    departureTime: formatGoogleTime(transit.departureTime),
-                    arrivalStop: transit.arrivalStop.name,
-                    arrivalTime: formatGoogleTime(transit.arrivalTime),
-                    numStops: transit.stopCount,
-                    duration: duration
-                });
+                // Ajout d'une vérification pour ignorer les transferts sans "ligne"
+                if (line) { 
+                    const shortName = line.nameShort || 'BUS';
+                    const color = line.color || '#3388ff';
+                    const textColor = line.textColor || '#ffffff';
+
+                    itinerary.summaryIcons.push({
+                        type: 'BUS',
+                        name: shortName,
+                        color: color,
+                        textColor: textColor
+                    });
+                    itinerary.steps.push({
+                        type: 'BUS',
+                        icon: ICONS.BUS,
+                        routeShortName: shortName,
+                        routeColor: color,
+                        routeTextColor: textColor,
+                        instruction: `Prendre le <b>${shortName}</b> direction <b>${transit.headsign}</b>`,
+                        departureStop: transit.departureStop.name,
+                        departureTime: formatGoogleTime(transit.departureTime),
+                        arrivalStop: transit.arrivalStop.name,
+                        arrivalTime: formatGoogleTime(transit.arrivalTime),
+                        numStops: transit.stopCount,
+                        duration: duration
+                    });
+                }
             }
         });
+        // *** FIN DE LA MODIFICATION ***
 
-        // Nettoie les icônes de résumé (supprime les marches en double consécutives)
         itinerary.summaryIcons = itinerary.summaryIcons.filter((icon, index, self) => 
             icon.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
         );
@@ -644,37 +632,32 @@ function processGoogleRoutesResponse(data) {
 
 /**
  * Affiche les itinéraires formatés dans la liste des résultats
- * @param {Array} itineraries - Le tableau d'itinéraires propres
  */
 function renderItineraryResults(itineraries) {
     if (!resultsListContainer) return;
     
-    resultsListContainer.innerHTML = ''; // Vide la liste
+    resultsListContainer.innerHTML = ''; 
 
     if (itineraries.length === 0) {
         resultsListContainer.innerHTML = '<p class="results-message">Aucun itinéraire en transport en commun trouvé.</p>';
         return;
     }
 
-    // Crée une carte HTML pour chaque itinéraire
     itineraries.forEach((itinerary, index) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'route-option-wrapper';
         
-        // --- 1. Titre (ex: "Suggéré") ---
         if (index === 0) {
             wrapper.innerHTML += `<p class="route-option-title">Suggéré</p>`;
         }
 
-        // --- 2. Carte Résumé (cliquable) ---
         const card = document.createElement('div');
         card.className = 'route-option';
 
-        // Icônes résumé (Marche, Bus 24, Bus A)
         const summaryHtml = itinerary.summaryIcons.map(icon => {
             if (icon.type === 'WALK') {
                 return `<div class="route-summary-icon walk">${ICONS.WALK}</div>`;
-            } else { // BUS
+            } else { 
                 return `<div class="route-line-badge" style="background-color: ${icon.color}; color: ${icon.textColor};">${icon.name}</div>`;
             }
         }).join('<span class="route-summary-separator">></span>');
@@ -689,9 +672,8 @@ function renderItineraryResults(itineraries) {
             </div>
         `;
         
-        // --- 3. Vue Détaillée (cachée par défaut) ---
         const details = document.createElement('div');
-        details.className = 'route-details hidden'; // Caché par défaut
+        details.className = 'route-details hidden'; 
 
         details.innerHTML = itinerary.steps.map(step => {
             if (step.type === 'WALK') {
@@ -721,7 +703,6 @@ function renderItineraryResults(itineraries) {
             }
         }).join('');
 
-        // Ajoute le listener pour déplier/replier
         card.addEventListener('click', () => {
             details.classList.toggle('hidden');
             card.classList.toggle('is-active');
