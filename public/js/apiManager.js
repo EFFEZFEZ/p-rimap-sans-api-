@@ -222,7 +222,8 @@ export class ApiManager {
                     
                     // ✅ FIELDMASK FINAL CORRIGÉ
                     // Les heures de départ/arrivée se trouvent dans localizedValues, pas dans startTime/endTime
-                    'X-Goog-FieldMask': 'routes.duration,routes.legs.localizedValues,routes.legs.steps.travelMode,routes.legs.steps.distanceMeters,routes.legs.steps.localizedValues,routes.legs.steps.navigationInstruction,routes.legs.steps.transitDetails'
+                    // Ajout de routes.polyline pour obtenir le tracé de l'itinéraire
+                    'X-Goog-FieldMask': 'routes.duration,routes.polyline,routes.legs.localizedValues,routes.legs.steps.travelMode,routes.legs.steps.distanceMeters,routes.legs.steps.localizedValues,routes.legs.steps.navigationInstruction,routes.legs.steps.transitDetails'
                 },
                 body: JSON.stringify(body)
             });
