@@ -47,27 +47,35 @@
 html, body {
     height: 100%;
     width: 100%;
-    overflow-x: hidden;
+    overflow: hidden; /* Empêche le scroll global */
     -webkit-font-smoothing: antialiased;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
 }
 
-/* NOUVEAU: Verrouille le scroll quand une vue plein écran est active */
+/* Verrouille le scroll quand une vue plein écran est active (toujours vrai pour la carte/résultats) */
 body.view-is-locked {
     overflow: hidden;
     overscroll-behavior: none; 
 }
 
-/* Ajout pour s'assurer que le contenu pousse le bas de page */
+/* Le body est le conteneur flex principal */
 body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
-#dashboard-container, #map-container, #itinerary-results-container {
-    flex: 1 0 auto; /* Permet au conteneur de grandir */
+
+/* Conteneurs de vue principaux */
+#dashboard-container {
+    flex: 1 0 auto;
+    overflow-y: auto; /* Seul le dashboard-container peut scroller */
+    overflow-x: hidden;
+}
+#map-container, #itinerary-results-container {
+    flex: 1 0 auto; 
+    display: flex; /* S'assure qu'ils remplissent l'espace */
 }
 
 
@@ -84,10 +92,10 @@ body {
     -webkit-backdrop-filter: blur(10px); 
     border-bottom: 1px solid var(--border);
     padding: 0 1.5rem;
-    position: sticky;
+    position: sticky; /* Reste sticky pour le dashboard */
     top: 0;
     z-index: 1050;
-    flex-shrink: 0; 
+    flex-shrink: 0; /* Ne doit pas rétrécir */
 }
 .header-content {
     display: flex;
@@ -128,7 +136,7 @@ body {
  * ========================================= */
 #alert-banner {
     position: sticky;
-    top: 65px; /* Sous l'en-tête */
+    top: 65px; /* Sous l'en-tête (pour le dashboard) */
     z-index: 1040;
     background: var(--color-yellow);
     color: #111;
@@ -859,6 +867,11 @@ details[open] .accordion-content {
  * ========================================= */
 @media (max-width: 768px) {
     
+    /* Gère le scroll du body pour le dashboard */
+    body:not(.view-is-locked) {
+        overflow-y: auto;
+    }
+
     .main-nav-buttons-condensed {
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -1033,6 +1046,7 @@ details[open] .accordion-content {
     background: var(--bg-secondary);
     border-color: var(--secondary);
 }
+
 
 .filter-header {
     display: flex;
@@ -1642,11 +1656,24 @@ details[open] .accordion-content {
  * NOUVELLE VUE : RÉSULTATS D'ITINÉRAIRE
  * ========================================= */
 
+/* Le conteneur principal est maintenant un flex en LIGNE */
 #itinerary-results-container {
     display: flex;
-    flex-direction: column;
-    height: 100vh; /* Prend toute la hauteur */
+    flex-direction: row; /* Panneau à gauche, carte à droite */
+    flex: 1; /* Prend toute la hauteur restante sous le header */
     background: var(--bg-light);
+}
+
+/* NOUVEAU : Panneau latéral (colonne) */
+#results-side-panel {
+    width: 400px; /* Largeur fixe type IDFM */
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Prend toute la hauteur du conteneur */
+    background: var(--bg-main);
+    border-right: 1px solid var(--border);
+    z-index: 10;
 }
 
 /* NOUVEAU : Panneau d'édition IDFM */
@@ -1654,7 +1681,6 @@ details[open] .accordion-content {
     background: var(--bg-main);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-    z-index: 10;
 }
 .itinerary-edit-header {
     display: flex;
@@ -1680,7 +1706,7 @@ details[open] .accordion-content {
 /* Bouton swap vertical */
 .btn-swap-vertical {
     position: absolute;
-    top: 50px; /* Ajustez au besoin */
+    top: 50px; /* Ajustement manuel pour le placer entre les deux */
     right: 1rem;
     z-index: 2;
     transform: rotate(90deg); /* Pivoter l'icône */
@@ -1698,31 +1724,25 @@ details[open] .accordion-content {
     border-radius: var(--radius-md);
 }
 
-
-.results-body {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
+/* NOUVEAU : Conteneur pour la liste des résultats */
+.results-list-wrapper {
+    flex: 1; /* Prend tout l'espace restant dans le panneau latéral */
+    overflow-y: auto; /* C'est LUI qui scrolle */
+    overscroll-behavior: contain;
 }
 
-#results-panel {
-    width: 400px;
-    background: var(--bg-main);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    flex-shrink: 0;
+/* La liste elle-même n'a besoin que de padding */
+.results-list {
+    padding: 1rem;
 }
+
+/* La CARTE prend le reste de l'espace */
 #results-map {
-    flex: 1;
+    flex: 1; /* Prend tout l'espace restant à droite */
+    height: 100%;
     background: #e5e5e5;
 }
 
-.results-list {
-    padding: 1rem;
-    flex: 1;
-}
 
 .results-message {
     padding: 2rem 1rem;
@@ -1917,24 +1937,33 @@ details[open] .accordion-content {
 
 /* Styles mobiles pour la vue résultats */
 @media (max-width: 768px) {
-    .results-body {
-        flex-direction: column-reverse; /* Met la carte en haut */
+    /* Rétablit la direction en colonne, avec la carte en HAUT */
+    #itinerary-results-container {
+        flex-direction: column-reverse;
     }
-    #results-panel {
+    
+    /* La carte a une hauteur fixe */
+    #results-map {
+        width: 100%;
+        height: 250px;
+        flex: none; /* Désactive le flex: 1 */
+    }
+
+    /* Le panneau latéral prend tout le reste */
+    #results-side-panel {
         width: 100%;
         flex: 1; /* Prend l'espace restant */
         border-right: none;
+        height: auto; /* Hauteur auto pour s'adapter au flex: 1 */
+        overflow-y: auto; /* Le panneau ENTIER scrolle */
     }
-    #results-map {
-        flex-shrink: 0;
-        height: 250px; /* Hauteur fixe pour la carte en haut */
-        border-bottom: 1px solid var(--border);
+    
+    /* Le wrapper de la liste ne doit plus scroller, c'est le parent */
+    .results-list-wrapper {
+        flex: none; /* Ne grandit pas, s'adapte au contenu */
+        overflow-y: visible;
     }
-    .results-header-title {
-        display: none; /* Cache le titre pour faire de la place */
-    }
-
-    /* Ajustements mobiles pour le nouveau panneau d'édition */
+    
     .itinerary-edit-header {
         padding: 0.5rem 0.75rem;
         gap: 0.75rem;
