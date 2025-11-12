@@ -63,7 +63,7 @@ const PDF_FILENAME_MAP = {
     'K4A': 'grandperigueux_fiche_horaires_ligne_K4A_sept_2025.pdf',
     'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
     'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
-    'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
+    'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2S025.pdf',
     'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
     'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
 };
@@ -108,6 +108,9 @@ let mapContainer, btnShowMap, btnBackToDashboardFromMap;
 
 // ÉLÉMENTS DOM (VUE 3: RÉSULTATS)
 let itineraryResultsContainer, btnBackToDashboardFromResults, resultsListContainer;
+// NOUVEAUX ÉLÉMENTS DOM (RÉCAPITULATIF RÉSULTATS)
+let summaryFrom, summaryTo, summaryWhen, btnModifySearchSummary;
+
 
 // --- ÉLÉMENTS DOM (PLANIFICATEUR) ---
 let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
@@ -161,6 +164,12 @@ async function initializeApp() {
     itineraryResultsContainer = document.getElementById('itinerary-results-container');
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
     resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
+
+    // NOUVELLES SÉLECTIONS DOM (RÉSULTATS)
+    summaryFrom = document.getElementById('summary-from');
+    summaryTo = document.getElementById('summary-to');
+    summaryWhen = document.getElementById('summary-when');
+    btnModifySearchSummary = document.getElementById('btn-modify-search-summary');
 
     plannerWhenBtn = document.getElementById('planner-when-btn');
     plannerOptionsPopover = document.getElementById('planner-options-popover');
@@ -329,6 +338,11 @@ function setupStaticEventListeners() {
     btnBackToDashboardFromMap.addEventListener('click', showDashboardHall);
     btnBackToDashboardFromResults.addEventListener('click', showDashboardHall);
     btnBackToHall.addEventListener('click', showDashboardHall);
+    
+    // NOUVEL ÉCOUTEUR : Bouton "Modifier" sur la barre de résumé
+    if (btnModifySearchSummary) {
+        btnModifySearchSummary.addEventListener('click', showDashboardHall);
+    }
 
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
     
@@ -416,6 +430,10 @@ function setupStaticEventListeners() {
             hour: popoverHour.value,
             minute: popoverMinute.value
         };
+        
+        // NOUVEAU : Mettre à jour la barre de résumé
+        updateItinerarySummary(searchTime);
+
         console.log("Recherche Google API lancée:", { from: fromPlaceId, to: toPlaceId, time: searchTime });
 
         showResultsView(); 
@@ -543,6 +561,30 @@ function setupDataDependentEventListeners() {
 
 // --- NOUVELLES FONCTIONS POUR L'AUTOCOMPLÉTION ET LES RÉSULTATS ---
 
+// NOUVELLE FONCTION : Met à jour la barre de résumé
+function updateItinerarySummary(searchTime) {
+    if (summaryFrom) {
+        summaryFrom.textContent = fromInput.value;
+    }
+    if (summaryTo) {
+        summaryTo.textContent = toInput.value;
+    }
+    if (summaryWhen) {
+        // Recrée la logique de formatage du temps
+        const dateText = popoverDate.options[popoverDate.selectedIndex].text;
+        const hourText = String(searchTime.hour).padStart(2, '0');
+        const minuteText = String(searchTime.minute).padStart(2, '0');
+        const prefix = (searchTime.type === 'arriver') ? "Arrivée" : "Départ";
+        
+        if (dateText === "Aujourd'hui") {
+            summaryWhen.textContent = `${prefix} à ${hourText}h${minuteText}`;
+        } else {
+            summaryWhen.textContent = `${prefix} ${dateText.toLowerCase()} à ${hourText}h${minuteText}`;
+        }
+    }
+}
+
+
 async function handleAutocomplete(query, container, onSelect) {
     if (query.length < 3) {
         container.innerHTML = '';
@@ -595,8 +637,7 @@ function renderSuggestions(suggestions, container, onSelect) {
  */
 /**
  * SECTION CORRIGÉE : processGoogleRoutesResponse
- * 
- * CORRECTION APPLIQUÉE:
+ * * CORRECTION APPLIQUÉE:
  * - Accès correct aux arrêts via transit.stopDetails.departureStop/arrivalStop
  * - Accès correct aux horaires via transit.stopDetails.departureTime/arrivalTime
  * - Vérifications défensives maintenues pour éviter les erreurs
