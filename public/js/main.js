@@ -730,7 +730,7 @@ function processGoogleRoutesResponse(data) {
     }
     return data.routes.map(route => {
         const leg = route.legs[0];                 
-        // *** CORRECTION : Utiliser localizedValues pour les heures ***
+        
         const departureTime = leg.localizedValues?.departureTime?.time?.text || "--:--";
         const arrivalTime = leg.localizedValues?.arrivalTime?.time?.text || "--:--";
                 
@@ -738,6 +738,7 @@ function processGoogleRoutesResponse(data) {
             departureTime: departureTime,
             arrivalTime: arrivalTime,
             duration: formatGoogleDuration(route.duration),
+            polyline: route.polyline?.encodedPolyline || null, // *** AJOUT DE LA POLYLINE ***
             summarySegments: [], 
             steps: []
         };
