@@ -4,8 +4,7 @@
  * Ce module nécessitera l'activation des API "Places API" et "Routes API"
  * dans votre console Google Cloud, ainsi qu'une clé d'API.
  *
- * CORRECTION : Utilise le service moderne "PlaceAutocompleteService"
- * au lieu de l'ancien "AutocompleteService" obsolète.
+ * CORRECTION : Revient au constructeur correct "AutocompleteService"
  */
 
 export class ApiManager {
@@ -66,12 +65,13 @@ export class ApiManager {
         }
         
         // *** CORRECTION ICI ***
-        // Utilise le service moderne "PlaceAutocompleteService"
-        this.autocompleteService = new window.google.maps.places.PlaceAutocompleteService();
+        // Utilise le service "AutocompleteService" (sans "Place")
+        this.autocompleteService = new window.google.maps.places.AutocompleteService();
+        
         // Crée un jeton de session pour l'autocomplétion (meilleure facturation)
         this.sessionToken = new window.google.maps.places.AutocompleteSessionToken();
         
-        console.log("Service d'autocomplétion Google (moderne) initialisé.");
+        console.log("Service d'autocomplétion Google initialisé.");
     }
 
     /**
@@ -132,11 +132,6 @@ export class ApiManager {
                 allowedTravelModes: ["BUS", "WALK"], // Autorise BUS et MARCHE
                 // 'TRAIN' est exclu par défaut car non listé
             },
-            
-            // Demande un itinéraire à vélo comme alternative (si possible)
-            // Note: C'est complexe de demander VÉLO et BUS en même temps.
-            // Nous ferons d'abord le trajet "BUS + MARCHE".
-            // Le vélo serait un appel séparé avec travelMode: "BICYCLE"
         };
 
         try {
