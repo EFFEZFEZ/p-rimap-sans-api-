@@ -798,7 +798,10 @@ function processGoogleRoutesResponse(data) {
                     const stopDetails = transit.stopDetails || {};
                     const departureStop = stopDetails.departureStop || {};
                     const arrivalStop = stopDetails.arrivalStop || {};
-                    const intermediateStops = (transit.intermediateStops || []).map(stop => stop.name || 'Arrêt inconnu');
+                    
+                    // *** CORRECTION APPLIQUÉE ICI ***
+                    // On cherche les arrêts dans stopDetails, pas dans transit
+                    const intermediateStops = (stopDetails.intermediateStops || []).map(stop => stop.name || 'Arrêt inconnu');
 
                     itinerary.steps.push({
                         type: 'BUS',
@@ -812,7 +815,7 @@ function processGoogleRoutesResponse(data) {
                         arrivalStop: arrivalStop.name || 'Arrêt d\'arrivée',
                         arrivalTime: formatGoogleTime(stopDetails.arrivalTime),
                         numStops: transit.stopCount || 0,
-                        intermediateStops: intermediateStops,
+                        intermediateStops: intermediateStops, // <-- Corrigé
                         duration: duration
                     });
                 }
