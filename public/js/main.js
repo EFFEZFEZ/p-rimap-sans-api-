@@ -39,7 +39,6 @@ const ICONS = {
         if (type === 'retard') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
         return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
     },
-    // *** ICÔNE DE MARCHE STANDARDISÉE ET CORRIGÉE ***
     WALK: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.7 0-1.3.4-1.7 1L8 8.3C7.2 9.5 5.8 10 4 10v2c1.1 0 2.1-.4 2.8-1.1l1-1.6 1.4 6.3L8 17v6h2l1-9.6L13.5 15v-3.4l-3.7-3.7z"/></svg>`,
     BUS: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`
 };
@@ -723,74 +722,61 @@ function renderSuggestions(suggestions, container, onSelect) {
     container.style.display = 'block';
 }
 
-/**
- * Traite la réponse brute de l'API Google Routes
- * @param {object} data - La réponse JSON brute de l'API
- * @returns {Array} Un tableau d'objets itinéraires simplifiés
- */
+// *** FONCTION ENTIÈREMENT REMPLACÉE PAR VOTRE CORRECTIF ***
 function processGoogleRoutesResponse(data) {
     if (!data || !data.routes || data.routes.length === 0) {
         console.warn("Réponse de l'API Routes vide ou invalide.");
         return [];
     }
-
     return data.routes.map(route => {
-        const leg = route.legs[0]; 
-        
+        const leg = route.legs[0];                 
+        // *** CORRECTION : Utiliser localizedValues pour les heures ***
+        const departureTime = leg.localizedValues?.departureTime?.time?.text || "--:--";
+        const arrivalTime = leg.localizedValues?.arrivalTime?.time?.text || "--:--";
+                
         const itinerary = {
-            departureTime: formatGoogleTime(leg.startTime),
-            arrivalTime: formatGoogleTime(leg.endTime),
+            departureTime: departureTime,
+            arrivalTime: arrivalTime,
             duration: formatGoogleDuration(route.duration),
             summarySegments: [], 
-            steps: [] // This is the one we're building
+            steps: []
         };
-
         let currentWalkStep = null;
-
         for (const step of leg.steps) {
             const duration = formatGoogleDuration(step.duration);
-            const rawDuration = parseGoogleDuration(step.duration); // Get duration in seconds
+            const rawDuration = parseGoogleDuration(step.duration);
             const distanceMeters = step.distanceMeters || 0;
-            const distanceText = step.localizedValues?.distance?.text || ''; // Get distance string
+            const distanceText = step.localizedValues?.distance?.text || '';
             const instruction = step.navigationInstruction?.instructions || step.localizedValues?.staticDuration?.text || "Marcher";
-
             if (step.travelMode === 'WALK') {
                 if (!currentWalkStep) {
-                    // Start a new walking group
                     currentWalkStep = {
                         type: 'WALK',
                         icon: ICONS.WALK,
-                        instruction: "Marche", // Generic title
-                        subSteps: [], // Array for detailed maneuvers
-                        totalDuration: 0, // We'll sum this
-                        totalDistanceMeters: 0 // We'll sum this
+                        instruction: "Marche",
+                        subSteps: [],
+                        totalDuration: 0,
+                        totalDistanceMeters: 0
                     };
                 }
-                // Add this maneuver to the current walking group
                 currentWalkStep.subSteps.push({ instruction, distance: distanceText });
                 currentWalkStep.totalDuration += rawDuration;
                 currentWalkStep.totalDistanceMeters += distanceMeters;
-
             } else if (step.travelMode === 'TRANSIT' && step.transitDetails) {
-                // 1. If we were in a walking group, push it to steps and clear it
                 if (currentWalkStep) {
-                    // Finalize duration/distance for the walk group
                     currentWalkStep.duration = formatGoogleDuration(currentWalkStep.totalDuration + 's');
-                    
+                                        
                     if (currentWalkStep.totalDistanceMeters > 1000) {
                         currentWalkStep.distance = `${(currentWalkStep.totalDistanceMeters / 1000).toFixed(1)} km`;
                     } else {
                         currentWalkStep.distance = `${currentWalkStep.totalDistanceMeters} m`;
                     }
-                    
+                                        
                     itinerary.steps.push(currentWalkStep);
                     currentWalkStep = null;
                 }
-
-                // 2. Process and add the TRANSIT step
                 const transit = step.transitDetails;
                 const line = transit.transitLine;
-
                 if (line) {
                     const shortName = line.nameShort || 'BUS';
                     const color = line.color || '#3388ff';
@@ -798,11 +784,13 @@ function processGoogleRoutesResponse(data) {
                     const stopDetails = transit.stopDetails || {};
                     const departureStop = stopDetails.departureStop || {};
                     const arrivalStop = stopDetails.arrivalStop || {};
-                    
-                    // *** CORRECTION APPLIQUÉE ICI ***
-                    // On cherche les arrêts dans stopDetails, pas dans transit
+                                        
                     const intermediateStops = (stopDetails.intermediateStops || []).map(stop => stop.name || 'Arrêt inconnu');
-
+                    // *** CORRECTION : Utiliser localizedValues pour les heures des arrêts ***
+                    const depTime = transit.localizedValues?.departureTime?.time?.text ||
+                                    formatGoogleTime(stopDetails.departureTime);
+                    const arrTime = transit.localizedValues?.arrivalTime?.time?.text ||
+                                    formatGoogleTime(stopDetails.arrivalTime);
                     itinerary.steps.push({
                         type: 'BUS',
                         icon: ICONS.BUS,
@@ -811,18 +799,16 @@ function processGoogleRoutesResponse(data) {
                         routeTextColor: textColor,
                         instruction: `Prendre le <b>${shortName}</b> direction <b>${transit.headsign || 'destination'}</b>`,
                         departureStop: departureStop.name || 'Arrêt de départ',
-                        departureTime: formatGoogleTime(stopDetails.departureTime),
+                        departureTime: depTime,
                         arrivalStop: arrivalStop.name || 'Arrêt d\'arrivée',
-                        arrivalTime: formatGoogleTime(stopDetails.arrivalTime),
+                        arrivalTime: arrTime,
                         numStops: transit.stopCount || 0,
-                        intermediateStops: intermediateStops, // <-- Corrigé
+                        intermediateStops: intermediateStops,
                         duration: duration
                     });
                 }
             }
         }
-
-        // 3. After the loop, push any remaining walking group
         if (currentWalkStep) {
             currentWalkStep.duration = formatGoogleDuration(currentWalkStep.totalDuration + 's');
             if (currentWalkStep.totalDistanceMeters > 1000) {
@@ -832,12 +818,11 @@ function processGoogleRoutesResponse(data) {
             }
             itinerary.steps.push(currentWalkStep);
         }
-        
-        // --- Process Summary Segments (based on the new grouped steps) ---
+                
         itinerary.summarySegments = itinerary.steps.map(step => {
             if (step.type === 'WALK') {
                 return { type: 'WALK', duration: step.duration };
-            } else { // BUS
+            } else {
                 return {
                     type: 'BUS',
                     name: step.routeShortName,
@@ -847,14 +832,14 @@ function processGoogleRoutesResponse(data) {
                 };
             }
         });
-        
+                
         itinerary.summarySegments = itinerary.summarySegments.filter((segment, index, self) => 
             segment.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
         );
-
         return itinerary;
     });
 }
+
 
 /**
  * Affiche les itinéraires formatés dans la liste des résultats
