@@ -2,11 +2,10 @@
  * dataManager.js
  * * Gère le chargement et le parsing des données GTFS et GeoJSON
  *
- * CORRECTION FINALE (CHEMINS Vercel/Vite/Replit) :
- * - Le serveur (Vercel) mappe le dossier 'public' à la racine '/'.
- * - Les chemins doivent être ABSOLUS (commencer par '/') mais NE PAS 
- * inclure 'public'.
- * - On demande '/data/...' et le serveur cherche dans '/public/data/...'.
+ * CORRECTION V5:
+ * - Implémente la logique GTFS complète pour getServiceId (gère type 1 et 2)
+ * - CORRIGE l'incohérence des service_id ('.timetable:' vs ':Timetable:')
+ * en normalisant les ID dans getActiveTrips et getUpcomingDepartures.
  */
 
 export class DataManager {
@@ -103,8 +102,6 @@ export class DataManager {
      * Charge un fichier GTFS (CSV)
      */
     async loadGTFSFile(filename) {
-        // *** CORRECTION ICI ***
-        // Le chemin est ABSOLU (commence par '/') mais SANS 'public'
         const response = await fetch(`/data/gtfs/${filename}`);
         if (!response.ok) {
             throw new Error(`Impossible de charger ${filename}: ${response.statusText}`);
@@ -125,8 +122,6 @@ export class DataManager {
      * Charge le fichier GeoJSON
      */
     async loadGeoJSON() {
-        // *** CORRECTION ICI ***
-        // Le chemin est ABSOLU (commence par '/') mais SANS 'public'
         const response = await fetch('/data/map.geojson');
         if (!response.ok) {
             console.warn(`map.geojson non trouvé ou invalide: ${response.statusText}. Les tracés de route ne seront pas disponibles.`);
@@ -134,8 +129,6 @@ export class DataManager {
         }
         return await response.json();
     }
-
-    // ... (Le reste du fichier reste inchangé) ...
 
     /**
      * Affiche une erreur non-bloquante
@@ -187,6 +180,8 @@ export class DataManager {
                 this.groupedStopMap[stop.stop_id] = [stop.stop_id];
             }
         });
+
+        console.log(`Arrêts regroupés: ${this.masterStops.length} arrêts maîtres.`);
     }
 
     /**
@@ -206,7 +201,11 @@ export class DataManager {
      */
     getUpcomingDepartures(stopIds, currentSeconds, date, limit = 5) {
         const serviceId = this.getServiceId(date);
-        if (!serviceId) return [];
+        
+        // *** CORRECTION INCOHÉRENCE GTFS ***
+        // Normalise l'ID pour correspondre à trips.txt
+        const normalizedServiceId = serviceId ? serviceId.replace(".timetable:", ":Timetable:") : null;
+        if (!normalizedServiceId) return [];
 
         let allDepartures = [];
 
@@ -214,7 +213,8 @@ export class DataManager {
             const stops = this.stopTimesByStop[stopId] || [];
             stops.forEach(st => {
                 const trip = this.tripsByTripId[st.trip_id];
-                if (trip && trip.service_id === serviceId) {
+                // Compare avec l'ID normalisé
+                if (trip && trip.service_id === normalizedServiceId) {
                     const departureSeconds = this.timeToSeconds(st.departure_time);
                     if (departureSeconds >= currentSeconds) {
                         allDepartures.push({
@@ -309,7 +309,7 @@ export class DataManager {
     }
 
     /**
-     * *** FONCTION ENTIÈREMENT CORRIGÉE (LOGIQUE GTFS COMPLÈTE) ***
+     * *** FONCTION CORRIGÉE (LOGIQUE GTFS COMPLÈTE) ***
      * Récupère le service_id pour la date donnée en respectant 
      * la priorité de calendar_dates sur calendar.
      */
@@ -320,7 +320,6 @@ export class DataManager {
                            String(date.getDate()).padStart(2, '0');
 
         // Étape 1: Vérifier les AJOUTS (type 1) dans calendar_dates.txt
-        // C'est la priorité la plus élevée.
         const addedService = this.calendarDates.find(d => 
             d.date === dateString && d.exception_type === '1'
         );
@@ -365,25 +364,33 @@ export class DataManager {
      */
     getActiveTrips(currentSeconds, date) {
         
-        const serviceId = this.getServiceId(date);
+        const serviceId = this.getServiceId(date); // Ex: .timetable:8
+        
+        // *** CORRECTION DE L'INCOHÉRENCE GTFS ***
+        // Normalise l'ID pour correspondre au format de trips.txt (ex: :Timetable:8)
+        const normalizedServiceId = serviceId ? serviceId.replace(".timetable:", ":Timetable:") : null;
 
-        console.log(`[getActiveTrips] Service ID utilisé: ${serviceId}`);
-
-        if (!serviceId) {
+        console.log(`[getActiveTrips] Service ID original (calendar): ${serviceId}`);
+        console.log(`[getActiveTrips] Service ID normalisé (trips): ${normalizedServiceId}`);
+        
+        if (!normalizedServiceId) {
+            console.warn("[getActiveTrips] Aucun Service ID trouvé pour aujourd'hui. Aucun bus ne sera affiché.");
             return [];
         }
 
         const activeTrips = [];
 
         this.trips.forEach(trip => {
-            if (trip.service_id === serviceId) {
+            // Compare avec l'ID normalisé
+            if (trip.service_id === normalizedServiceId) {
                 const stopTimes = this.stopTimesByTrip[trip.trip_id];
                 if (!stopTimes || stopTimes.length < 2) return;
 
                 const firstStop = stopTimes[0];
                 const lastStop = stopTimes[stopTimes.length - 1];
                 
-                // (Utilise la correction précédente : arrival_time)
+                // *** CORRECTION (V2) *** // Utilise arrival_time pour le début (pour inclure l'attente au terminus)
+                // et arrival_time pour la fin.
                 const startTime = this.timeToSeconds(firstStop.arrival_time);
                 const endTime = this.timeToSeconds(lastStop.arrival_time);
 
