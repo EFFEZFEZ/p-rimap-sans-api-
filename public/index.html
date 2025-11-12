@@ -69,6 +69,7 @@
                                         <input type="text" id="hall-planner-from" placeholder="Gare, station, arrêt ou lieu" autocomplete="off">
                                         <div id="from-suggestions" class="autocomplete-suggestions"></div>
                                     </div>
+
                                     <button class="btn-swap-direction" aria-label="Inverser le départ et l'arrivée">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2.6c0-1.1.9-2 2-2h16"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2.6c0 1.1-.9 2-2 2H3"/></svg>
                                     </button>
@@ -78,7 +79,8 @@
                                         <input type="text" id="hall-planner-to" placeholder="Gare, station, arrêt ou lieu" autocomplete="off">
                                         <div id="to-suggestions" class="autocomplete-suggestions"></div>
                                     </div>
-                                    </div>
+
+                                </div>
 
                                 <div class="form-group-when">
                                     <label for="planner-when-btn">QUAND</label>
@@ -92,24 +94,28 @@
                                             <button class="popover-tab active" data-tab="partir">Partir</button>
                                             <button class="popover-tab" data-tab="arriver">Arriver</button>
                                         </div>
+                                        
                                         <div class="popover-content">
                                             <div class="form-group">
                                                 <label for="popover-date">DATE DU TRAJET</label>
-                                                <input type="text" id="popover-date" class="sim-select" value="Aujourd'hui" readonly>
+                                                <select id="popover-date" class="real-select">
+                                                    <option value="today">Aujourd'hui</option>
+                                                    <option value="tomorrow">Demain</option>
+                                                </select>
                                             </div>
                                             <div class="popover-time-inputs">
                                                 <div class="form-group">
                                                     <label for="popover-hour">HEURE</label>
-                                                    <input type="text" id="popover-hour" class="sim-select" value="20 h" readonly>
+                                                    <select id="popover-hour" class="real-select"></select>
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="popover-minute">MINUTES</label>
-                                                    <input type="text" id="popover-minute" class="sim-select" value="25" readonly>
+                                                    <select id="popover-minute" class="real-select"></select>
                                                 </div>
                                             </div>
                                             <button id="popover-submit-btn" class="btn btn-primary btn-popover-submit">Partir maintenant</button>
                                         </div>
-                                    </div>
+                                        </div>
                                 </div>
                                 
                                 <button id="planner-submit-btn" class="btn btn-primary planner-search-btn">Rechercher</button>
