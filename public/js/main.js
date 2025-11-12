@@ -742,45 +742,62 @@ function processGoogleRoutesResponse(data) {
             arrivalTime: formatGoogleTime(leg.endTime),
             duration: formatGoogleDuration(route.duration),
             summarySegments: [], 
-            steps: [] 
+            steps: [] // This is the one we're building
         };
 
-        leg.steps.forEach(step => {
+        let currentWalkStep = null;
+
+        for (const step of leg.steps) {
             const duration = formatGoogleDuration(step.duration);
-            
+            const rawDuration = parseGoogleDuration(step.duration); // Get duration in seconds
+            const distanceMeters = step.distanceMeters || 0;
+            const distanceText = step.localizedValues?.distance?.text || ''; // Get distance string
+            const instruction = step.navigationInstruction?.instructions || step.localizedValues?.staticDuration?.text || "Marcher";
+
             if (step.travelMode === 'WALK') {
-                itinerary.summarySegments.push({ 
-                    type: 'WALK', 
-                    duration: duration 
-                });
-                itinerary.steps.push({
-                    type: 'WALK',
-                    icon: ICONS.WALK,
-                    instruction: step.navigationInstruction?.instructions || step.localizedValues?.staticDuration?.text || "Marcher",
-                    duration: duration
-                });
+                if (!currentWalkStep) {
+                    // Start a new walking group
+                    currentWalkStep = {
+                        type: 'WALK',
+                        icon: ICONS.WALK,
+                        instruction: "Marche", // Generic title
+                        subSteps: [], // Array for detailed maneuvers
+                        totalDuration: 0, // We'll sum this
+                        totalDistanceMeters: 0 // We'll sum this
+                    };
+                }
+                // Add this maneuver to the current walking group
+                currentWalkStep.subSteps.push({ instruction, distance: distanceText });
+                currentWalkStep.totalDuration += rawDuration;
+                currentWalkStep.totalDistanceMeters += distanceMeters;
+
             } else if (step.travelMode === 'TRANSIT' && step.transitDetails) {
+                // 1. If we were in a walking group, push it to steps and clear it
+                if (currentWalkStep) {
+                    // Finalize duration/distance for the walk group
+                    currentWalkStep.duration = formatGoogleDuration(currentWalkStep.totalDuration + 's');
+                    
+                    if (currentWalkStep.totalDistanceMeters > 1000) {
+                        currentWalkStep.distance = `${(currentWalkStep.totalDistanceMeters / 1000).toFixed(1)} km`;
+                    } else {
+                        currentWalkStep.distance = `${currentWalkStep.totalDistanceMeters} m`;
+                    }
+                    
+                    itinerary.steps.push(currentWalkStep);
+                    currentWalkStep = null;
+                }
+
+                // 2. Process and add the TRANSIT step
                 const transit = step.transitDetails;
                 const line = transit.transitLine;
 
-                if (line) { 
+                if (line) {
                     const shortName = line.nameShort || 'BUS';
                     const color = line.color || '#3388ff';
                     const textColor = line.textColor || '#ffffff';
-
-                    itinerary.summarySegments.push({
-                        type: 'BUS',
-                        name: shortName,
-                        color: color,
-                        textColor: textColor,
-                        duration: duration
-                    });
-
                     const stopDetails = transit.stopDetails || {};
                     const departureStop = stopDetails.departureStop || {};
                     const arrivalStop = stopDetails.arrivalStop || {};
-                    
-                    // *** NOUVEAU: Récupérer les arrêts intermédiaires ***
                     const intermediateStops = (transit.intermediateStops || []).map(stop => stop.name || 'Arrêt inconnu');
 
                     itinerary.steps.push({
@@ -795,13 +812,39 @@ function processGoogleRoutesResponse(data) {
                         arrivalStop: arrivalStop.name || 'Arrêt d\'arrivée',
                         arrivalTime: formatGoogleTime(stopDetails.arrivalTime),
                         numStops: transit.stopCount || 0,
-                        intermediateStops: intermediateStops, // <-- Ajouté
+                        intermediateStops: intermediateStops,
                         duration: duration
                     });
                 }
             }
-        });
+        }
 
+        // 3. After the loop, push any remaining walking group
+        if (currentWalkStep) {
+            currentWalkStep.duration = formatGoogleDuration(currentWalkStep.totalDuration + 's');
+            if (currentWalkStep.totalDistanceMeters > 1000) {
+                currentWalkStep.distance = `${(currentWalkStep.totalDistanceMeters / 1000).toFixed(1)} km`;
+            } else {
+                currentWalkStep.distance = `${currentWalkStep.totalDistanceMeters} m`;
+            }
+            itinerary.steps.push(currentWalkStep);
+        }
+        
+        // --- Process Summary Segments (based on the new grouped steps) ---
+        itinerary.summarySegments = itinerary.steps.map(step => {
+            if (step.type === 'WALK') {
+                return { type: 'WALK', duration: step.duration };
+            } else { // BUS
+                return {
+                    type: 'BUS',
+                    name: step.routeShortName,
+                    color: step.routeColor,
+                    textColor: step.routeTextColor,
+                    duration: step.duration
+                };
+            }
+        });
+        
         itinerary.summarySegments = itinerary.summarySegments.filter((segment, index, self) => 
             segment.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
         );
@@ -868,6 +911,7 @@ function renderItineraryResults(itineraries) {
         // *** LOGIQUE DE RENDU DES DÉTAILS ENTIÈREMENT MISE À JOUR ***
         details.innerHTML = itinerary.steps.map(step => {
             if (step.type === 'WALK') {
+                const hasSubSteps = step.subSteps && step.subSteps.length > 0;
                 return `
                     <div class="step-detail walk">
                         <div class="step-icon">
@@ -875,7 +919,18 @@ function renderItineraryResults(itineraries) {
                         </div>
                         <div class="step-info">
                             <span class="step-instruction">Marche <span class="step-duration-inline">(${step.duration})</span></span>
-                            <span class="step-sub-instruction">${step.instruction.replace('Marcher', 'Marcher vers')}</span>
+                            
+                            ${hasSubSteps ? `
+                            <details class="intermediate-stops">
+                                <summary>
+                                    <span>Environ ${step.duration}, ${step.distance}</span>
+                                    <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                                </summary>
+                                <ul class="intermediate-stops-list walk-steps">
+                                    ${step.subSteps.map(subStep => `<li>${subStep.instruction} ${subStep.distance ? `(${subStep.distance})` : ''}</li>`).join('')}
+                                </ul>
+                            </details>
+                            ` : `<span class="step-sub-instruction">${step.instruction}</span>`}
                         </div>
                     </div>
                 `;
@@ -973,6 +1028,19 @@ function formatGoogleDuration(durationString) {
         return `${minutes} min`;
     } catch (e) {
         return "";
+    }
+}
+
+/**
+ * NOUVEAU HELPER
+ * Helper pour parser la durée de Google (ex: "1800s") en nombre (1800)
+ */
+function parseGoogleDuration(durationString) {
+    if (!durationString) return 0;
+    try {
+        return parseInt(durationString.slice(0, -1)) || 0;
+    } catch (e) {
+        return 0;
     }
 }
 
