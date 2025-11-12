@@ -1,19 +1,15 @@
 /**
  * apiManager.js
- * * Gère tous les appels aux API externes (Google Places & Google Routes).
+ * Gère tous les appels aux API externes (Google Places & Google Routes).
  * Ce module nécessitera l'activation des API "Places API" et "Routes API"
  * dans votre console Google Cloud, ainsi qu'une clé d'API.
- *
- * CORRECTION FINALE : Charge "v=beta" ET "libraries=places,places-new"
- * Ajout d'un "cache-buster" (le paramètre 'nonce') pour forcer le 
- * navigateur à re-télécharger le script de Google.
  */
 
 export class ApiManager {
     constructor(apiKey) {
         this.apiKey = apiKey;
         this.autocompleteService = null;
-        this.sessionToken = null; // Jeton pour les sessions d'autocomplétion
+        this.sessionToken = null;
 
         // Limite l'autosuggestion à la Dordogne
         this.dordogneBounds = {
@@ -26,11 +22,10 @@ export class ApiManager {
 
     /**
      * Initialise le chargeur de l'API Google Maps.
-     * C'est nécessaire pour utiliser les services Places.
      * @param {string} apiKey Votre clé d'API Google
      */
     loadGoogleMapsAPI() {
-        if (window.google) {
+        if (window.google && window.google.maps && window.google.maps.places) {
             console.log("API Google Maps déjà chargée.");
             this.initServices();
             return Promise.resolve();
@@ -39,25 +34,30 @@ export class ApiManager {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             
-            // *** CORRECTION ICI ***
-            // Ajout de "nonce" pour forcer le re-téléchargement
-            const cacheBuster = new Date().getTime();
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places,places-new&v=beta&callback=onGoogleMapsApiLoaded&nonce=${cacheBuster}`;
+            // CORRECTION : Utilisation de loading=async au lieu de callback
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places&loading=async`;
             
             script.async = true;
             script.defer = true;
-            document.head.appendChild(script);
             
-            // Le script ci-dessus appellera cette fonction globale
-            window.onGoogleMapsApiLoaded = () => {
-                console.log("API Google Maps (v=beta, places-new) chargée avec succès.");
-                this.initServices();
-                resolve();
+            script.onload = () => {
+                console.log("API Google Maps chargée avec succès.");
+                // Attendre que google.maps.places soit disponible
+                if (window.google && window.google.maps && window.google.maps.places) {
+                    this.initServices();
+                    resolve();
+                } else {
+                    console.error("google.maps.places n'est pas disponible après le chargement");
+                    reject(new Error("Bibliothèque places non disponible"));
+                }
             };
+            
             script.onerror = () => {
                 console.error("Erreur lors du chargement du script Google Maps.");
                 reject(new Error("Impossible de charger Google Maps API."));
             };
+            
+            document.head.appendChild(script);
         });
     }
 
@@ -70,13 +70,17 @@ export class ApiManager {
             return;
         }
         
-        // Utilise le service moderne "PlaceAutocompleteService"
-        this.autocompleteService = new window.google.maps.places.PlaceAutocompleteService();
-        
-        // Crée un jeton de session pour l'autocomplétion (meilleure facturation)
-        this.sessionToken = new window.google.maps.places.AutocompleteSessionToken();
-        
-        console.log("Service d'autocomplétion Google (moderne) initialisé.");
+        try {
+            // CORRECTION PRINCIPALE : Utiliser AutocompleteService (sans "Place" au début)
+            this.autocompleteService = new google.maps.places.AutocompleteService();
+            
+            // Crée un jeton de session pour l'autocomplétion
+            this.sessionToken = new google.maps.places.AutocompleteSessionToken();
+            
+            console.log("Service d'autocomplétion Google initialisé avec succès.");
+        } catch (error) {
+            console.error("Erreur lors de l'initialisation des services:", error);
+        }
     }
 
     /**
@@ -88,22 +92,30 @@ export class ApiManager {
         if (!this.autocompleteService) {
             console.warn("Service d'autocomplétion non initialisé. Tentative de chargement...");
             await this.loadGoogleMapsAPI();
-            if (!this.autocompleteService) return [];
+            if (!this.autocompleteService) {
+                console.error("Impossible d'initialiser le service d'autocomplétion");
+                return [];
+            }
         }
 
         return new Promise((resolve, reject) => {
-            this.autocompleteService.getPlacePredictions({
+            const request = {
                 input: inputString,
-                sessionToken: this.sessionToken, 
+                sessionToken: this.sessionToken,
                 componentRestrictions: { country: 'fr' },
                 // Biais vers la zone de la Dordogne
-                bounds: this.dordogneBounds, 
-                strictBounds: false, 
-            }, (predictions, status) => {
-                // Le statut de la nouvelle API est juste une chaîne, pas un objet enum
-                if (status !== "OK" || !predictions) {
+                locationBias: {
+                    south: this.dordogneBounds.south,
+                    west: this.dordogneBounds.west,
+                    north: this.dordogneBounds.north,
+                    east: this.dordogneBounds.east,
+                },
+            };
+
+            this.autocompleteService.getPlacePredictions(request, (predictions, status) => {
+                if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
                     console.warn("Échec de l'autocomplétion Places:", status);
-                    resolve([]); 
+                    resolve([]);
                 } else {
                     // Formate les résultats
                     const results = predictions.map(p => ({
@@ -131,11 +143,10 @@ export class ApiManager {
         const body = {
             origin: { placeId: fromPlaceId },
             destination: { placeId: toPlaceId },
-            travelMode: "TRANSIT", // Mode transport en commun
+            travelMode: "TRANSIT",
             
-            // --- Vos spécifications ---
             transitPreferences: {
-                allowedTravelModes: ["BUS", "WALK"], // Autorise BUS et MARCHE
+                allowedTravelModes: ["BUS", "WALK"],
             },
         };
 
@@ -145,7 +156,7 @@ export class ApiManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
-                    'X-Goog-FieldMask': 'routes.legs,routes.duration,routes.distanceMeters,routes.polyline,routes.steps' 
+                    'X-Goog-FieldMask': 'routes.legs,routes.duration,routes.distanceMeters,routes.polyline,routes.steps'
                 },
                 body: JSON.stringify(body)
             });
@@ -153,7 +164,7 @@ export class ApiManager {
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error("Erreur de l'API Routes:", errorData);
-                throw new Error(`API Routes a échoué: ${errorData.error.message}`);
+                throw new Error(`API Routes a échoué: ${errorData.error?.message || response.statusText}`);
             }
 
             const data = await response.json();
@@ -161,13 +172,15 @@ export class ApiManager {
             console.log("Réponse de l'API Routes:", data);
             
             // Réinitialise le jeton de session après une recherche réussie
-            this.sessionToken = new window.google.maps.places.AutocompleteSessionToken();
+            if (window.google && window.google.maps && window.google.maps.places) {
+                this.sessionToken = new google.maps.places.AutocompleteSessionToken();
+            }
 
-            return data; 
+            return data;
 
         } catch (error) {
             console.error("Erreur lors de l'appel à fetchItinerary:", error);
-            throw error; 
+            throw error;
         }
     }
 }
