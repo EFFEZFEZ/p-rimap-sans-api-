@@ -1,15 +1,14 @@
 /**
- * mapRenderer.js - VERSION FINALE (Audit V4 / Corrigé V12)
- * Gère l'affichage de la carte Leaflet et le rendu des bus et routes
+ * mapRenderer.js - VERSION FINALE (V13 - Anti-clignotement TOTAL)
  *
- * *** CORRECTION (V12 - Anti-clignotement + Mise à jour) ***
- * - Ré-introduit la logique de MISE À JOUR ATOMIQUE DU DOM.
- * - Le popup est créé une fois avec des attributs [data-update].
- * - updateBusMarkers() N'APPELLE PAS setContent(), mais
- * appelle updateMovingBusPopup() ou updateStationaryBusPopup().
- * - Ces fonctions utilisent querySelector() pour mettre à jour
- * UNIQUEMENT le textContent des éléments, ce qui
- * permet la mise à jour en temps réel SANS clignotement.
+ * *** CORRECTION V13 ***
+ * - SUPPRESSION TOTALE de 'classList.toggle('bus-icon-waiting')'.
+ * L'icône ne change plus JAMAIS d'apparence. C'est ce qui
+ * causait le redessinage du marqueur et le clignotement.
+ *
+ * - CONSERVATION de la mise à jour atomique (V12).
+ * Le popup met à jour son 'textContent' (ETA, prochain arrêt)
+ * en temps réel sans clignoter.
  */
 
 export class MapRenderer {
@@ -212,8 +211,8 @@ export class MapRenderer {
     }
 
     /**
-     * MODIFIÉ (V12 - Anti-clignotement)
-     * Ré-introduction de la logique de mise à jour ATOMIQUE.
+     * MODIFIÉ (V13 - Anti-clignotement FINAL)
+     * Suppression du 'classList.toggle' de l'icône.
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -245,23 +244,20 @@ export class MapRenderer {
                 markerData.bus = bus; 
                 markerData.marker.setLatLng([lat, lon]);
                 
-                // L'icône est modifiée (OK)
-                const isWaiting = !bus.segment; 
-                const iconElement = markerData.marker.getElement();
-                if (iconElement) {
-                    iconElement.classList.toggle('bus-icon-waiting', isWaiting);
-                }
+                // *** CORRECTION V13 ***
+                // SUPPRESSION de la modification de l'icône
+                // C'est cette ligne qui causait le clignotement.
+                // const isWaiting = !bus.segment; 
+                // const iconElement = markerData.marker.getElement();
+                // if (iconElement) {
+                //     iconElement.classList.toggle('bus-icon-waiting', isWaiting);
+                // }
                 
-                // *** LOGIQUE ATOMIQUE V12 ***
-                // Si le popup est ouvert, on met à jour son DOM
-                // au lieu d'appeler setContent()
+                // *** LOGIQUE ATOMIQUE V12 (Conservée) ***
                 if (markerData.marker.isPopupOpen()) {
                     const popup = markerData.marker.getPopup();
                     
-                    if (!popup.getElement()) {
-                        // Le popup est en cours d'ouverture mais pas encore dans le DOM,
-                        // setContent sera appelé par l'événement 'popupopen'.
-                    } else {
+                    if (popup.getElement()) {
                         const popupElement = popup.getElement();
                         const currentState = bus.segment ? 'moving' : 'stationary';
 
@@ -269,13 +265,11 @@ export class MapRenderer {
                         if (currentState === 'moving') {
                             this.updateMovingBusPopup(popupElement, bus, tripScheduler);
                         } else {
-                            // (currentState === 'stationary')
                             this.updateStationaryBusPopup(popupElement, bus, tripScheduler);
                         }
                         markerData.lastState = currentState;
                     }
                 } else {
-                    // Mettre à jour l'état même si fermé
                     markerData.lastState = bus.segment ? 'moving' : 'stationary';
                 }
 
@@ -307,7 +301,7 @@ export class MapRenderer {
     }
 
     /**
-     * NOUVEAU (V12): Mise à jour atomique pour un bus en mouvement
+     * (V12): Mise à jour atomique pour un bus en mouvement
      */
     updateMovingBusPopup(popupElement, bus, tripScheduler) {
         try {
@@ -319,7 +313,7 @@ export class MapRenderer {
             const stateText = `En Ligne (vers ${destination})`;
             const nextStopLabelText = "Prochain arrêt :";
             const nextStopText = nextStopName;
-            const etaLabelText = "Arrivée :"; // Reste "Arrivée" (logique V12)
+            const etaLabelText = "Arrivée :"; 
             const etaText = nextStopETA ? nextStopETA.formatted : '...';
 
             const stateEl = popupElement.querySelector('[data-update="state"]');
@@ -340,7 +334,7 @@ export class MapRenderer {
     }
 
     /**
-     * NOUVEAU (V12): Mise à jour atomique pour un bus à l'arrêt (terminus)
+     * (V12): Mise à jour atomique pour un bus à l'arrêt (terminus)
      */
     updateStationaryBusPopup(popupElement, bus, tripScheduler) {
         try {
@@ -375,7 +369,7 @@ export class MapRenderer {
 
     /**
      * Crée le contenu popup avec une structure HTML unifiée
-     * NOUVEAU (V12): Ajout des attributs [data-update]
+     * (V12): Ajout des attributs [data-update]
      */
     createBusPopupContent(bus, tripScheduler) {
         const route = bus.route;
@@ -435,7 +429,7 @@ export class MapRenderer {
 
     /**
      * Création d'un marqueur avec état initial
-     * NOUVEAU (V12): Ajout de 'lastState'
+     * MODIFIÉ (V13): Suppression de 'isWaiting' du className.
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -444,8 +438,9 @@ export class MapRenderer {
         const routeColor = route?.route_color ? `#${route.route_color}` : '#FFC107';
         const textColor = route?.route_text_color ? `#${route.route_text_color}` : '#ffffff';
 
-        const isWaiting = !bus.segment; 
-        const iconClassName = isWaiting ? 'bus-icon-rect bus-icon-waiting' : 'bus-icon-rect';
+        // *** CORRECTION V13 ***
+        // Suppression de la logique 'isWaiting'. L'icône est toujours 'bus-icon-rect'.
+        const iconClassName = 'bus-icon-rect';
 
         // Ajout d'une classe de statut (perturbation, etc.)
         const statusClass = bus.currentStatus ? `bus-status-${bus.currentStatus}` : 'bus-status-normal';
