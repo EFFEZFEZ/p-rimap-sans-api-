@@ -5,7 +5,8 @@
  * dans votre console Google Cloud, ainsi qu'une clé d'API.
  *
  * CORRECTION FINALE : Charge "v=beta" ET "libraries=places,places-new"
- * pour accéder au constructeur "PlaceAutocompleteService".
+ * Ajout d'un "cache-buster" (le paramètre 'nonce') pour forcer le 
+ * navigateur à re-télécharger le script de Google.
  */
 
 export class ApiManager {
@@ -39,8 +40,9 @@ export class ApiManager {
             const script = document.createElement('script');
             
             // *** CORRECTION ICI ***
-            // Ajout de "places-new" à la liste des bibliothèques
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places,places-new&v=beta&callback=onGoogleMapsApiLoaded`;
+            // Ajout de "nonce" pour forcer le re-téléchargement
+            const cacheBuster = new Date().getTime();
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places,places-new&v=beta&callback=onGoogleMapsApiLoaded&nonce=${cacheBuster}`;
             
             script.async = true;
             script.defer = true;
@@ -69,7 +71,6 @@ export class ApiManager {
         }
         
         // Utilise le service moderne "PlaceAutocompleteService"
-        // (Maintenant que "places-new" est chargé, cela devrait fonctionner)
         this.autocompleteService = new window.google.maps.places.PlaceAutocompleteService();
         
         // Crée un jeton de session pour l'autocomplétion (meilleure facturation)
