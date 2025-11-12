@@ -39,8 +39,8 @@ const ICONS = {
         if (type === 'retard') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
         return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
     },
-    // *** ICÔNE DE MARCHE MISE À JOUR ***
-    WALK: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M8 12.5h8"/><path d="M12 12.5v9m-3-6 3 6 3-6"/></svg>`,
+    // *** ICÔNE DE MARCHE STANDARDISÉE ET CORRIGÉE ***
+    WALK: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.7 0-1.3.4-1.7 1L8 8.3C7.2 9.5 5.8 10 4 10v2c1.1 0 2.1-.4 2.8-1.1l1-1.6 1.4 6.3L8 17v6h2l1-9.6L13.5 15v-3.4l-3.7-3.7z"/></svg>`,
     BUS: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`
 };
 
@@ -871,7 +871,7 @@ function renderItineraryResults(itineraries) {
                 return `
                     <div class="step-detail walk">
                         <div class="step-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M8 12.5h8"/><path d="M12 12.5v9m-3-6 3 6 3-6"/></svg>
+                            ${ICONS.WALK}
                         </div>
                         <div class="step-info">
                             <span class="step-instruction">Marche <span class="step-duration-inline">(${step.duration})</span></span>
@@ -881,10 +881,15 @@ function renderItineraryResults(itineraries) {
                 `;
             } else { // BUS
                 const hasIntermediateStops = step.intermediateStops && step.intermediateStops.length > 0;
-                // Calcule le nombre d'arrêts intermédiaires basé sur la liste si elle existe, sinon utilise numStops
-                const stopCountLabel = hasIntermediateStops ?
-                    `${step.intermediateStops.length} arrêt${step.intermediateStops.length > 1 ? 's' : ''}` :
-                    (step.numStops > 1 ? `${step.numStops - 1} arrêt${step.numStops > 2 ? 's' : ''}` : 'Direct');
+                // Calcule le nombre d'arrêts intermédiaires
+                const intermediateStopCount = hasIntermediateStops ? step.intermediateStops.length : (step.numStops > 1 ? step.numStops - 1 : 0);
+                
+                let stopCountLabel = 'Direct';
+                if (intermediateStopCount > 1) {
+                    stopCountLabel = `${intermediateStopCount} arrêts`;
+                } else if (intermediateStopCount === 1) {
+                    stopCountLabel = `1 arrêt`;
+                }
 
                 return `
                     <div class="step-detail bus">
@@ -899,7 +904,7 @@ function renderItineraryResults(itineraries) {
                                 <span class="step-time-detail">(${step.departureTime})</span>
                             </div>
                             
-                            ${(hasIntermediateStops || step.numStops > 1) ? `
+                            ${(intermediateStopCount > 0) ? `
                             <details class="intermediate-stops">
                                 <summary>
                                     <span>${stopCountLabel}</span>
