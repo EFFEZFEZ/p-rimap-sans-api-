@@ -2018,6 +2018,7 @@ details[open] .accordion-content {
     border-left-color: transparent;
     padding-left: 0;
     margin-left: 0;
+    font-weight: 500;
 }
 .intermediate-stops-list.walk-steps li {
     padding-left: 0;
