@@ -9,13 +9,11 @@ import { TimeManager } from './timeManager.js';
 import { TripScheduler } from './tripScheduler.js';
 import { BusPositionCalculator } from './busPositionCalculator.js';
 import { MapRenderer } from './mapRenderer.js';
-// NOUVEL IMPORT
 import { ApiManager } from './apiManager.js';
 
 // *** ACTION REQUISE ***
 // Remplacez cette chaîne par votre clé d'API Google Cloud
-// (Vous devez activer "Places API" et "Routes API" pour cette clé)
-const GOOGLE_API_KEY = "AIzaSyBYDN_8hSHSx_irp_fxLw--XyxuLiixaW4";
+const GOOGLE_API_KEY = "VOTRE_CLE_API_GOOGLE_ICI";
 
 // Modules
 let dataManager;
@@ -25,12 +23,12 @@ let busPositionCalculator;
 let mapRenderer;
 let resultsMapRenderer; 
 let visibleRoutes = new Set();
-let apiManager; // Nouvelle instance
+let apiManager; 
 
 // NOUVEL ÉTAT GLOBAL
 let lineStatuses = {}; 
 
-// NOUVELLES ICÔNES SVG
+// ICÔNES SVG
 const ICONS = {
     busSmall: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
     statusTriangle: `<svg width="16" height="8" viewBox="0 0 16 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8 0L16 8H0L8 0Z" /></svg>`,
@@ -41,7 +39,6 @@ const ICONS = {
         if (type === 'retard') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
         return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
     },
-    // --- NOUVELLES ICÔNES D'ITINÉRAIRE ---
     WALK: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-2.2c0-.4-.1-.8-.4-1.1l-1.9-2.8c-.8-1.1-2.2-1.8-3.7-1.8H5v8h2v-3h2.3c1 0 1.8.8 1.8 1.8V16H16z"/><path d="M5 18v2h4v-2H5z"/><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/></svg>`,
     BUS: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`
 };
@@ -112,10 +109,11 @@ let mapContainer, btnShowMap, btnBackToDashboardFromMap;
 // ÉLÉMENTS DOM (VUE 3: RÉSULTATS)
 let itineraryResultsContainer, btnBackToDashboardFromResults, resultsListContainer;
 
-// --- NOUVEAUX ÉLÉMENTS DOM (PLANIFICATEUR AVEC API) ---
+// --- ÉLÉMENTS DOM (PLANIFICATEUR) ---
 let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
 let fromInput, toInput;
 let fromSuggestions, toSuggestions;
+let popoverDate, popoverHour, popoverMinute; // NOUVEAUX sélecteurs
 // Variables pour stocker les IDs de lieu Google
 let fromPlaceId = null;
 let toPlaceId = null;
@@ -165,6 +163,7 @@ async function initializeApp() {
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
     resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
 
+    // NOUVELLES SÉLECTIONS DOM
     plannerWhenBtn = document.getElementById('planner-when-btn');
     plannerOptionsPopover = document.getElementById('planner-options-popover');
     plannerSubmitBtn = document.getElementById('planner-submit-btn');
@@ -172,6 +171,9 @@ async function initializeApp() {
     toInput = document.getElementById('hall-planner-to');
     fromSuggestions = document.getElementById('from-suggestions');
     toSuggestions = document.getElementById('to-suggestions');
+    popoverDate = document.getElementById('popover-date');
+    popoverHour = document.getElementById('popover-hour');
+    popoverMinute = document.getElementById('popover-minute');
 
     // --- 2. INITIALISER LES MANAGERS ---
     apiManager = new ApiManager(GOOGLE_API_KEY);
@@ -230,6 +232,47 @@ function setupDashboardContent() {
     setupAdminConsole();
 }
 
+/**
+ * NOUVELLE FONCTION : Remplit les listes <select> pour l'heure et les minutes
+ */
+function populateTimeSelects() {
+    const now = new Date();
+    const currentHour = now.getHours();
+    // Arrondit à l'intervalle de 5 minutes le plus proche
+    const currentMinute = Math.round(now.getMinutes() / 5) * 5; 
+
+    // Gère le cas où 58 minutes arrondit à 60
+    let selectedHour = currentHour;
+    let selectedMinute = currentMinute;
+    if (currentMinute === 60) {
+        selectedMinute = 0;
+        selectedHour = (currentHour + 1) % 24; // Passe à l'heure suivante
+    }
+
+    // Remplir les heures (0-23)
+    for (let h = 0; h < 24; h++) {
+        const option = document.createElement('option');
+        option.value = h;
+        option.textContent = `${h} h`;
+        if (h === selectedHour) {
+            option.selected = true;
+        }
+        popoverHour.appendChild(option);
+    }
+
+    // Remplir les minutes (00, 05, 10, ... 55)
+    for (let m = 0; m < 60; m += 5) {
+        const option = document.createElement('option');
+        option.value = m;
+        option.textContent = String(m).padStart(2, '0');
+        if (m === selectedMinute) {
+            option.selected = true;
+        }
+        popoverMinute.appendChild(option);
+    }
+}
+
+
 function setupStaticEventListeners() {
     // Tente de charger l'API Google Maps dès que possible
     try {
@@ -237,6 +280,9 @@ function setupStaticEventListeners() {
     } catch (error) {
         console.error("Impossible de charger l'API Google:", error);
     }
+
+    // NOUVEAU : Remplit les sélecteurs de temps
+    populateTimeSelects();
 
     // --- Navigation principale ---
     document.querySelectorAll('.main-nav-buttons-condensed .nav-button-condensed[data-view]').forEach(button => {
@@ -268,6 +314,7 @@ function setupStaticEventListeners() {
     });
 
     // --- Filtres et Instructions (pour la carte temps réel) ---
+    // (Ce code ne change pas)
     document.getElementById('close-instructions').addEventListener('click', () => {
         document.getElementById('instructions').classList.add('hidden');
         localStorage.setItem('gtfsInstructionsShown', 'true');
@@ -304,6 +351,7 @@ function setupStaticEventListeners() {
     });
 
     // --- Recherche d'horaires (Système GTFS local) ---
+    // (Ce code ne change pas)
     document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
         const horairesCard = document.getElementById('horaires');
         if (horairesCard) {
@@ -318,7 +366,7 @@ function setupStaticEventListeners() {
     searchBar.addEventListener('focus', handleSearchInput);
 
 
-    // --- NOUVEAU: ÉCOUTEURS DU PLANIFICATEUR (API GOOGLE) ---
+    // --- ÉCOUTEURS DU PLANIFICATEUR (API GOOGLE) ---
 
     // Bouton "Rechercher"
     plannerSubmitBtn.addEventListener('click', async (e) => {
@@ -333,17 +381,21 @@ function setupStaticEventListeners() {
             return;
         }
 
-        console.log(`Recherche Google API lancée: DE ${fromPlaceId} À ${toPlaceId}`);
-        showResultsView(); // Affiche la vue des résultats (avec "Recherche en cours...")
+        // NOUVEAU: Récupérer les infos de temps
+        const searchTime = {
+            type: document.querySelector('.popover-tab.active').dataset.tab, // 'partir' ou 'arriver'
+            date: popoverDate.value,
+            hour: popoverHour.value,
+            minute: popoverMinute.value
+        };
+        console.log("Recherche Google API lancée:", { from: fromPlaceId, to: toPlaceId, time: searchTime });
+
+        showResultsView(); 
 
         try {
-            // 1. Appelle l'API Routes
-            const results = await apiManager.fetchItinerary(fromPlaceId, toPlaceId);
-            
-            // 2. Traite la réponse complexe de Google
+            // Transmet les infos de temps à l'API Manager
+            const results = await apiManager.fetchItinerary(fromPlaceId, toPlaceId, searchTime); 
             const itineraries = processGoogleRoutesResponse(results);
-            
-            // 3. Affiche les itinéraires formatés
             renderItineraryResults(itineraries);
             
         } catch (error) {
@@ -390,10 +442,29 @@ function setupStaticEventListeners() {
                 }
             });
         });
+        
+        // --- ÉCOUTEUR MIS À JOUR ---
         document.getElementById('popover-submit-btn').addEventListener('click', () => { 
+             // 1. Lire les valeurs sélectionnées
+             const dateText = popoverDate.options[popoverDate.selectedIndex].text;
+             const hourText = String(popoverHour.value).padStart(2, '0');
+             const minuteText = String(popoverMinute.value).padStart(2, '0');
+             const tab = document.querySelector('.popover-tab.active').dataset.tab;
+             const mainBtnSpan = document.querySelector('#planner-when-btn span');
+             
+             // 2. Mettre à jour le bouton principal
+             let prefix = (tab === 'arriver') ? "Arrivée" : "Départ";
+             if (dateText === "Aujourd'hui") {
+                 mainBtnSpan.textContent = `${prefix} à ${hourText} h ${minuteText}`;
+             } else {
+                 mainBtnSpan.textContent = `${prefix} ${dateText.toLowerCase()} à ${hourText} h ${minuteText}`;
+             }
+
+             // 3. Fermer le popover
              plannerOptionsPopover.classList.add('hidden');
              plannerWhenBtn.classList.remove('popover-active');
         });
+        
         plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation()); 
     }
     
@@ -425,8 +496,8 @@ function setupStaticEventListeners() {
             }
         }
         if (!e.target.closest('.form-group')) {
-            fromSuggestions.style.display = 'none';
-            toSuggestions.style.display = 'none';
+            if (fromSuggestions) fromSuggestions.style.display = 'none';
+            if (toSuggestions) toSuggestions.style.display = 'none';
         }
     });
 }
@@ -507,7 +578,8 @@ function processGoogleRoutesResponse(data) {
 
     // Mappe chaque "route" de Google en un "itinéraire" simple
     return data.routes.map(route => {
-        const leg = route.legs[0]; // Nous supposons un seul "leg" pour un trajet simple
+        // La réponse peut contenir plusieurs "legs", mais pour un trajet A->B simple, on prend le premier.
+        const leg = route.legs[0]; 
         
         const itinerary = {
             departureTime: formatGoogleTime(leg.startTime),
@@ -526,7 +598,8 @@ function processGoogleRoutesResponse(data) {
                 itinerary.steps.push({
                     type: 'WALK',
                     icon: ICONS.WALK,
-                    instruction: step.navigationInstruction.instructions,
+                    // L'instruction peut être dans "navigationInstruction" ou "localizedValues"
+                    instruction: step.navigationInstruction?.instructions || step.localizedValues?.staticDuration?.text || "Marcher",
                     duration: duration
                 });
             } else if (step.travelMode === 'TRANSIT') {
@@ -560,9 +633,9 @@ function processGoogleRoutesResponse(data) {
             }
         });
 
-        // Nettoie les icônes de résumé (supprime les marches en double)
+        // Nettoie les icônes de résumé (supprime les marches en double consécutives)
         itinerary.summaryIcons = itinerary.summaryIcons.filter((icon, index, self) => 
-            icon.type !== 'WALK' || (index > 0 && self[index - 1].type !== 'WALK')
+            icon.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
         );
 
         return itinerary;
@@ -611,7 +684,7 @@ function renderItineraryResults(itineraries) {
                 ${summaryHtml}
             </div>
             <div class="route-option-right">
-                <span class="route-time">${itinerary.departureTime} > ${itinerary.arrivalTime}</span>
+                <span class="route-time">${itinerary.departureTime} &gt; ${itinerary.arrivalTime}</span>
                 <span class="route-duration">${itinerary.duration}</span>
             </div>
         `;
@@ -664,6 +737,7 @@ function renderItineraryResults(itineraries) {
  * Helper pour formater le temps ISO de Google en HH:MM
  */
 function formatGoogleTime(isoTime) {
+    if (!isoTime) return "--:--";
     try {
         const date = new Date(isoTime);
         const hours = String(date.getHours()).padStart(2, '0');
@@ -678,6 +752,7 @@ function formatGoogleTime(isoTime) {
  * Helper pour formater la durée de Google (ex: "1800s") en "30 min"
  */
 function formatGoogleDuration(durationString) {
+    if (!durationString) return "";
     try {
         const seconds = parseInt(durationString.slice(0, -1));
         const minutes = Math.round(seconds / 60);
