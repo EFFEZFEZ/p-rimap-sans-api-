@@ -39,7 +39,8 @@ const ICONS = {
         if (type === 'retard') return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
         return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
     },
-    WALK: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v-2.2c0-.4-.1-.8-.4-1.1l-1.9-2.8c-.8-1.1-2.2-1.8-3.7-1.8H5v8h2v-3h2.3c1 0 1.8.8 1.8 1.8V16H16z"/><path d="M5 18v2h4v-2H5z"/><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/></svg>`,
+    // *** ICÔNE DE MARCHE MISE À JOUR ***
+    WALK: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M8 12.5h8"/><path d="M12 12.5v9m-3-6 3 6 3-6"/></svg>`,
     BUS: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2l.64 2.54c.24.95-.54 1.96-1.54 1.96H4c-1 0-1.78-1.01-1.54-1.96L3 17h2"/><path d="M19 17V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v12h14z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`
 };
 
@@ -740,7 +741,7 @@ function processGoogleRoutesResponse(data) {
             departureTime: formatGoogleTime(leg.startTime),
             arrivalTime: formatGoogleTime(leg.endTime),
             duration: formatGoogleDuration(route.duration),
-            summarySegments: [], // *** MODIFIÉ: Remplacer summaryIcons par summarySegments
+            summarySegments: [], 
             steps: [] 
         };
 
@@ -748,7 +749,6 @@ function processGoogleRoutesResponse(data) {
             const duration = formatGoogleDuration(step.duration);
             
             if (step.travelMode === 'WALK') {
-                // *** MODIFIÉ: Ajouter la durée au segment ***
                 itinerary.summarySegments.push({ 
                     type: 'WALK', 
                     duration: duration 
@@ -768,18 +768,20 @@ function processGoogleRoutesResponse(data) {
                     const color = line.color || '#3388ff';
                     const textColor = line.textColor || '#ffffff';
 
-                    // *** MODIFIÉ: Ajouter les détails + durée au segment ***
                     itinerary.summarySegments.push({
                         type: 'BUS',
                         name: shortName,
                         color: color,
                         textColor: textColor,
-                        duration: duration // Ajout de la durée du trajet en bus
+                        duration: duration
                     });
 
                     const stopDetails = transit.stopDetails || {};
                     const departureStop = stopDetails.departureStop || {};
                     const arrivalStop = stopDetails.arrivalStop || {};
+                    
+                    // *** NOUVEAU: Récupérer les arrêts intermédiaires ***
+                    const intermediateStops = (transit.intermediateStops || []).map(stop => stop.name || 'Arrêt inconnu');
 
                     itinerary.steps.push({
                         type: 'BUS',
@@ -793,13 +795,13 @@ function processGoogleRoutesResponse(data) {
                         arrivalStop: arrivalStop.name || 'Arrêt d\'arrivée',
                         arrivalTime: formatGoogleTime(stopDetails.arrivalTime),
                         numStops: transit.stopCount || 0,
+                        intermediateStops: intermediateStops, // <-- Ajouté
                         duration: duration
                     });
                 }
             }
         });
 
-        // *** MODIFIÉ: Nettoyer les segments de marche consécutifs ***
         itinerary.summarySegments = itinerary.summarySegments.filter((segment, index, self) => 
             segment.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
         );
@@ -832,7 +834,6 @@ function renderItineraryResults(itineraries) {
         const card = document.createElement('div');
         card.className = 'route-option';
 
-        // *** NOUVELLE LOGIQUE HTML POUR LE RÉCAPITULATIF ***
         const summarySegmentsHtml = itinerary.summarySegments.map(segment => {
             if (segment.type === 'WALK') {
                 return `
@@ -860,38 +861,69 @@ function renderItineraryResults(itineraries) {
                 <span class="route-duration">${itinerary.duration}</span>
             </div>
         `;
-        // *** FIN DE LA NOUVELLE LOGIQUE HTML ***
         
         const details = document.createElement('div');
         details.className = 'route-details hidden'; 
 
+        // *** LOGIQUE DE RENDU DES DÉTAILS ENTIÈREMENT MISE À JOUR ***
         details.innerHTML = itinerary.steps.map(step => {
             if (step.type === 'WALK') {
                 return `
                     <div class="step-detail walk">
-                        <div class="step-icon">${step.icon}</div>
+                        <div class="step-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M8 12.5h8"/><path d="M12 12.5v9m-3-6 3 6 3-6"/></svg>
+                        </div>
                         <div class="step-info">
-                            <span class="step-instruction">${step.instruction}</span>
-                            <span class="step-duration">${step.duration}</span>
+                            <span class="step-instruction">Marche <span class="step-duration-inline">(${step.duration})</span></span>
+                            <span class="step-sub-instruction">${step.instruction.replace('Marcher', 'Marcher vers')}</span>
                         </div>
                     </div>
                 `;
             } else { // BUS
+                const hasIntermediateStops = step.intermediateStops && step.intermediateStops.length > 0;
+                // Calcule le nombre d'arrêts intermédiaires basé sur la liste si elle existe, sinon utilise numStops
+                const stopCountLabel = hasIntermediateStops ?
+                    `${step.intermediateStops.length} arrêt${step.intermediateStops.length > 1 ? 's' : ''}` :
+                    (step.numStops > 1 ? `${step.numStops - 1} arrêt${step.numStops > 2 ? 's' : ''}` : 'Direct');
+
                 return `
                     <div class="step-detail bus">
                         <div class="step-icon">
                             <div class="route-line-badge" style="background-color: ${step.routeColor}; color: ${step.routeTextColor};">${step.routeShortName}</div>
                         </div>
                         <div class="step-info">
-                            <span class="step-instruction">${step.instruction}</span>
-                            <span class="step-time">${step.departureStop} (${step.departureTime})</span>
-                            <span class="step-duration">${step.duration} (${step.numStops} arrêts)</span>
-                            <span class="step-time">${step.arrivalStop} (${step.arrivalTime})</span>
+                            <span class="step-instruction">${step.instruction} <span class="step-duration-inline">(${step.duration})</span></span>
+                            
+                            <div class="step-stop-point">
+                                <span class="step-time">Montée à <strong>${step.departureStop}</strong></span>
+                                <span class="step-time-detail">(${step.departureTime})</span>
+                            </div>
+                            
+                            ${(hasIntermediateStops || step.numStops > 1) ? `
+                            <details class="intermediate-stops">
+                                <summary>
+                                    <span>${stopCountLabel}</span>
+                                    <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                                </summary>
+                                ${hasIntermediateStops ? `
+                                <ul class="intermediate-stops-list">
+                                    ${step.intermediateStops.map(stopName => `<li>${stopName}</li>`).join('')}
+                                </ul>
+                                ` : `<ul class="intermediate-stops-list"><li>(La liste détaillée des arrêts n'est pas disponible)</li></ul>`}
+                            </details>
+                            ` : ''}
+                            
+                            <div class="step-stop-point">
+                                <span class="step-time">Descente à <strong>${step.arrivalStop}</strong></span>
+                                <span class="step-time-detail">(${step.arrivalTime})</span>
+                            </div>
                         </div>
                     </div>
                 `;
             }
         }).join('');
+        // *** FIN DE LA MISE À JOUR ***
+
 
         card.addEventListener('click', () => {
             details.classList.toggle('hidden');
