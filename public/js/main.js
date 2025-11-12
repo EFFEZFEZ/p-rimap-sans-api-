@@ -896,7 +896,6 @@ function renderItineraryResults(itineraries) {
         const details = document.createElement('div');
         details.className = 'route-details hidden'; 
 
-        // *** LOGIQUE DE RENDU DES DÉTAILS ENTIÈREMENT MISE À JOUR ***
         details.innerHTML = itinerary.steps.map(step => {
             if (step.type === 'WALK') {
                 const hasSubSteps = step.subSteps && step.subSteps.length > 0;
@@ -970,7 +969,6 @@ function renderItineraryResults(itineraries) {
                 `;
             }
         }).join('');
-        // *** FIN DE LA MISE À JOUR ***
 
 
         card.addEventListener('click', () => {
