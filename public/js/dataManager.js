@@ -54,16 +54,6 @@ export class DataManager {
             this.calendarDates = calendarDates;
             this.geoJson = geoJson;
 
-            // *** DEBUG LOG ***
-            console.log(`[Debug] Données brutes chargées:`);
-            console.log(`[Debug] ${this.routes.length} routes`);
-            console.log(`[Debug] ${this.trips.length} trips`);
-            console.log(`[Debug] ${this.stopTimes.length} stop_times`);
-            console.log(`[Debug] ${this.stops.length} stops`);
-            console.log(`[Debug] ${this.calendar.length} calendar entries`);
-            console.log(`[Debug] ${this.calendarDates.length} calendar_dates`);
-            // *** FIN DEBUG LOG ***
-
             console.log('🛠️  Pré-traitement des données...');
 
             // Indexer les routes pour un accès rapide
@@ -197,9 +187,6 @@ export class DataManager {
                 this.groupedStopMap[stop.stop_id] = [stop.stop_id];
             }
         });
-
-        // *** DEBUG LOG ***
-        console.log(`[Debug] ${this.masterStops.length} arrêts maîtres (groupés) trouvés.`);
     }
 
     /**
@@ -322,7 +309,9 @@ export class DataManager {
     }
 
     /**
-     * Récupère le service_id pour la date donnée
+     * *** FONCTION ENTIÈREMENT CORRIGÉE (LOGIQUE GTFS COMPLÈTE) ***
+     * Récupère le service_id pour la date donnée en respectant 
+     * la priorité de calendar_dates sur calendar.
      */
     getServiceId(date) {
         const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
@@ -330,37 +319,45 @@ export class DataManager {
                            String(date.getMonth() + 1).padStart(2, '0') +
                            String(date.getDate()).padStart(2, '0');
 
-        // *** DEBUG LOG ***
-        console.log(`[Debug getServiceId] Recherche service pour date: ${dateString} (jour: ${dayOfWeek})`);
-
-        const exception = this.calendarDates.find(d => d.date === dateString);
-        if (exception) {
-            // *** DEBUG LOG ***
-            console.log(`[Debug getServiceId] Exception trouvée: type ${exception.exception_type}, service_id ${exception.service_id}`);
-            
-            // *** CORRECTION (HACK DE TEST) ***
-            // Nous traitons le 'type 2' (suppression) comme un 'type 1' (ajout) pour forcer l'affichage
-            if (exception.exception_type === '1' || exception.exception_type === '2') {
-                console.warn(`[Debug getServiceId] HACK: Traitement du type ${exception.exception_type} comme un service VALIDE.`);
-                return exception.service_id;
-            }
-            return null;
-        }
-
-        const service = this.calendar.find(s => 
-            s[dayOfWeek] === '1' &&
-            s.start_date <= dateString &&
-            s.end_date >= dateString
+        // Étape 1: Vérifier les AJOUTS (type 1) dans calendar_dates.txt
+        // C'est la priorité la plus élevée.
+        const addedService = this.calendarDates.find(d => 
+            d.date === dateString && d.exception_type === '1'
         );
 
-        // *** DEBUG LOG ***
-        if (service) {
-            console.log(`[Debug getServiceId] Service calendrier trouvé: ${service.service_id}`);
-        } else {
-            console.warn(`[Debug getServiceId] Aucun service (calendar.txt) trouvé pour ${dateString}.`);
+        if (addedService) {
+            console.log(`[getServiceId] Service AJOUTÉ trouvé (type 1): ${addedService.service_id}`);
+            return addedService.service_id;
         }
 
-        return service ? service.service_id : null;
+        // Étape 2: Si aucun ajout, trouver les SUPPRESSIONS (type 2) pour aujourd'hui
+        const removedServiceIds = new Set();
+        this.calendarDates.forEach(d => {
+            if (d.date === dateString && d.exception_type === '2') {
+                removedServiceIds.add(d.service_id);
+            }
+        });
+
+        if (removedServiceIds.size > 0) {
+            console.log(`[getServiceId] Services SUPPRIMÉS (type 2) trouvés:`, Array.from(removedServiceIds));
+        }
+
+        // Étape 3: Vérifier le calendrier régulier (calendar.txt)
+        const regularService = this.calendar.find(s => 
+            s[dayOfWeek] === '1' &&
+            s.start_date <= dateString &&
+            s.end_date >= dateString &&
+            !removedServiceIds.has(s.service_id) // IMPORTANT: Ne doit pas être supprimé
+        );
+
+        if (regularService) {
+            console.log(`[getServiceId] Service régulier (calendar.txt) trouvé: ${regularService.service_id}`);
+            return regularService.service_id;
+        }
+
+        // Étape 4: Aucun service trouvé
+        console.warn(`[getServiceId] Aucun service valide trouvé pour ${dateString}.`);
+        return null;
     }
 
     /**
@@ -368,13 +365,9 @@ export class DataManager {
      */
     getActiveTrips(currentSeconds, date) {
         
-        // *** DEBUG LOG ***
-        console.log(`[Debug getActiveTrips] Recherche de voyages à ${currentSeconds}s pour ${date.toISOString()}`);
-
         const serviceId = this.getServiceId(date);
 
-        // *** DEBUG LOG ***
-        console.log(`[Debug getActiveTrips] Service ID utilisé: ${serviceId}`);
+        console.log(`[getActiveTrips] Service ID utilisé: ${serviceId}`);
 
         if (!serviceId) {
             return [];
@@ -405,8 +398,7 @@ export class DataManager {
             }
         });
 
-        // *** DEBUG LOG ***
-        console.log(`[Debug getActiveTrips] ${activeTrips.length} voyages actifs trouvés.`);
+        console.log(`[getActiveTrips] ${activeTrips.length} voyages actifs trouvés.`);
 
         return activeTrips;
     }
