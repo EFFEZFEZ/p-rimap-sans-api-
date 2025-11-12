@@ -593,6 +593,15 @@ function renderSuggestions(suggestions, container, onSelect) {
  * @param {object} data - La réponse JSON brute de l'API
  * @returns {Array} Un tableau d'objets itinéraires simplifiés
  */
+/**
+ * SECTION CORRIGÉE : processGoogleRoutesResponse
+ * 
+ * CORRECTION APPLIQUÉE:
+ * - Accès correct aux arrêts via transit.stopDetails.departureStop/arrivalStop
+ * - Accès correct aux horaires via transit.stopDetails.departureTime/arrivalTime
+ * - Vérifications défensives maintenues pour éviter les erreurs
+ */
+
 function processGoogleRoutesResponse(data) {
     if (!data || !data.routes || data.routes.length === 0) {
         console.warn("Réponse de l'API Routes vide ou invalide.");
@@ -622,10 +631,12 @@ function processGoogleRoutesResponse(data) {
                     duration: duration
                 });
             } else if (step.travelMode === 'TRANSIT' && step.transitDetails) {
+                // ✅ VÉRIFICATION: S'assurer que transitDetails existe
                 
                 const transit = step.transitDetails;
                 const line = transit.transitLine;
 
+                // ✅ VÉRIFICATION: S'assurer que la ligne existe (ignore les transferts sans ligne)
                 if (line) { 
                     const shortName = line.nameShort || 'BUS';
                     const color = line.color || '#3388ff';
@@ -637,24 +648,33 @@ function processGoogleRoutesResponse(data) {
                         color: color,
                         textColor: textColor
                     });
+
+                    // ✅ CORRECTION CRITIQUE ICI:
+                    // Selon la documentation Google Routes API v2, les arrêts sont dans stopDetails
+                    // Structure: transit.stopDetails.departureStop.name et transit.stopDetails.arrivalStop.name
+                    const stopDetails = transit.stopDetails || {};
+                    const departureStop = stopDetails.departureStop || {};
+                    const arrivalStop = stopDetails.arrivalStop || {};
+
                     itinerary.steps.push({
                         type: 'BUS',
                         icon: ICONS.BUS,
                         routeShortName: shortName,
                         routeColor: color,
                         routeTextColor: textColor,
-                        instruction: `Prendre le <b>${shortName}</b> direction <b>${transit.headsign}</b>`,
-                        departureStop: transit.departureStop.name,
-                        departureTime: formatGoogleTime(transit.departureTime),
-                        arrivalStop: transit.arrivalStop.name,
-                        arrivalTime: formatGoogleTime(transit.arrivalTime),
-                        numStops: transit.stopCount,
+                        instruction: `Prendre le <b>${shortName}</b> direction <b>${transit.headsign || 'destination'}</b>`,
+                        departureStop: departureStop.name || 'Arrêt de départ',
+                        departureTime: formatGoogleTime(stopDetails.departureTime),
+                        arrivalStop: arrivalStop.name || 'Arrêt d\'arrivée',
+                        arrivalTime: formatGoogleTime(stopDetails.arrivalTime),
+                        numStops: transit.stopCount || 0,
                         duration: duration
                     });
                 }
             }
         });
 
+        // Nettoyer les icônes WALK consécutives
         itinerary.summaryIcons = itinerary.summaryIcons.filter((icon, index, self) => 
             icon.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
         );
