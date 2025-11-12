@@ -337,7 +337,14 @@ export class DataManager {
         if (exception) {
             // *** DEBUG LOG ***
             console.log(`[Debug getServiceId] Exception trouvée: type ${exception.exception_type}, service_id ${exception.service_id}`);
-            return exception.exception_type === '1' ? exception.service_id : null;
+            
+            // *** CORRECTION (HACK DE TEST) ***
+            // Nous traitons le 'type 2' (suppression) comme un 'type 1' (ajout) pour forcer l'affichage
+            if (exception.exception_type === '1' || exception.exception_type === '2') {
+                console.warn(`[Debug getServiceId] HACK: Traitement du type ${exception.exception_type} comme un service VALIDE.`);
+                return exception.service_id;
+            }
+            return null;
         }
 
         const service = this.calendar.find(s => 
