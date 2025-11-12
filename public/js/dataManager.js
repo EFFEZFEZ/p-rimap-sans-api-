@@ -2,11 +2,8 @@
  * dataManager.js
  * * Gère le chargement et le parsing des données GTFS et GeoJSON
  *
- * CORRECTION FINALE (CHEMINS Vercel/Vite/Replit) :
- * - Le serveur (Vercel) mappe le dossier 'public' à la racine '/'.
- * - Les chemins doivent être ABSOLUS (commencer par '/') mais NE PAS 
- * inclure 'public'.
- * - On demande '/data/...' et le serveur cherche dans '/public/data/...'.
+ * NOTE (V6):
+ * - Logique "block_id" (tripsByBlockId, findNextTripInBlock) SUPPRIMÉE
  */
 
 export class DataManager {
@@ -27,6 +24,8 @@ export class DataManager {
         this.stopTimesByStop = {}; 
         this.tripsByTripId = {}; // Stocke les trips par ID
         this.stopTimesByTrip = {}; // Stocke les stop_times par trip_id
+
+        // tripsByBlockId a été supprimé
     }
 
     /**
@@ -83,9 +82,15 @@ export class DataManager {
             // Indexer les trips
             this.trips.forEach(trip => {
                 this.tripsByTripId[trip.trip_id] = trip;
+                // La logique block_id a été retirée d'ici
             });
             
+            // Le tri des blocks a été retiré d'ici
+
+            // Regrouper les arrêts (logique V4 améliorée)
             this.groupNearbyStops();
+
+            // Prétraiter les stop_times par arrêt (pour les popups d'arrêt)
             this.preprocessStopTimesByStop();
 
             console.log('✅ Données chargées et traitées.');
@@ -103,9 +108,7 @@ export class DataManager {
      * Charge un fichier GTFS (CSV)
      */
     async loadGTFSFile(filename) {
-        // *** CORRECTION ICI ***
-        // Le chemin est ABSOLU (commence par '/') mais SANS 'public'
-        const response = await fetch(`/data/gtfs/${filename}`);
+        const response = await fetch(`./data/gtfs/${filename}`);
         if (!response.ok) {
             throw new Error(`Impossible de charger ${filename}: ${response.statusText}`);
         }
@@ -125,17 +128,13 @@ export class DataManager {
      * Charge le fichier GeoJSON
      */
     async loadGeoJSON() {
-        // *** CORRECTION ICI ***
-        // Le chemin est ABSOLU (commence par '/') mais SANS 'public'
-        const response = await fetch('/data/map.geojson');
+        const response = await fetch('./data/map.geojson');
         if (!response.ok) {
             console.warn(`map.geojson non trouvé ou invalide: ${response.statusText}. Les tracés de route ne seront pas disponibles.`);
             return null; // N'est pas une erreur fatale
         }
         return await response.json();
     }
-
-    // ... (Le reste du fichier reste inchangé) ...
 
     /**
      * Affiche une erreur non-bloquante
@@ -148,6 +147,7 @@ export class DataManager {
             const ol = errorElement.querySelector('ol');
             ol.innerHTML = `<li>${message}</li>`;
             
+            // Cacher les instructions de base si elles existent
             const defaultItems = errorElement.querySelectorAll('ol li:not(:first-child)');
             defaultItems.forEach(item => item.style.display = 'none');
         }
@@ -161,27 +161,34 @@ export class DataManager {
         this.groupedStopMap = {};
         const childStops = new Set();
 
+        // Identifier tous les arrêts qui sont des "enfants"
         this.stops.forEach(stop => {
             if (stop.parent_station && stop.parent_station.trim() !== '') {
                 childStops.add(stop.stop_id);
             }
         });
 
+        // Construire la carte de regroupement
         this.stops.forEach(stop => {
+            // Si c'est un arrêt "parent" (location_type = 1)
             if (stop.location_type === '1') {
                 this.masterStops.push(stop);
                 if (!this.groupedStopMap[stop.stop_id]) {
                     this.groupedStopMap[stop.stop_id] = [];
                 }
+                // S'ajoute lui-même pour les départs (ex: gare routière)
                 this.groupedStopMap[stop.stop_id].push(stop.stop_id); 
             }
+            // Si c'est un arrêt "enfant" avec un parent
             else if (stop.parent_station && stop.parent_station.trim() !== '') {
                 const parentId = stop.parent_station;
                 if (!this.groupedStopMap[parentId]) {
+                    // Si le parent n'est pas dans la map, on l'ajoute (au cas où)
                     this.groupedStopMap[parentId] = [];
                 }
                 this.groupedStopMap[parentId].push(stop.stop_id);
             }
+            // Si c'est un arrêt "normal" (ni parent, ni enfant)
             else if (stop.location_type !== '1' && !childStops.has(stop.stop_id) && (!stop.parent_station || stop.parent_station.trim() === '')) {
                 this.masterStops.push(stop);
                 this.groupedStopMap[stop.stop_id] = [stop.stop_id];
@@ -230,9 +237,11 @@ export class DataManager {
             });
         });
 
+        // Trier et limiter
         allDepartures.sort((a, b) => a.departureSeconds - b.departureSeconds);
         allDepartures = allDepartures.slice(0, limit);
 
+        // Enrichir les données
         return allDepartures.map(dep => {
             const trip = this.tripsByTripId[dep.tripId];
             const route = this.routesById[trip.route_id];
@@ -319,11 +328,13 @@ export class DataManager {
                            String(date.getMonth() + 1).padStart(2, '0') +
                            String(date.getDate()).padStart(2, '0');
 
+        // Gérer les exceptions (calendar_dates)
         const exception = this.calendarDates.find(d => d.date === dateString);
         if (exception) {
             return exception.exception_type === '1' ? exception.service_id : null;
         }
 
+        // Gérer le calendrier régulier
         const service = this.calendar.find(s => 
             s[dayOfWeek] === '1' &&
             s.start_date <= dateString &&
@@ -368,6 +379,8 @@ export class DataManager {
         return activeTrips;
     }
     
+    // La fonction findNextTripInBlock a été supprimée
+
     /**
      * Récupère la destination finale d'un trip (V4)
      */
@@ -381,6 +394,8 @@ export class DataManager {
         
         return stopInfo ? stopInfo.stop_name : 'Destination inconnue';
     }
+
+    // ... (autres fonctions utilitaires: getDailyServiceBounds, findFirstActiveSecond, findNextActiveSecond...)
 
     /**
      * Récupère les bornes de service (début/fin) pour la journée
@@ -439,6 +454,7 @@ export class DataManager {
         return nextActiveTime;
     }
 
+    // *** CORRECTION: La fonction est déplacée ICI ***
     /**
      * Convertit un nombre de secondes en chaîne de caractères "X h Y min"
      */
