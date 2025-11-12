@@ -2,11 +2,13 @@
  * mapRenderer.js - VERSION FINALE (Audit V4)
  * Gère l'affichage de la carte Leaflet et le rendu des bus et routes
  *
- * *** CORRECTION (V8 - Suppression état stationnaire) ***
- * - Supprime TOUTE la logique 'waiting_at_stop' / 'stationary'.
- * - Les bus ne sont rendus que s'ils ont un 'segment' (en mouvement).
- * - Suppression de updateStationaryBusPopup et simplification de la logique de rendu
- * pour éliminer le clignotement des popups.
+ * *** CORRECTION (V10 - Anti-clignotement) ***
+ * - Supprime les fonctions updateMovingBusPopup et updateStationaryBusPopup.
+ * - Modifie updateBusMarkers pour NE PLUS JAMAIS appeler setContent()
+ * sur un popup déjà ouvert.
+ * - Le contenu du popup est généré une seule fois à l'ouverture (dans 'popupopen')
+ * et n'est plus jamais modifié, ce qui élimine le clignotement.
+ * - Conserve le changement visuel de l'icône (classe 'bus-icon-waiting').
  */
 
 export class MapRenderer {
@@ -44,7 +46,7 @@ export class MapRenderer {
     /**
      * Initialise la carte Leaflet
      */
-    initializeMap() {
+    initializeMap(useClusters = true) {
         this.map = L.map(this.mapElementId).setView(this.centerCoordinates, this.zoomLevel);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
@@ -53,9 +55,12 @@ export class MapRenderer {
         
         /* Initialisation des couches */
         this.stopLayer = L.layerGroup().addTo(this.map);
-        this.map.addLayer(this.clusterGroup);
         
-        console.log('🗺️ Carte initialisée');
+        if (useClusters) {
+            this.map.addLayer(this.clusterGroup);
+        }
+        
+        console.log(`🗺️ Carte ${this.mapElementId} initialisée`);
         this.map.on('click', () => {
             if (this.tempStopMarker) {
                 this.map.removeLayer(this.tempStopMarker);
@@ -188,7 +193,7 @@ export class MapRenderer {
                 });
             }
         });
-        console.log(`✓ ${geometryMap.size} segments de routes affichées (lignes décalées pour visibilité)`);
+        // console.log(`✓ ${geometryMap.size} segments de routes affichées (lignes décalées pour visibilité)`);
     }
     
     addRoutePopup(layer, features, dataManager) {
@@ -206,8 +211,9 @@ export class MapRenderer {
     }
 
     /**
-     * MODIFIÉ (V8 - Suppression état stationnaire)
-     * Logique de mise à jour unifiée, ne gère plus les états 'waiting'.
+     * MODIFIÉ (V10 - Anti-clignotement)
+     * Ne met à jour que la position (setLatLng) et l'icône (classe),
+     * mais NE TOUCHE PLUS au contenu du popup (setContent).
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -231,8 +237,6 @@ export class MapRenderer {
             const busId = bus.tripId;
             if (!busId) return;
             
-            // (bus.segment est implicitement toujours vrai, car tripScheduler V8)
-            
             const { lat, lon } = bus.position;
             
             if (this.busMarkers[busId]) {
@@ -241,80 +245,55 @@ export class MapRenderer {
                 markerData.bus = bus; 
                 markerData.marker.setLatLng([lat, lon]);
                 
-                // Suppression de la classe 'bus-icon-waiting'
+                // bus.segment est 'null' si le bus est à l'arrêt
+                const isWaiting = !bus.segment; 
                 const iconElement = markerData.marker.getElement();
                 if (iconElement) {
-                    iconElement.classList.remove('bus-icon-waiting');
+                    iconElement.classList.toggle('bus-icon-waiting', isWaiting);
                 }
                 
-                if (markerData.marker.isPopupOpen()) {
-                    const popup = markerData.marker.getPopup();
-                    
-                    if (popup.getElement()) {
-                        const popupElement = popup.getElement();
-                        // Appel direct à la seule fonction de mise à jour restante
-                        this.updateMovingBusPopup(popupElement, bus, tripScheduler);
-                    }
-                }
+                // *** CORRECTION V10 ***
+                // On ne fait RIEN si le popup est ouvert.
+                // On ne met PAS à jour son contenu pour éviter le clignotement.
+                
+                // (Suppression de la logique 'if (markerData.marker.isPopupOpen()) { ... }')
 
             } else {
                 // Nouveau marqueur
                 const markerData = this.createBusMarker(bus, tripScheduler, busId);
                 this.busMarkers[busId] = markerData;
-                markersToAdd.push(markerData.marker);
+                if (this.clusterGroup) {
+                    markersToAdd.push(markerData.marker);
+                } else {
+                    markerData.marker.addTo(this.map); // Ajout direct si pas de cluster
+                }
             }
         });
 
         // Nettoyage final des couches
-        if (markersToRemove.length > 0) {
-            this.clusterGroup.removeLayers(markersToRemove);
-        }
-        if (markersToAdd.length > 0) {
-            this.clusterGroup.addLayers(markersToAdd);
-        }
-    }
-
-    /**
-     * Mise à jour atomique pour un bus (toujours en mouvement)
-     */
-    updateMovingBusPopup(popupElement, bus, tripScheduler) {
-        try {
-            const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
-            const destination = tripScheduler.getTripDestination(stopTimes);
-            const nextStopName = bus.segment?.toStopInfo?.stop_name || 'Inconnu';
-            const nextStopETA = tripScheduler.getNextStopETA(bus.segment, bus.currentSeconds);
-
-            const stateText = `En Ligne (vers ${destination})`;
-            const nextStopLabelText = "Prochain arrêt :";
-            const nextStopText = nextStopName;
-            const etaLabelText = "Arrivée :";
-            const etaText = nextStopETA ? nextStopETA.formatted : '...';
-
-            const stateEl = popupElement.querySelector('[data-update="state"]');
-            const nextStopLabelEl = popupElement.querySelector('[data-update="next-stop-label"]');
-            const nextStopEl = popupElement.querySelector('[data-update="next-stop-value"]');
-            const etaLabelEl = popupElement.querySelector('[data-update="eta-label"]');
-            const etaEl = popupElement.querySelector('[data-update="eta-value"]');
-
-            if (stateEl && stateEl.textContent !== stateText) stateEl.textContent = stateText;
-            if (nextStopLabelEl && nextStopLabelEl.textContent !== nextStopLabelText) nextStopLabelEl.textContent = nextStopLabelText;
-            if (nextStopEl && nextStopEl.textContent !== nextStopText) nextStopEl.textContent = nextStopText;
-            if (etaLabelEl && etaLabelEl.textContent !== etaLabelText) etaLabelEl.textContent = etaLabelText;
-            if (etaEl && etaEl.textContent !== etaText) etaEl.textContent = etaText;
-            
-        } catch (e) {
-             console.error("Erreur mise à jour popup 'moving':", e, bus);
+        if (this.clusterGroup) {
+            if (markersToRemove.length > 0) {
+                this.clusterGroup.removeLayers(markersToRemove);
+            }
+            if (markersToAdd.length > 0) {
+                this.clusterGroup.addLayers(markersToAdd);
+            }
+        } else {
+             if (markersToRemove.length > 0) {
+                markersToRemove.forEach(m => this.map.removeLayer(m));
+            }
         }
     }
 
     /**
-     * updateStationaryBusPopup A ÉTÉ SUPPRIMÉ (V8)
+     * FONCTIONS updateMovingBusPopup et updateStationaryBusPopup SUPPRIMÉES (V10)
      */
 
 
     /**
      * Crée le contenu popup avec une structure HTML unifiée
-     * (Logique 'else' supprimée - V8)
+     * NOTE: Cette fonction n'est appelée qu'UNE SEULE FOIS,
+     * lors de l'ouverture du popup (événement 'popupopen').
      */
     createBusPopupContent(bus, tripScheduler) {
         const route = bus.route;
@@ -327,22 +306,40 @@ export class MapRenderer {
         const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
         const destination = tripScheduler.getTripDestination(stopTimes);
 
-        // Cas 1: Bus en mouvement (seul cas restant)
-        const nextStopName = bus.segment?.toStopInfo?.stop_name || 'Inconnu';
-        const nextStopETA = tripScheduler.getNextStopETA(bus.segment, bus.currentSeconds);
+        // Si le bus est en mouvement (bus.segment existe)
+        if (bus.segment) {
+            const nextStopName = bus.segment?.toStopInfo?.stop_name || 'Inconnu';
+            const nextStopETA = tripScheduler.getNextStopETA(bus.segment, bus.currentSeconds);
 
-        stateText = `En Ligne (vers ${destination})`;
-        nextStopLabelText = "Prochain arrêt :";
-        nextStopText = nextStopName;
-        etaLabelText = "Arrivée :";
-        etaText = nextStopETA ? nextStopETA.formatted : '...';
+            stateText = `En Ligne (vers ${destination})`;
+            nextStopLabelText = "Prochain arrêt :";
+            nextStopText = nextStopName;
+            etaLabelText = "Arrivée :";
+            etaText = nextStopETA ? nextStopETA.formatted : '...';
 
-        // Structure HTML unifiée
+        } 
+        // Si le bus est à l'arrêt (bus.segment est null)
+        else {
+            // 'bus.position' contient les infos de l'arrêt (cf tripScheduler)
+            const stopName = bus.position.stopInfo.stop_name;
+            const departureTime = bus.position.nextDepartureTime;
+            const departureText = tripScheduler.dataManager.formatTime(departureTime).substring(0, 5);
+            
+            stateText = `À l'arrêt`;
+            nextStopLabelText = "Arrêt actuel :";
+            nextStopText = stopName;
+            etaLabelText = "Départ :";
+            etaText = departureText;
+        }
+
+        // Structure HTML unifiée (utilisée pour les DEUX états)
+        // Les data-update ne sont plus utilisés pour la mise à jour,
+        // mais ne posent pas de problème.
         const detailsHtml = `
             <p><strong>Statut:</strong> <span data-update="state">${stateText}</span></p>
             <p><strong data-update="next-stop-label">${nextStopLabelText}</strong> <span data-update="next-stop-value">${nextStopText}</span></p>
             <p><strong data-update="eta-label">${etaLabelText}</strong> <span data-update="eta-value">${etaText}</span></p>
-            <p class="realtime-notice"><em>Mise à jour en temps réel</em></p>
+            <p class="realtime-notice"><em>État au moment du clic</em></p>
         `;
 
         return `
@@ -350,7 +347,7 @@ export class MapRenderer {
                 <div class="info-popup-header" style="background: ${routeColor}; color: ${textColor};">
                     Ligne ${routeShortName}
                 </div>
-                <div class="info-popup-body bus-details">
+                <div class.info-popup-body bus-details">
                     ${detailsHtml}
                 </div>
             </div>
@@ -359,7 +356,7 @@ export class MapRenderer {
 
     /**
      * Création d'un marqueur avec état initial
-     * (Logique 'isWaiting' supprimée - V8)
+     * (Logique 'isWaiting' conservée pour l'icône - V10)
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -368,21 +365,27 @@ export class MapRenderer {
         const routeColor = route?.route_color ? `#${route.route_color}` : '#FFC107';
         const textColor = route?.route_text_color ? `#${route.route_text_color}` : '#ffffff';
 
-        // Classe 'bus-icon-waiting' supprimée
-        const iconClassName = 'bus-icon-rect';
+        // L'état 'isWaiting' est important pour l'apparence de l'icône
+        const isWaiting = !bus.segment; 
+        const iconClassName = isWaiting ? 'bus-icon-rect bus-icon-waiting' : 'bus-icon-rect';
+
+        // Ajout d'une classe de statut (perturbation, etc.)
+        const statusClass = bus.currentStatus ? `bus-status-${bus.currentStatus}` : 'bus-status-normal';
 
         const icon = L.divIcon({
-            className: iconClassName,
-            html: `<div style="background-color: ${routeColor}; color: ${textColor}; width: 40px; height: 24px; border-radius: 6px; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; box-shadow: 0 2px 10px rgba(0,0,0,0.4); text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${routeShortName}</div>`,
+            className: `${iconClassName} ${statusClass}`,
+            html: `<div style="background-color: ${routeColor}; color: ${textColor};">${routeShortName}</div>`,
             iconSize: [40, 24],
             iconAnchor: [20, 12],
             popupAnchor: [0, -12]
         });
 
         const marker = L.marker([lat, lon], { icon });
+        
+        // Popup est vide au début
         marker.bindPopup("");
 
-        // Génération du contenu au clic
+        // Le contenu est généré UNIQUEMENT à l'ouverture (V10)
         marker.on('popupopen', (e) => {
             const markerData = this.busMarkers[busId];
             if (!markerData || !markerData.bus) {
@@ -390,17 +393,15 @@ export class MapRenderer {
                 return;
             }
 
+            // Récupère l'état ACTUEL du bus au moment du clic
             const freshBus = markerData.bus;
             const freshPopupContent = this.createBusPopupContent(freshBus, tripScheduler);
             e.popup.setContent(freshPopupContent);
-            
-            // 'lastState' n'est plus nécessaire
         });
 
         return {
             marker: marker,
-            bus: bus
-            // 'lastState' supprimé
+            bus: bus,
         };
     }
 
@@ -516,7 +517,7 @@ export class MapRenderer {
     createStopPopupContent(masterStop, departures, currentSeconds) {
         let html = `<div class="info-popup-content">`;
         html += `<div class="info-popup-header">${masterStop.stop_name}</div>`;
-        html += `<div class="info-popup-body">`; 
+        html += `<div class.info-popup-body">`; 
 
         if (departures.length === 0) {
             html += `<div class="departure-item empty">Aucun prochain passage trouvé.</div>`;
