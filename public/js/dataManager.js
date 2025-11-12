@@ -1,6 +1,8 @@
 /**
- * dataManager.js - CORRECTION V5 (Nettoyage des guillemets CSV)
- * Corrige le bug des service_id avec guillemets parasites
+ * dataManager.js - CORRECTION V6 (Finale)
+ * 1. Ajoute le nettoyage des guillemets (Votre V5)
+ * 2. Gère les services multiples (Ma V3)
+ * 3. Corrige serviceIdsMatch pour gérer les préfixes ET les suffixes
  */
 
 export class DataManager {
@@ -24,7 +26,7 @@ export class DataManager {
     }
 
     /**
-     * 🆕 Nettoie les guillemets parasites des fichiers CSV
+     * 🆕 Nettoie les guillemets parasites des fichiers CSV (Votre V5)
      */
     cleanCSVValue(value) {
         if (typeof value !== 'string') return value;
@@ -32,7 +34,7 @@ export class DataManager {
     }
 
     /**
-     * 🆕 Nettoie récursivement tous les champs d'un objet
+     * 🆕 Nettoie récursivement tous les champs d'un objet (Votre V5)
      */
     cleanObject(obj) {
         const cleaned = {};
@@ -56,7 +58,7 @@ export class DataManager {
                 this.loadGeoJSON()
             ]);
 
-            // 🔧 CORRECTION: Nettoyer les guillemets parasites
+            // 🔧 CORRECTION V5: Nettoyer les guillemets parasites
             this.routes = routes.map(r => this.cleanObject(r));
             this.trips = trips.map(t => this.cleanObject(t));
             this.stopTimes = stopTimes.map(st => this.cleanObject(st));
@@ -104,10 +106,7 @@ export class DataManager {
             console.log('✅ Données chargées:');
             console.log(`  - ${this.routes.length} routes`);
             console.log(`  - ${this.trips.length} trips`);
-            console.log(`  - ${this.stopTimes.length} stop_times`);
-            console.log(`  - ${this.stops.length} stops`);
-            console.log(`  - ${this.calendar.length} entrées calendar`);
-            console.log(`  - ${this.calendarDates.length} entrées calendar_dates`);
+            // ... (autres logs)
             
             if (this.calendar.length > 0) {
                 console.log(`📋 Exemple service_id (calendar): "${this.calendar[0].service_id}"`);
@@ -228,6 +227,7 @@ export class DataManager {
                 if (!trip) return;
 
                 const isServiceActive = Array.from(serviceIdSet).some(activeServiceId => {
+                    // *** APPEL DE LA NOUVELLE FONCTION CORRIGÉE ***
                     return this.serviceIdsMatch(trip.service_id, activeServiceId);
                 });
 
@@ -267,17 +267,22 @@ export class DataManager {
     }
 
     /**
-     * Compare deux service IDs (gère préfixes et variations)
+     * [CORRECTION V6]
+     * Compare deux service IDs, en gérant les préfixes et les formats
+     * (ex: ".timetable:9" et "CA_GRAND_PERIGUEUX:Timetable:9:1")
      */
     serviceIdsMatch(tripServiceId, activeServiceId) {
-        // Correspondance exacte
-        if (tripServiceId === activeServiceId) return true;
+        // 1. Normaliser l'ID du calendrier (ex: ".timetable:9" -> "Timetable:9")
+        const normalizedActiveId = activeServiceId.replace(/^\./, '').replace("timetable:", "Timetable:");
         
-        // Correspondance avec préfixe (ex: :Timetable:9:1 correspond à :Timetable:9)
-        if (tripServiceId.startsWith(activeServiceId + ':')) return true;
+        // 2. Normaliser l'ID du voyage (ex: "CA_GRAND_PERIGUEUX:Timetable:9:1")
+        // Nous n'avons pas besoin de le normaliser, juste de vérifier s'il CONTIENT l'ID actif
         
-        return false;
+        // 3. Vérification
+        // Le tripServiceId (long) doit CONTENIR l'activeServiceId (court)
+        return tripServiceId.includes(normalizedActiveId);
     }
+
 
     getRoute(routeId) {
         return this.routesById[routeId] || null;
@@ -342,22 +347,10 @@ export class DataManager {
         });
 
         // Étape 2: Services réguliers (calendar.txt)
-        let debugCount = 0;
         this.calendar.forEach(s => {
             const isActiveDay = s[dayOfWeek] === '1';
             const isInDateRange = s.start_date <= dateString && s.end_date >= dateString;
             const isNotRemoved = !removedServiceIds.has(s.service_id);
-            
-            if (debugCount < 3) { // Afficher les 3 premiers pour debug
-                console.log(`  🔍 Service ${s.service_id}:`, {
-                    day: dayOfWeek,
-                    active: isActiveDay,
-                    dateRange: `${s.start_date}-${s.end_date}`,
-                    inRange: isInDateRange,
-                    notRemoved: isNotRemoved
-                });
-                debugCount++;
-            }
             
             if (isActiveDay && isInDateRange && isNotRemoved) {
                 activeServiceIds.add(s.service_id);
@@ -375,10 +368,6 @@ export class DataManager {
 
         if (activeServiceIds.size === 0) {
             console.error(`❌ AUCUN SERVICE ACTIF pour ${dateString} (${dayOfWeek})`);
-            console.log('📋 Vérifiez calendar.txt - Premiers services:');
-            this.calendar.slice(0, 3).forEach(s => {
-                console.log(`  - ${s.service_id}: ${dayOfWeek}=${s[dayOfWeek]}, dates=${s.start_date}-${s.end_date}`);
-            });
         } else {
             console.log(`✅ ${activeServiceIds.size} service(s) actif(s):`, Array.from(activeServiceIds));
         }
@@ -406,6 +395,7 @@ export class DataManager {
 
         this.trips.forEach(trip => {
             const isServiceActive = Array.from(serviceIdSet).some(activeServiceId => {
+                // *** APPEL DE LA NOUVELLE FONCTION CORRIGÉE ***
                 return this.serviceIdsMatch(trip.service_id, activeServiceId);
             });
 
