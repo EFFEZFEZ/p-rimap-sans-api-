@@ -2,11 +2,10 @@
  * dataManager.js
  * * Gère le chargement et le parsing des données GTFS et GeoJSON
  *
- * CORRECTION V5:
- * - Implémente la logique GTFS complète pour getServiceId (gère type 1 et 2)
- * - CORRIGE l'incohérence des service_id ('.timetable:' vs ':Timetable:')
- * en normalisant les ID dans getActiveTrips et getUpcomingDepartures.
- * * CORRECTION V8.1:
+ * CORRECTION V9 (Robustesse):
+ * - Remplace la normalisation fragile (replace ".timetable:") par
+ * une fonction _normalizeServiceId qui nettoie TOUS les ID
+ * (de calendar ET trips) avant la comparaison, pour assurer la correspondance.
  * - Ajout des helpers 'calculateDistance' et 'findNearestPointOnRoute'
  * pour permettre à busPositionCalculator d'interpoler sur le GeoJSON.
  */
@@ -29,6 +28,17 @@ export class DataManager {
         this.stopTimesByStop = {}; 
         this.tripsByTripId = {}; // Stocke les trips par ID
         this.stopTimesByTrip = {}; // Stocke les stop_times par trip_id
+    }
+
+    /**
+     * NOUVEAU HELPER (V9)
+     * Nettoie un service_id pour une comparaison robuste.
+     * Ex: ".timetable:8" -> "timetable8"
+     * Ex: ":Timetable:8" -> "timetable8"
+     */
+    _normalizeServiceId(id) {
+        if (!id) return null;
+        return id.replace(/[^a-z0-9]/gi, '').toLowerCase();
     }
 
     /**
@@ -201,14 +211,15 @@ export class DataManager {
 
     /**
      * Récupère les prochains départs pour une liste d'arrêts (V4)
+     * CORRECTION V9: Utilise _normalizeServiceId
      */
     getUpcomingDepartures(stopIds, currentSeconds, date, limit = 5) {
         const serviceId = this.getServiceId(date);
-        
-        // *** CORRECTION INCOHÉRENCE GTFS ***
-        // Normalise l'ID pour correspondre à trips.txt
-        const normalizedServiceId = serviceId ? serviceId.replace(".timetable:", ":Timetable:") : null;
-        if (!normalizedServiceId) return [];
+        if (!serviceId) return [];
+
+        // *** CORRECTION V9 ***
+        const normalizedCalendarId = this._normalizeServiceId(serviceId);
+        if (!normalizedCalendarId) return [];
 
         let allDepartures = [];
 
@@ -216,16 +227,22 @@ export class DataManager {
             const stops = this.stopTimesByStop[stopId] || [];
             stops.forEach(st => {
                 const trip = this.tripsByTripId[st.trip_id];
-                // Compare avec l'ID normalisé
-                if (trip && trip.service_id === normalizedServiceId) {
-                    const departureSeconds = this.timeToSeconds(st.departure_time);
-                    if (departureSeconds >= currentSeconds) {
-                        allDepartures.push({
-                            tripId: st.trip_id,
-                            stopId: stopId,
-                            time: st.departure_time,
-                            departureSeconds: departureSeconds
-                        });
+                
+                if (trip) {
+                    // *** CORRECTION V9 ***
+                    const normalizedTripId = this._normalizeServiceId(trip.service_id);
+                    
+                    // Compare les ID normalisés
+                    if (normalizedTripId === normalizedCalendarId) {
+                        const departureSeconds = this.timeToSeconds(st.departure_time);
+                        if (departureSeconds >= currentSeconds) {
+                            allDepartures.push({
+                                tripId: st.trip_id,
+                                stopId: stopId,
+                                time: st.departure_time,
+                                departureSeconds: departureSeconds
+                            });
+                        }
                     }
                 }
             });
@@ -365,7 +382,7 @@ export class DataManager {
 
         // Seuil: si l'arrêt est à plus de 500m du tracé, on considère qu'il n'est pas dessus
         if (minDistance > 500) { 
-            console.warn(`Arrêt (${lat}, ${lon}) est à ${minDistance.toFixed(0)}m du tracé. Abandon.`);
+            // console.warn(`Arrêt (${lat}, ${lon}) est à ${minDistance.toFixed(0)}m du tracé. Abandon.`);
             return null;
         }
 
@@ -420,42 +437,44 @@ export class DataManager {
         }
 
         // Étape 4: Aucun service trouvé
-        // console.warn(`[getServiceId] Aucun service valide trouvé pour ${dateString}.`);
+        console.warn(`[getServiceId] Aucun service valide trouvé pour ${dateString}.`);
         return null;
     }
 
     /**
      * Récupère tous les trips actifs pour un temps et une date (V4)
+     * CORRECTION V9: Utilise _normalizeServiceId
      */
     getActiveTrips(currentSeconds, date) {
         
-        const serviceId = this.getServiceId(date); // Ex: .timetable:8
-        
-        // *** CORRECTION DE L'INCOHÉRENCE GTFS ***
-        // Normalise l'ID pour correspondre au format de trips.txt (ex: :Timetable:8)
-        const normalizedServiceId = serviceId ? serviceId.replace(".timetable:", ":Timetable:") : null;
+        const serviceId = this.getServiceId(date);
+        if (!serviceId) {
+            console.warn("[getActiveTrips] Aucun Service ID trouvé pour aujourd'hui (getServiceId). Aucun bus ne sera affiché.");
+            return [];
+        }
 
-        // console.log(`[getActiveTrips] Service ID original (calendar): ${serviceId}`);
-        // console.log(`[getActiveTrips] Service ID normalisé (trips): ${normalizedServiceId}`);
+        // *** CORRECTION V9 ***
+        const normalizedCalendarId = this._normalizeServiceId(serviceId);
         
-        if (!normalizedServiceId) {
-            // console.warn("[getActiveTrips] Aucun Service ID trouvé pour aujourd'hui. Aucun bus ne sera affiché.");
+        if (!normalizedCalendarId) {
+            console.warn("[getActiveTrips] Aucun Service ID normalisé. Aucun bus ne sera affiché.");
             return [];
         }
 
         const activeTrips = [];
 
         this.trips.forEach(trip => {
+            // *** CORRECTION V9 ***
+            const normalizedTripId = this._normalizeServiceId(trip.service_id);
+
             // Compare avec l'ID normalisé
-            if (trip.service_id === normalizedServiceId) {
+            if (normalizedTripId === normalizedCalendarId) {
                 const stopTimes = this.stopTimesByTrip[trip.trip_id];
                 if (!stopTimes || stopTimes.length < 2) return;
 
                 const firstStop = stopTimes[0];
                 const lastStop = stopTimes[stopTimes.length - 1];
                 
-                // *** CORRECTION (V2) *** // Utilise arrival_time pour le début (pour inclure l'attente au terminus)
-                // et arrival_time pour la fin.
                 const startTime = this.timeToSeconds(firstStop.arrival_time);
                 const endTime = this.timeToSeconds(lastStop.arrival_time);
 
@@ -470,7 +489,11 @@ export class DataManager {
             }
         });
 
-        // console.log(`[getActiveTrips] ${activeTrips.length} voyages actifs trouvés.`);
+        if (activeTrips.length === 0) {
+             console.warn(`[getActiveTrips] 0 bus actifs trouvés pour l'ID normalisé: ${normalizedCalendarId}`);
+        } else {
+             console.log(`[getActiveTrips] ${activeTrips.length} voyages actifs trouvés pour l'ID: ${normalizedCalendarId}.`);
+        }
 
         return activeTrips;
     }
