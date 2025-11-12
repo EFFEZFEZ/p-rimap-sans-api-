@@ -1640,38 +1640,6 @@ details[open] .accordion-content {
     background: #e5e5e5; /* Fond de carte temporaire */
 }
 
-.results-panel-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-}
-.results-update-time {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
-}
-.results-modes {
-    display: flex;
-    gap: 0.5rem;
-}
-.mode-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    cursor: pointer;
-}
-.mode-icon.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
-
 .results-list {
     padding: 1rem;
     flex: 1;
