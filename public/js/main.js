@@ -63,7 +63,7 @@ const PDF_FILENAME_MAP = {
     'K4A': 'grandperigueux_fiche_horaires_ligne_K4A_sept_2025.pdf',
     'K4B': 'grandperigueux_fiche_horaires_ligne_K4B_sept_2025.pdf',
     'K5': 'grandperigueux_fiche_horaires_ligne_K5_sept_2025.pdf',
-    'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2S025.pdf',
+    'K6': 'grandperigueux_fiche_horaires_ligne_K6_sept_2025.pdf',
     'N': 'grandperigueux_fiche_horaires_ligne_N_sept_2025.pdf',
     'N1': 'grandperigueux_fiche_horaires_ligne_N1_sept_2025.pdf',
 };
@@ -108,15 +108,19 @@ let mapContainer, btnShowMap, btnBackToDashboardFromMap;
 
 // ÉLÉMENTS DOM (VUE 3: RÉSULTATS)
 let itineraryResultsContainer, btnBackToDashboardFromResults, resultsListContainer;
-// NOUVEAUX ÉLÉMENTS DOM (RÉCAPITULATIF RÉSULTATS)
-let summaryFrom, summaryTo, summaryWhen, btnModifySearchSummary;
+// RÉCAPITULATIF STATIQUE
+let itinerarySummaryDisplay, summaryFrom, summaryTo, summaryWhen, btnShowPlannerEdit;
+// PLANIFICATEUR D'ÉDITION
+let itineraryPlannerEdit, resultsFromInput, resultsToInput, resultsFromSuggestions, resultsToSuggestions;
+let resultsSwapBtn, resultsWhenBtn, resultsPopover, resultsDate, resultsHour, resultsMinute;
+let resultsPopoverSubmitBtn, resultsPlannerSubmitBtn;
 
 
-// --- ÉLÉMENTS DOM (PLANIFICATEUR) ---
-let plannerWhenBtn, plannerOptionsPopover, plannerSubmitBtn;
-let fromInput, toInput;
-let fromSuggestions, toSuggestions;
-let popoverDate, popoverHour, popoverMinute; 
+// --- ÉLÉMENTS DOM (PLANIFICATEUR DU HALL) ---
+let hallPlannerSubmitBtn, hallFromInput, hallToInput, hallFromSuggestions, hallToSuggestions;
+let hallWhenBtn, hallPopover, hallDate, hallHour, hallMinute, hallPopoverSubmitBtn, hallSwapBtn;
+
+// État global pour les place_id (partagé par les deux formulaires)
 let fromPlaceId = null;
 let toPlaceId = null;
 
@@ -161,26 +165,47 @@ async function initializeApp() {
     btnShowMap = document.getElementById('btn-show-map');
     btnBackToDashboardFromMap = document.getElementById('btn-back-to-dashboard-from-map');
     
+    // VUE 3: RÉSULTATS (Général)
     itineraryResultsContainer = document.getElementById('itinerary-results-container');
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
     resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
 
-    // NOUVELLES SÉLECTIONS DOM (RÉSULTATS)
+    // VUE 3: RÉCAPITULATIF STATIQUE
+    itinerarySummaryDisplay = document.getElementById('itinerary-summary-display');
     summaryFrom = document.getElementById('summary-from');
     summaryTo = document.getElementById('summary-to');
     summaryWhen = document.getElementById('summary-when');
-    btnModifySearchSummary = document.getElementById('btn-modify-search-summary');
+    btnShowPlannerEdit = document.getElementById('btn-show-planner-edit');
+    
+    // VUE 3: PLANIFICATEUR D'ÉDITION
+    itineraryPlannerEdit = document.getElementById('itinerary-planner-edit');
+    resultsFromInput = document.getElementById('results-planner-from');
+    resultsToInput = document.getElementById('results-planner-to');
+    resultsFromSuggestions = document.getElementById('results-from-suggestions');
+    resultsToSuggestions = document.getElementById('results-to-suggestions');
+    resultsSwapBtn = document.getElementById('results-btn-swap-direction');
+    resultsWhenBtn = document.getElementById('results-planner-when-btn');
+    resultsPopover = document.getElementById('results-planner-options-popover');
+    resultsDate = document.getElementById('results-popover-date');
+    resultsHour = document.getElementById('results-popover-hour');
+    resultsMinute = document.getElementById('results-popover-minute');
+    resultsPopoverSubmitBtn = document.getElementById('results-popover-submit-btn');
+    resultsPlannerSubmitBtn = document.getElementById('results-planner-submit-btn');
 
-    plannerWhenBtn = document.getElementById('planner-when-btn');
-    plannerOptionsPopover = document.getElementById('planner-options-popover');
-    plannerSubmitBtn = document.getElementById('planner-submit-btn');
-    fromInput = document.getElementById('hall-planner-from');
-    toInput = document.getElementById('hall-planner-to');
-    fromSuggestions = document.getElementById('from-suggestions');
-    toSuggestions = document.getElementById('to-suggestions');
-    popoverDate = document.getElementById('popover-date');
-    popoverHour = document.getElementById('popover-hour');
-    popoverMinute = document.getElementById('popover-minute');
+    // VUE 1: PLANIFICATEUR DU HALL
+    hallPlannerSubmitBtn = document.getElementById('planner-submit-btn');
+    hallFromInput = document.getElementById('hall-planner-from');
+    hallToInput = document.getElementById('hall-planner-to');
+    hallFromSuggestions = document.getElementById('from-suggestions');
+    hallToSuggestions = document.getElementById('to-suggestions');
+    hallSwapBtn = document.getElementById('hall-btn-swap-direction');
+    hallWhenBtn = document.getElementById('planner-when-btn');
+    hallPopover = document.getElementById('planner-options-popover');
+    hallDate = document.getElementById('popover-date');
+    hallHour = document.getElementById('popover-hour');
+    hallMinute = document.getElementById('popover-minute');
+    hallPopoverSubmitBtn = document.getElementById('popover-submit-btn');
+
 
     // --- 2. INITIALISER LES MANAGERS ---
     apiManager = new ApiManager(GOOGLE_API_KEY);
@@ -239,10 +264,9 @@ function setupDashboardContent() {
     setupAdminConsole();
 }
 
-// *** DÉBUT DE LA FONCTION MODIFIÉE ***
 /**
  * Remplit les listes <select> pour l'heure et les minutes
- * ET initialise le champ date
+ * ET initialise le champ date pour LES DEUX formulaires
  */
 function populateTimeSelects() {
     const now = new Date();
@@ -255,62 +279,55 @@ function populateTimeSelects() {
         selectedMinute = 0;
         selectedHour = (currentHour + 1) % 24; 
     }
+    
+    const today = now.toISOString().split('T')[0];
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowDate = tomorrow.toISOString().split('T')[0];
 
-    // ✅ Initialiser le champ date
-    const today = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
-    if (popoverDate) {
-        // Vider d'abord (au cas où)
-        popoverDate.innerHTML = '';
+    // Fonction interne pour remplir un <select>
+    const populate = (dateEl, hourEl, minEl) => {
+        if (!dateEl || !hourEl || !minEl) return;
         
-        // Si c'est un <select> (ce que c'est maintenant)
-        if (popoverDate.tagName === 'SELECT') {
-            // Ajouter "Aujourd'hui"
-            const todayOption = document.createElement('option');
-            todayOption.value = today;
-            todayOption.textContent = "Aujourd'hui";
-            todayOption.selected = true;
-            popoverDate.appendChild(todayOption);
-            
-            // Ajouter "Demain"
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowDate = tomorrow.toISOString().split('T')[0];
-            const tomorrowOption = document.createElement('option');
-            tomorrowOption.value = tomorrowDate;
-            tomorrowOption.textContent = "Demain";
-            popoverDate.appendChild(tomorrowOption);
-        }
-    }
+        // Date
+        dateEl.innerHTML = '';
+        const todayOption = document.createElement('option');
+        todayOption.value = today;
+        todayOption.textContent = "Aujourd'hui";
+        todayOption.selected = true;
+        dateEl.appendChild(todayOption);
+        
+        const tomorrowOption = document.createElement('option');
+        tomorrowOption.value = tomorrowDate;
+        tomorrowOption.textContent = "Demain";
+        dateEl.appendChild(tomorrowOption);
 
-    // Remplir les heures (0-23)
-    if (popoverHour) {
-        popoverHour.innerHTML = ''; // Vider d'abord
+        // Heures
+        hourEl.innerHTML = '';
         for (let h = 0; h < 24; h++) {
             const option = document.createElement('option');
             option.value = h;
             option.textContent = `${h} h`;
-            if (h === selectedHour) {
-                option.selected = true;
-            }
-            popoverHour.appendChild(option);
+            if (h === selectedHour) option.selected = true;
+            hourEl.appendChild(option);
         }
-    }
 
-    // Remplir les minutes (00, 05, 10, ... 55)
-    if (popoverMinute) {
-        popoverMinute.innerHTML = ''; // Vider d'abord
+        // Minutes
+        minEl.innerHTML = '';
         for (let m = 0; m < 60; m += 5) {
             const option = document.createElement('option');
             option.value = m;
             option.textContent = String(m).padStart(2, '0');
-            if (m === selectedMinute) {
-                option.selected = true;
-            }
-            popoverMinute.appendChild(option);
+            if (m === selectedMinute) option.selected = true;
+            minEl.appendChild(option);
         }
-    }
+    };
+
+    // Remplir le formulaire du Hall
+    populate(hallDate, hallHour, hallMinute);
+    // Remplir le formulaire des Résultats
+    populate(resultsDate, resultsHour, resultsMinute);
 }
-// *** FIN DE LA FONCTION MODIFIÉE ***
 
 
 function setupStaticEventListeners() {
@@ -320,7 +337,7 @@ function setupStaticEventListeners() {
         console.error("Impossible de charger l'API Google:", error);
     }
 
-    // Remplit les sélecteurs de temps
+    // Remplit les sélecteurs de temps pour les DEUX formulaires
     populateTimeSelects();
 
     // --- Navigation principale ---
@@ -339,10 +356,13 @@ function setupStaticEventListeners() {
     btnBackToDashboardFromResults.addEventListener('click', showDashboardHall);
     btnBackToHall.addEventListener('click', showDashboardHall);
     
-    // NOUVEL ÉCOUTEUR : Bouton "Modifier" sur la barre de résumé
-    if (btnModifySearchSummary) {
-        btnModifySearchSummary.addEventListener('click', showDashboardHall);
-    }
+    // --- NOUVELLE LOGIQUE DE VUE RÉSULTATS ---
+    btnShowPlannerEdit.addEventListener('click', () => {
+        itinerarySummaryDisplay.classList.add('hidden');
+        itineraryPlannerEdit.classList.remove('hidden');
+        prefillEditPlanner();
+    });
+
 
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
     
@@ -408,57 +428,98 @@ function setupStaticEventListeners() {
     searchBar.addEventListener('focus', handleSearchInput);
 
 
-    // --- ÉCOUTEURS DU PLANIFICATEUR (API GOOGLE) ---
+    // --- ÉCOUTEURS DU PLANIFICATEUR (HALL) ---
+    setupPlannerListeners('hall', {
+        submitBtn: hallPlannerSubmitBtn,
+        fromInput: hallFromInput,
+        toInput: hallToInput,
+        fromSuggestions: hallFromSuggestions,
+        toSuggestions: hallToSuggestions,
+        swapBtn: hallSwapBtn,
+        whenBtn: hallWhenBtn,
+        popover: hallPopover,
+        dateSelect: hallDate,
+        hourSelect: hallHour,
+        minuteSelect: hallMinute,
+        popoverSubmitBtn: hallPopoverSubmitBtn
+    });
+
+    // --- ÉCOUTEURS DU PLANIFICATEUR (RÉSULTATS) ---
+    setupPlannerListeners('results', {
+        submitBtn: resultsPlannerSubmitBtn,
+        fromInput: resultsFromInput,
+        toInput: resultsToInput,
+        fromSuggestions: resultsFromSuggestions,
+        toSuggestions: resultsToSuggestions,
+        swapBtn: resultsSwapBtn,
+        whenBtn: resultsWhenBtn,
+        popover: resultsPopover,
+        dateSelect: resultsDate,
+        hourSelect: resultsHour,
+        minuteSelect: resultsMinute,
+        popoverSubmitBtn: resultsPopoverSubmitBtn
+    });
+
+
+    // Clic global "Click Outside"
+    document.addEventListener('click', (e) => {
+        if (searchResultsContainer && !e.target.closest('#horaires-search-container')) {
+            searchResultsContainer.classList.add('hidden');
+        }
+        // Fermer les popovers des deux formulaires
+        if (hallPopover && !e.target.closest('.form-group-when') && !e.target.closest('#planner-options-popover')) {
+            hallPopover.classList.add('hidden');
+            hallWhenBtn.classList.remove('popover-active');
+        }
+        if (resultsPopover && !e.target.closest('.form-group-when') && !e.target.closest('#results-planner-options-popover')) {
+            resultsPopover.classList.add('hidden');
+            resultsWhenBtn.classList.remove('popover-active');
+        }
+        // Fermer les suggestions des deux formulaires
+        if (!e.target.closest('.form-group')) {
+            if (hallFromSuggestions) hallFromSuggestions.style.display = 'none';
+            if (hallToSuggestions) hallToSuggestions.style.display = 'none';
+            if (resultsFromSuggestions) resultsFromSuggestions.style.display = 'none';
+            if (resultsToSuggestions) resultsToSuggestions.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * NOUVELLE FONCTION REFACTORISÉE
+ * Attache tous les écouteurs nécessaires à un ensemble d'éléments de formulaire.
+ * @param {string} source - 'hall' ou 'results'
+ * @param {object} elements - Un objet contenant les éléments DOM pour ce formulaire
+ */
+function setupPlannerListeners(source, elements) {
+    const { submitBtn, fromInput, toInput, fromSuggestions, toSuggestions, swapBtn, whenBtn, popover, dateSelect, hourSelect, minuteSelect, popoverSubmitBtn } = elements;
 
     // Bouton "Rechercher"
-    plannerSubmitBtn.addEventListener('click', async (e) => {
+    submitBtn.addEventListener('click', async (e) => {
         e.preventDefault(); 
-        if (plannerOptionsPopover && !plannerOptionsPopover.classList.contains('hidden')) {
-            plannerOptionsPopover.classList.add('hidden');
-            plannerWhenBtn.classList.remove('popover-active');
+        if (popover && !popover.classList.contains('hidden')) {
+            popover.classList.add('hidden');
+            whenBtn.classList.remove('popover-active');
         }
-
-        if (!fromPlaceId || !toPlaceId) {
-            alert("Veuillez sélectionner un point de départ et d'arrivée depuis les suggestions.");
-            return;
-        }
-
-        // Récupérer les infos de temps
-        const searchTime = {
-            type: document.querySelector('.popover-tab.active').dataset.tab, 
-            date: popoverDate.value, // (sera YYYY-MM-DD)
-            hour: popoverHour.value,
-            minute: popoverMinute.value
-        };
         
-        // NOUVEAU : Mettre à jour la barre de résumé
-        updateItinerarySummary(searchTime);
+        // Exécuter la recherche
+        await executeItinerarySearch(source, elements);
 
-        console.log("Recherche Google API lancée:", { from: fromPlaceId, to: toPlaceId, time: searchTime });
-
-        showResultsView(); 
-
-        try {
-            const results = await apiManager.fetchItinerary(fromPlaceId, toPlaceId, searchTime); 
-            const itineraries = processGoogleRoutesResponse(results);
-            renderItineraryResults(itineraries);
-            
-        } catch (error) {
-            console.error("Échec de la recherche d'itinéraire:", error);
-            if (resultsListContainer) {
-                resultsListContainer.innerHTML = `<p class="results-message error">Impossible de calculer l'itinéraire. L'API n'a pas trouvé de trajet en bus.</p>`;
-            }
+        // Si la recherche vient des "résultats", cacher le formulaire et montrer le résumé
+        if (source === 'results') {
+            itineraryPlannerEdit.classList.add('hidden');
+            itinerarySummaryDisplay.classList.remove('hidden');
         }
     });
 
-    // Autocomplétion pour le champ "Départ"
+    // Autocomplétion "Départ"
     fromInput.addEventListener('input', (e) => {
         handleAutocomplete(e.target.value, fromSuggestions, (placeId) => {
             fromPlaceId = placeId; 
         });
     });
 
-    // Autocomplétion pour le champ "Arrivée"
+    // Autocomplétion "Arrivée"
     toInput.addEventListener('input', (e) => {
         handleAutocomplete(e.target.value, toSuggestions, (placeId) => {
             toPlaceId = placeId; 
@@ -466,34 +527,31 @@ function setupStaticEventListeners() {
     });
 
     // Popover "QUAND"
-    if (plannerWhenBtn && plannerOptionsPopover) { 
-        plannerWhenBtn.addEventListener('click', (e) => {
+    if (whenBtn && popover) { 
+        whenBtn.addEventListener('click', (e) => {
             e.stopPropagation(); 
-            plannerOptionsPopover.classList.toggle('hidden');
-            plannerWhenBtn.classList.toggle('popover-active');
+            popover.classList.toggle('hidden');
+            whenBtn.classList.toggle('popover-active');
         });
-        document.querySelectorAll('.popover-tab').forEach(tab => { 
+
+        // Onglets "Partir" / "Arriver"
+        popover.querySelectorAll('.popover-tab').forEach(tab => { 
             tab.addEventListener('click', (e) => {
-                document.querySelectorAll('.popover-tab').forEach(t => t.classList.remove('active'));
+                popover.querySelectorAll('.popover-tab').forEach(t => t.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 
-                // Mettre à jour le texte du bouton de soumission
-                const popoverSubmitBtn = document.getElementById('popover-submit-btn');
-                if (e.currentTarget.dataset.tab === 'arriver') { 
-                    popoverSubmitBtn.textContent = "Valider l'arrivée";
-                } else {
-                    popoverSubmitBtn.textContent = 'Partir maintenant';
-                }
+                const tabType = e.currentTarget.dataset.tab;
+                popoverSubmitBtn.textContent = (tabType === 'arriver') ? "Valider l'arrivée" : 'Partir maintenant';
             });
         });
         
-        // --- ÉCOUTEUR MIS À JOUR ---
-        document.getElementById('popover-submit-btn').addEventListener('click', () => { 
-             const dateText = popoverDate.options[popoverDate.selectedIndex].text;
-             const hourText = String(popoverHour.value).padStart(2, '0');
-             const minuteText = String(popoverMinute.value).padStart(2, '0');
-             const tab = document.querySelector('.popover-tab.active').dataset.tab;
-             const mainBtnSpan = document.querySelector('#planner-when-btn span');
+        // Bouton de validation du Popover
+        popoverSubmitBtn.addEventListener('click', () => { 
+             const dateText = dateSelect.options[dateSelect.selectedIndex].text;
+             const hourText = String(hourSelect.value).padStart(2, '0');
+             const minuteText = String(minuteSelect.value).padStart(2, '0');
+             const tab = popover.querySelector('.popover-tab.active').dataset.tab;
+             const mainBtnSpan = whenBtn.querySelector('span');
              
              let prefix = (tab === 'arriver') ? "Arrivée" : "Départ";
              if (dateText === "Aujourd'hui") {
@@ -502,46 +560,82 @@ function setupStaticEventListeners() {
                  mainBtnSpan.textContent = `${prefix} ${dateText.toLowerCase()} à ${hourText}h${minuteText}`;
              }
 
-             plannerOptionsPopover.classList.add('hidden');
-             plannerWhenBtn.classList.remove('popover-active');
+             popover.classList.add('hidden');
+             whenBtn.classList.remove('popover-active');
         });
         
-        plannerOptionsPopover.addEventListener('click', (e) => e.stopPropagation()); 
+        popover.addEventListener('click', (e) => e.stopPropagation()); 
     }
     
     // Bouton SWAP
-    const swapBtn = document.querySelector('.btn-swap-direction'); 
     if (swapBtn) {
         swapBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const fromVal = fromInput.value;
             fromInput.value = toInput.value;
             toInput.value = fromVal;
+            // L'état fromPlaceId/toPlaceId est partagé, donc on l'inverse aussi
             const tempId = fromPlaceId;
             fromPlaceId = toPlaceId;
             toPlaceId = tempId;
         });
     }
-
-    // Clic global "Click Outside"
-    document.addEventListener('click', (e) => {
-        if (searchResultsContainer && !e.target.closest('#horaires-search-container')) {
-            searchResultsContainer.classList.add('hidden');
-        }
-        if (plannerOptionsPopover && !e.target.closest('.form-group-when')) {
-            if (!plannerOptionsPopover.classList.contains('hidden')) {
-                plannerOptionsPopover.classList.add('hidden');
-                if (plannerWhenBtn) {
-                    plannerWhenBtn.classList.remove('popover-active');
-                }
-            }
-        }
-        if (!e.target.closest('.form-group')) {
-            if (fromSuggestions) fromSuggestions.style.display = 'none';
-            if (toSuggestions) toSuggestions.style.display = 'none';
-        }
-    });
 }
+
+/**
+ * NOUVELLE FONCTION REFACTORISÉE
+ * Exécute la recherche d'itinéraire en lisant les valeurs du formulaire source.
+ * @param {string} source - 'hall' ou 'results'
+ */
+async function executeItinerarySearch(source) {
+    let elements;
+    if (source === 'hall') {
+        elements = { fromInput: hallFromInput, toInput: hallToInput, dateSelect: hallDate, hourSelect: hallHour, minuteSelect: hallMinute, popover: hallPopover };
+    } else {
+        elements = { fromInput: resultsFromInput, toInput: resultsToInput, dateSelect: resultsDate, hourSelect: resultsHour, minuteSelect: resultsMinute, popover: resultsPopover };
+    }
+
+    const { fromInput, toInput, dateSelect, hourSelect, minuteSelect, popover } = elements;
+
+    if (!fromPlaceId || !toPlaceId) {
+        alert("Veuillez sélectionner un point de départ et d'arrivée depuis les suggestions.");
+        return;
+    }
+
+    // Récupérer les infos de temps
+    const searchTime = {
+        type: popover.querySelector('.popover-tab.active').dataset.tab, 
+        date: dateSelect.value,
+        hour: hourSelect.value,
+        minute: minuteSelect.value
+    };
+    
+    // Mettre à jour la barre de résumé (visible ou non)
+    updateItinerarySummary(fromInput.value, toInput.value, searchTime, dateSelect);
+
+    console.log(`Recherche Google API (source: ${source}):`, { from: fromPlaceId, to: toPlaceId, time: searchTime });
+    
+    // Afficher la vue des résultats (si on vient du Hall)
+    if (source === 'hall') {
+        showResultsView(); 
+    } else {
+        // Si on est déjà dans les résultats, afficher juste le spinner
+        resultsListContainer.innerHTML = '<p class="results-message">Mise à jour de l\'itinéraire...</p>';
+    }
+
+    try {
+        const results = await apiManager.fetchItinerary(fromPlaceId, toPlaceId, searchTime); 
+        const itineraries = processGoogleRoutesResponse(results);
+        renderItineraryResults(itineraries);
+        
+    } catch (error) {
+        console.error("Échec de la recherche d'itinéraire:", error);
+        if (resultsListContainer) {
+            resultsListContainer.innerHTML = `<p class="results-message error">Impossible de calculer l'itinéraire. L'API n'a pas trouvé de trajet en bus.</p>`;
+        }
+    }
+}
+
 
 /**
  * Attache les écouteurs qui dépendent des modules GTFS chargés
@@ -561,17 +655,50 @@ function setupDataDependentEventListeners() {
 
 // --- NOUVELLES FONCTIONS POUR L'AUTOCOMPLÉTION ET LES RÉSULTATS ---
 
-// NOUVELLE FONCTION : Met à jour la barre de résumé
-function updateItinerarySummary(searchTime) {
+/**
+ * NOUVELLE FONCTION
+ * Pré-remplit le formulaire d'édition avec les valeurs du formulaire principal.
+ */
+function prefillEditPlanner() {
+    // Copier les valeurs de texte
+    resultsFromInput.value = hallFromInput.value;
+    resultsToInput.value = hallToInput.value;
+    
+    // Copier les sélections
+    resultsDate.value = hallDate.value;
+    resultsHour.value = hallHour.value;
+    resultsMinute.value = hallMinute.value;
+    
+    // Copier l'état du tab "Partir/Arriver"
+    const hallActiveTab = hallPopover.querySelector('.popover-tab.active').dataset.tab;
+    resultsPopover.querySelectorAll('.popover-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === hallActiveTab);
+    });
+    
+    // Mettre à jour le texte du bouton "Quand"
+    resultsWhenBtn.querySelector('span').textContent = hallWhenBtn.querySelector('span').textContent;
+
+    // Mettre à jour le texte du bouton de soumission du popover
+    resultsPopoverSubmitBtn.textContent = (hallActiveTab === 'arriver') ? "Valider l'arrivée" : 'Partir maintenant';
+}
+
+
+/**
+ * Met à jour la barre de résumé statique
+ * @param {string} fromText 
+ * @param {string} toText 
+ * @param {object} searchTime 
+ * @param {HTMLSelectElement} dateSelect 
+ */
+function updateItinerarySummary(fromText, toText, searchTime, dateSelect) {
     if (summaryFrom) {
-        summaryFrom.textContent = fromInput.value;
+        summaryFrom.textContent = fromText;
     }
     if (summaryTo) {
-        summaryTo.textContent = toInput.value;
+        summaryTo.textContent = toText;
     }
     if (summaryWhen) {
-        // Recrée la logique de formatage du temps
-        const dateText = popoverDate.options[popoverDate.selectedIndex].text;
+        const dateText = dateSelect.options[dateSelect.selectedIndex].text;
         const hourText = String(searchTime.hour).padStart(2, '0');
         const minuteText = String(searchTime.minute).padStart(2, '0');
         const prefix = (searchTime.type === 'arriver') ? "Arrivée" : "Départ";
@@ -635,14 +762,6 @@ function renderSuggestions(suggestions, container, onSelect) {
  * @param {object} data - La réponse JSON brute de l'API
  * @returns {Array} Un tableau d'objets itinéraires simplifiés
  */
-/**
- * SECTION CORRIGÉE : processGoogleRoutesResponse
- * * CORRECTION APPLIQUÉE:
- * - Accès correct aux arrêts via transit.stopDetails.departureStop/arrivalStop
- * - Accès correct aux horaires via transit.stopDetails.departureTime/arrivalTime
- * - Vérifications défensives maintenues pour éviter les erreurs
- */
-
 function processGoogleRoutesResponse(data) {
     if (!data || !data.routes || data.routes.length === 0) {
         console.warn("Réponse de l'API Routes vide ou invalide.");
@@ -672,12 +791,9 @@ function processGoogleRoutesResponse(data) {
                     duration: duration
                 });
             } else if (step.travelMode === 'TRANSIT' && step.transitDetails) {
-                // ✅ VÉRIFICATION: S'assurer que transitDetails existe
-                
                 const transit = step.transitDetails;
                 const line = transit.transitLine;
 
-                // ✅ VÉRIFICATION: S'assurer que la ligne existe (ignore les transferts sans ligne)
                 if (line) { 
                     const shortName = line.nameShort || 'BUS';
                     const color = line.color || '#3388ff';
@@ -690,9 +806,6 @@ function processGoogleRoutesResponse(data) {
                         textColor: textColor
                     });
 
-                    // ✅ CORRECTION CRITIQUE ICI:
-                    // Selon la documentation Google Routes API v2, les arrêts sont dans stopDetails
-                    // Structure: transit.stopDetails.departureStop.name et transit.stopDetails.arrivalStop.name
                     const stopDetails = transit.stopDetails || {};
                     const departureStop = stopDetails.departureStop || {};
                     const arrivalStop = stopDetails.arrivalStop || {};
@@ -1083,6 +1196,10 @@ function showDashboardHall() {
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
     });
+
+    // Réinitialiser la vue des résultats lors du retour au hall
+    itinerarySummaryDisplay.classList.remove('hidden');
+    itineraryPlannerEdit.classList.add('hidden');
 }
 
 function showResultsView() {
