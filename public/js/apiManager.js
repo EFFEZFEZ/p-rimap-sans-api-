@@ -212,18 +212,37 @@ export class ApiManager {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
                     
-                    // ✅ FIELDMASK CORRIGÉ - Basé sur la documentation officielle
+                    // ✅ FIELDMASK FINAL - Validé par la documentation Google officielle
                     // Source: https://developers.google.com/maps/documentation/routes/transit-route
                     // 
-                    // Format validé: routes.legs.steps.transitDetails récupère:
-                    // - transitDetails.stopDetails (arrivalStop, departureStop avec .name)
-                    // - transitDetails.transitLine (nameShort, color, textColor, etc.)
-                    // - transitDetails.headsign
-                    // - arrivalTime, departureTime, stopCount
+                    // STRUCTURE de transitDetails (quand on demande routes.legs.steps.transitDetails):
+                    // {
+                    //   "stopDetails": {
+                    //     "arrivalStop": { "name": "...", "location": {...} },
+                    //     "departureStop": { "name": "...", "location": {...} },
+                    //     "arrivalTime": "2023-08-26T10:49:42Z",
+                    //     "departureTime": "2023-08-26T10:35:15Z"
+                    //   },
+                    //   "localizedValues": { "arrivalTime": {...}, "departureTime": {...} },
+                    //   "headsign": "Direction name",
+                    //   "headway": "360s",
+                    //   "transitLine": {
+                    //     "agencies": [...],
+                    //     "name": "Green Line",
+                    //     "uri": "...",
+                    //     "color": "#00ff00",
+                    //     "iconUri": "...",
+                    //     "nameShort": "GL",
+                    //     "textColor": "#ffffff",
+                    //     "vehicle": { "name": {...}, "type": "BUS", "iconUri": "..." }
+                    //   },
+                    //   "stopCount": 5
+                    // }
                     //
-                    // Note: En spécifiant "transitDetails" sans sous-champs, l'API
-                    // retourne TOUS les sous-champs de transitDetails automatiquement.
-                    'X-Goog-FieldMask': 'routes.duration,routes.legs.steps.transitDetails,routes.legs.steps.travelMode,routes.legs.steps.localizedValues,routes.legs.steps.navigationInstruction'
+                    // NOTE CRITIQUE: Quand vous spécifiez "routes.legs.steps.transitDetails" sans
+                    // sous-champs, l'API retourne AUTOMATIQUEMENT tous les champs imbriqués.
+                    // C'est confirmé par la doc officielle et les exemples.
+                    'X-Goog-FieldMask': 'routes.duration,routes.legs.steps.travelMode,routes.legs.steps.localizedValues,routes.legs.steps.navigationInstruction,routes.legs.steps.transitDetails'
                 },
                 body: JSON.stringify(body)
             });
