@@ -3,16 +3,18 @@
  * * Gère tous les appels aux API externes (Google Places & Google Routes).
  * Ce module nécessitera l'activation des API "Places API" et "Routes API"
  * dans votre console Google Cloud, ainsi qu'une clé d'API.
+ *
+ * CORRECTION : Utilise le service moderne "PlaceAutocompleteService"
+ * au lieu de l'ancien "AutocompleteService" obsolète.
  */
 
 export class ApiManager {
     constructor(apiKey) {
         this.apiKey = apiKey;
-        this.placesService = null;
         this.autocompleteService = null;
+        this.sessionToken = null; // Jeton pour les sessions d'autocomplétion
 
         // Limite l'autosuggestion à la Dordogne
-        // Coordonnées approximatives du département
         this.dordogneBounds = {
             south: 44.5,
             west: 0.0,
@@ -62,8 +64,14 @@ export class ApiManager {
             console.error("La bibliothèque Google Maps 'places' n'est pas disponible.");
             return;
         }
-        this.autocompleteService = new window.google.maps.places.AutocompleteService();
-        this.placesService = new window.google.maps.places.PlacesService(document.createElement('div')); // Nécessite un élément DOM factice
+        
+        // *** CORRECTION ICI ***
+        // Utilise le service moderne "PlaceAutocompleteService"
+        this.autocompleteService = new window.google.maps.places.PlaceAutocompleteService();
+        // Crée un jeton de session pour l'autocomplétion (meilleure facturation)
+        this.sessionToken = new window.google.maps.places.AutocompleteSessionToken();
+        
+        console.log("Service d'autocomplétion Google (moderne) initialisé.");
     }
 
     /**
@@ -81,6 +89,7 @@ export class ApiManager {
         return new Promise((resolve, reject) => {
             this.autocompleteService.getPlacePredictions({
                 input: inputString,
+                sessionToken: this.sessionToken, // *** Ajout du jeton de session ***
                 componentRestrictions: { country: 'fr' },
                 // Biais vers la zone de la Dordogne
                 bounds: this.dordogneBounds, 
@@ -137,7 +146,7 @@ export class ApiManager {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
                     // Champ important pour ne renvoyer que les champs nécessaires
-                    'X-Goog-FieldMask': 'routes.legs,routes.duration,routes.distanceMeters,routes.polyline' 
+                    'X-Goog-FieldMask': 'routes.legs,routes.duration,routes.distanceMeters,routes.polyline,routes.steps' 
                 },
                 body: JSON.stringify(body)
             });
@@ -150,12 +159,11 @@ export class ApiManager {
 
             const data = await response.json();
             
-            // TODO: Formater la réponse 'data' de Google 
-            // dans le format que notre application utilise (similaire à la simulation).
-            
             console.log("Réponse de l'API Routes:", data);
             
-            // Pour l'instant, renvoie la donnée brute
+            // Réinitialise le jeton de session après une recherche réussie
+            this.sessionToken = new window.google.maps.places.AutocompleteSessionToken();
+
             return data; 
 
         } catch (error) {
