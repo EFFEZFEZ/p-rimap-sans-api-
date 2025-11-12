@@ -90,6 +90,15 @@ export class DataManager {
             console.log('✅ Données chargées et traitées.');
             this.isLoaded = true;
 
+            // --- AJOUT DEBUG (Étape 2) ---
+            try {
+                const allTripServiceIds = new Set(this.trips.map(t => t.service_id));
+                console.log("[DEBUG] Tous les service_id uniques trouvés dans trips.txt :", allTripServiceIds);
+            } catch (e) {
+                console.error("Erreur lors du debug des service_id", e);
+            }
+            // --- FIN AJOUT DEBUG ---
+
         } catch (error) {
             console.error('Erreur fatale lors du chargement des données:', error);
             this.showError('Erreur de chargement des données', 'Vérifiez que les fichiers GTFS sont présents dans /public/data/gtfs/ et que map.geojson est dans /public/data/.');
@@ -365,6 +374,10 @@ export class DataManager {
     getActiveTrips(currentSeconds, date) {
         
         const serviceId = this.getServiceId(date); // Ex: .timetable:8
+
+        // --- AJOUT DEBUG (Étape 1) ---
+        console.log("[DEBUG] Service ID trouvé dans calendar.txt pour aujourd'hui :", serviceId);
+        // --- FIN AJOUT DEBUG ---
         
         // *** CORRECTION DE L'INCOHÉRENCE GTFS ***
         // Normalise l'ID pour correspondre au format de trips.txt (ex: :Timetable:8)
