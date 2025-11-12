@@ -13,7 +13,7 @@ import { ApiManager } from './apiManager.js';
 
 // *** ACTION REQUISE ***
 // Remplacez cette chaîne par votre clé d'API Google Cloud
-const GOOGLE_API_KEY = "AIzaSyBYDN_8hSHSx_irp_fxLw--XyxuLiixaW4";
+const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 
 // Modules
 let dataManager;
