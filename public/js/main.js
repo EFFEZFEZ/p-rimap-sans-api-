@@ -13,7 +13,7 @@ import { ApiManager } from './apiManager.js';
 
 // *** ACTION REQUISE ***
 // Remplacez cette chaîne par votre clé d'API Google Cloud
-const GOOGLE_API_KEY = "/**
+const GOOGLE_API_KEY = "AIzaSyBYDN_8hSHSx_irp_fxLw--XyxuLiixaW4";
  * main.js
  * Point d'entrée principal de l'application
  * Gère le tableau de bord, la vue carte et l'état du trafic.
