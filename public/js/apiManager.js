@@ -2,11 +2,14 @@
  * apiManager.js
  * Gère tous les appels aux API externes (Google Places & Google Routes).
  * Utilise la NOUVELLE API Places (AutocompleteSuggestion) recommandée depuis mars 2025.
- * 
+ *
  * MODES DE TRANSPORT:
  * - BUS uniquement (pas de train/métro/tramway)
  * - MARCHE automatiquement incluse pour rejoindre les arrêts
  * - Pour le vélo, une requête séparée sera nécessaire
+ *
+ * CORRECTION: Le FieldMask de fetchItinerary est élargi pour inclure 
+ * tous les champs de "steps" (y compris .name) requis par main.js.
  */
 
 export class ApiManager {
@@ -40,15 +43,14 @@ export class ApiManager {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             
-            // Utilisation de la nouvelle API Places (v=beta)
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places&loading=async&v=beta`;
+            // Charge la version beta ET la nouvelle bibliothèque "places-new"
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places,places-new&loading=async&v=beta`;
             
             script.async = true;
             script.defer = true;
             
             script.onload = () => {
-                console.log("✅ API Google Maps (v=beta) chargée avec succès.");
-                // Petit délai pour s'assurer que tout est chargé
+                console.log("✅ API Google Maps (v=beta, places-new) chargée avec succès.");
                 setTimeout(() => {
                     if (window.google && window.google.maps && window.google.maps.places) {
                         this.initServices();
@@ -79,17 +81,14 @@ export class ApiManager {
         }
         
         try {
-            // Utilisation de la NOUVELLE API AutocompleteSuggestion (recommandée depuis mars 2025)
             if (google.maps.places.AutocompleteSuggestion) {
                 this.placesService = google.maps.places.AutocompleteSuggestion;
                 console.log("✅ Nouveau service AutocompleteSuggestion initialisé.");
             } else {
-                // Fallback vers l'ancienne API si la nouvelle n'est pas disponible
                 console.warn("⚠️ AutocompleteSuggestion non disponible, utilisation de l'ancienne API");
                 this.placesService = new google.maps.places.AutocompleteService();
             }
             
-            // Crée un jeton de session pour l'autocomplétion
             this.sessionToken = new google.maps.places.AutocompleteSessionToken();
             
         } catch (error) {
@@ -99,8 +98,6 @@ export class ApiManager {
 
     /**
      * Récupère les suggestions d'autocomplétion avec la NOUVELLE API
-     * @param {string} inputString - Le texte tapé par l'utilisateur
-     * @returns {Promise<Array>} Une liste de suggestions
      */
     async getPlaceAutocomplete(inputString) {
         if (!this.placesService) {
@@ -117,23 +114,18 @@ export class ApiManager {
             if (this.placesService === google.maps.places.AutocompleteSuggestion) {
                 const request = {
                     input: inputString,
-                    // RESTRICTION stricte à la zone du Grand Périgueux
                     locationRestriction: {
                         south: this.perigueuxBounds.south,
                         west: this.perigueuxBounds.west,
                         north: this.perigueuxBounds.north,
                         east: this.perigueuxBounds.east
                     },
-                    // Retirer includedPrimaryTypes pour avoir TOUS les types de résultats
                     region: "fr",
                     sessionToken: this.sessionToken,
                 };
 
                 console.log("🔍 Recherche autocomplétion:", inputString);
-
-                // Utilisation de la méthode fetchAutocompleteSuggestions
                 const { suggestions } = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
-                
                 console.log(`✅ ${suggestions.length} suggestions trouvées`);
                 
                 const results = suggestions.map(s => ({
@@ -143,18 +135,17 @@ export class ApiManager {
                 
                 return results;
             } else {
-                // Fallback : ancienne API avec strictBounds
+                // Fallback : ancienne API
                 return new Promise((resolve, reject) => {
                     const request = {
                         input: inputString,
                         sessionToken: this.sessionToken,
                         componentRestrictions: { country: 'fr' },
-                        // Restriction stricte à la zone (pas juste location + radius)
                         bounds: new google.maps.LatLngBounds(
                             new google.maps.LatLng(this.perigueuxBounds.south, this.perigueuxBounds.west),
                             new google.maps.LatLng(this.perigueuxBounds.north, this.perigueuxBounds.east)
                         ),
-                        strictBounds: true, // IMPORTANT: force les résultats dans les bounds
+                        strictBounds: true,
                     };
 
                     this.placesService.getPlacePredictions(request, (predictions, status) => {
@@ -180,25 +171,15 @@ export class ApiManager {
 
     /**
      * Calcule un itinéraire en transport en commun (BUS uniquement, pas de train)
-     * Note: La marche est automatiquement incluse pour rejoindre les arrêts
-     * @param {string} fromPlaceId - L'ID de lieu Google du départ
-     * @param {string} toPlaceId - L'ID de lieu Google de l'arrivée
-     * @returns {Promise<Object>} Un objet d'itinéraire
      */
     async fetchItinerary(fromPlaceId, toPlaceId) {
         console.log(`🚍 API Google Routes: Calcul de ${fromPlaceId} à ${toPlaceId}`);
 
         const API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
-        // Format simplifié basé sur la documentation officielle
-        // IMPORTANT: Ne pas inclure polylineQuality ou polylineEncoding avec TRANSIT
         const body = {
-            origin: { 
-                placeId: fromPlaceId 
-            },
-            destination: { 
-                placeId: toPlaceId 
-            },
+            origin: { placeId: fromPlaceId },
+            destination: { placeId: toPlaceId },
             travelMode: "TRANSIT",
             transitPreferences: {
                 allowedTravelModes: ["BUS"], // Uniquement le bus
@@ -216,8 +197,11 @@ export class ApiManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
-                    // FieldMask pour TRANSIT - simplifié et testé
-                    'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.legs.steps.transitDetails,routes.legs.steps.travelMode'
+                    
+                    // *** CORRECTION ICI ***
+                    // Demande 'routes.legs' en entier pour obtenir tous les sous-champs
+                    // (y compris departureStop.name) dont main.js a besoin.
+                    'X-Goog-FieldMask': 'routes.duration,routes.legs'
                 },
                 body: JSON.stringify(body)
             });
@@ -227,7 +211,6 @@ export class ApiManager {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error("❌ Texte d'erreur brut:", errorText);
-                
                 try {
                     const errorData = JSON.parse(errorText);
                     console.error("❌ Erreur de l'API Routes:", errorData);
@@ -238,10 +221,8 @@ export class ApiManager {
             }
 
             const data = await response.json();
-            
             console.log("✅ Réponse de l'API Routes:", data);
             
-            // Réinitialise le jeton de session après une recherche réussie
             if (window.google && window.google.maps && window.google.maps.places) {
                 this.sessionToken = new google.maps.places.AutocompleteSessionToken();
             }
@@ -256,9 +237,6 @@ export class ApiManager {
 
     /**
      * Calcule un itinéraire à vélo
-     * @param {string} fromPlaceId - L'ID de lieu Google du départ
-     * @param {string} toPlaceId - L'ID de lieu Google de l'arrivée
-     * @returns {Promise<Object>} Un objet d'itinéraire
      */
     async fetchBicycleRoute(fromPlaceId, toPlaceId) {
         console.log(`🚴 API Google Routes (VÉLO): Calcul de ${fromPlaceId} à ${toPlaceId}`);
@@ -266,12 +244,8 @@ export class ApiManager {
         const API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
         const body = {
-            origin: { 
-                placeId: fromPlaceId 
-            },
-            destination: { 
-                placeId: toPlaceId 
-            },
+            origin: { placeId: fromPlaceId },
+            destination: { placeId: toPlaceId },
             travelMode: "BICYCLE",
             languageCode: "fr",
             units: "METRIC"
@@ -297,9 +271,7 @@ export class ApiManager {
             }
 
             const data = await response.json();
-            
             console.log("✅ Réponse de l'API Routes (vélo):", data);
-
             return data;
 
         } catch (error) {
