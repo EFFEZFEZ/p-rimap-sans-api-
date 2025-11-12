@@ -291,81 +291,78 @@
 
     <div id="itinerary-results-container" class="hidden">
         
-        <div id="itinerary-edit-panel">
-            <div class="itinerary-edit-header">
-                <button id="btn-back-to-dashboard-from-results" class="btn-icon-round">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                </button>
-                <h2>Itinéraires</h2>
-            </div>
-
-            <div class="itinerary-edit-form">
-                <div class="form-group" style="position: relative;">
-                    <label for="results-planner-from">DÉPART (obligatoire)</label>
-                    <input type="text" id="results-planner-from" placeholder="Gare, station, arrêt ou lieu" autocomplete="off">
-                    <div id="results-from-suggestions" class="autocomplete-suggestions"></div>
-                </div>
-
-                <button class="btn-icon-round btn-swap-vertical" id="results-btn-swap-direction" aria-label="Inverser le départ et l'arrivée">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2.6c0-1.1.9-2 2-2h16"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2.6c0 1.1-.9 2-2 2H3"/></svg>
-                </button>
-
-                <div class="form-group" style="position: relative;">
-                    <label for="results-planner-to">ARRIVÉE (obligatoire)</label>
-                    <input type="text" id="results-planner-to" placeholder="Gare, station, arrêt ou lieu" autocomplete="off">
-                    <div id="results-to-suggestions" class="autocomplete-suggestions"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="results-planner-when-btn">QUAND</label>
-                    <button id="results-planner-when-btn" class="btn-when-inline">
-                        <span>Partir maintenant</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        <div id="results-side-panel">
+            
+            <div id="itinerary-edit-panel">
+                <div class="itinerary-edit-header">
+                    <button id="btn-back-to-dashboard-from-results" class="btn-icon-round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                     </button>
-                    
-                    <div id="results-planner-options-popover" class="hidden">
-                        <div class="popover-tabs">
-                            <button class="popover-tab active" data-tab="partir">Partir</button>
-                            <button class="popover-tab" data-tab="arriver">Arriver</button>
-                        </div>
-                        <div class="popover-content">
-                            <div class="form-group">
-                                <label for="results-popover-date">DATE DU TRAJET</label>
-                                <select id="results-popover-date" class="real-select"></select>
+                    <h2>Itinéraires</h2>
+                </div>
+
+                <div class="itinerary-edit-form">
+                    <div class="form-group" style="position: relative;">
+                        <label for="results-planner-from">DÉPART (obligatoire)</label>
+                        <input type="text" id="results-planner-from" placeholder="Gare, station, arrêt ou lieu" autocomplete="off">
+                        <div id="results-from-suggestions" class="autocomplete-suggestions"></div>
+                    </div>
+
+                    <button class="btn-icon-round btn-swap-vertical" id="results-btn-swap-direction" aria-label="Inverser le départ et l'arrivée">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2.6c0-1.1.9-2 2-2h16"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2.6c0 1.1-.9 2-2 2H3"/></svg>
+                    </button>
+
+                    <div class="form-group" style="position: relative;">
+                        <label for="results-planner-to">ARRIVÉE (obligatoire)</label>
+                        <input type="text" id="results-planner-to" placeholder="Gare, station, arrêt ou lieu" autocomplete="off">
+                        <div id="results-to-suggestions" class="autocomplete-suggestions"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="results-planner-when-btn">QUAND</label>
+                        <button id="results-planner-when-btn" class="btn-when-inline">
+                            <span>Partir maintenant</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        
+                        <div id="results-planner-options-popover" class="hidden">
+                            <div class="popover-tabs">
+                                <button class="popover-tab active" data-tab="partir">Partir</button>
+                                <button class="popover-tab" data-tab="arriver">Arriver</button>
                             </div>
-                            <div class="popover-time-inputs">
+                            <div class="popover-content">
                                 <div class="form-group">
-                                    <label for="results-popover-hour">HEURE</label>
-                                    <select id="results-popover-hour" class="real-select"></select>
+                                    <label for="results-popover-date">DATE DU TRAJET</label>
+                                    <select id="results-popover-date" class="real-select"></select>
                                 </div>
-                                <div class="form-group">
-                                    <label for="results-popover-minute">MINUTES</label>
-                                    <select id="results-popover-minute" class="real-select"></select>
+                                <div class="popover-time-inputs">
+                                    <div class="form-group">
+                                        <label for="results-popover-hour">HEURE</label>
+                                        <select id="results-popover-hour" class="real-select"></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="results-popover-minute">MINUTES</label>
+                                        <select id="results-popover-minute" class="real-select"></select>
+                                    </div>
                                 </div>
+                                <button id="results-popover-submit-btn" class="btn btn-primary btn-popover-submit">Partir maintenant</button>
                             </div>
-                            <button id="results-popover-submit-btn" class="btn btn-primary btn-popover-submit">Partir maintenant</button>
                         </div>
                     </div>
+
+                    <button id="results-planner-submit-btn" class="btn btn-primary btn-full-width">Lancer la recherche</button>
                 </div>
-
-                <button id="results-planner-submit-btn" class="btn btn-primary btn-full-width">Lancer la recherche</button>
-
             </div>
-        </div>
-
-
-        <div class="results-body">
             
-            <div id="results-panel">
-                
+            <div class="results-list-wrapper">
                 <div class="results-list">
                     </div>
-
             </div>
 
-            <div id="results-map">
-                </div>
         </div>
+
+        <div id="results-map">
+            </div>
 
     </div>
 
