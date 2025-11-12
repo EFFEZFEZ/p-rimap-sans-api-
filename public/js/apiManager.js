@@ -220,8 +220,9 @@ export class ApiManager {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
                     
-                    // ✅ FIELDMASK FINAL - Inclut startTime et endTime pour les heures globales
-                    'X-Goog-FieldMask': 'routes.duration,routes.legs.startTime,routes.legs.endTime,routes.legs.steps.travelMode,routes.legs.steps.distanceMeters,routes.legs.steps.localizedValues,routes.legs.steps.navigationInstruction,routes.legs.steps.transitDetails'
+                    // ✅ FIELDMASK FINAL CORRIGÉ
+                    // Les heures de départ/arrivée se trouvent dans localizedValues, pas dans startTime/endTime
+                    'X-Goog-FieldMask': 'routes.duration,routes.legs.localizedValues,routes.legs.steps.travelMode,routes.legs.steps.distanceMeters,routes.legs.steps.localizedValues,routes.legs.steps.navigationInstruction,routes.legs.steps.transitDetails'
                 },
                 body: JSON.stringify(body)
             });
