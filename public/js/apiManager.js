@@ -15,10 +15,16 @@ export class ApiManager {
         this.placesService = null;
         this.sessionToken = null;
 
-        // Centre sur le canton de Périgueux
-        // Coordonnées du centre de Périgueux : 45.184029, 0.7211149
+        // Zone du Grand Périgueux / Dordogne
+        // Rectangle couvrant le Grand Périgueux et environs
+        this.perigueuxBounds = {
+            south: 45.10,  // Sud du Grand Périgueux
+            west: 0.60,    // Ouest
+            north: 45.30,  // Nord
+            east: 0.85     // Est
+        };
+        
         this.perigueuxCenter = { lat: 45.184029, lng: 0.7211149 };
-        this.perigueuxRadius = 10000; // 10 km en mètres
     }
 
     /**
@@ -111,7 +117,13 @@ export class ApiManager {
             if (this.placesService === google.maps.places.AutocompleteSuggestion) {
                 const request = {
                     input: inputString,
-                    locationBias: this.perigueuxCenter,
+                    // RESTRICTION stricte à la zone du Grand Périgueux (pas juste un biais)
+                    locationRestriction: {
+                        south: this.perigueuxBounds.south,
+                        west: this.perigueuxBounds.west,
+                        north: this.perigueuxBounds.north,
+                        east: this.perigueuxBounds.east
+                    },
                     includedPrimaryTypes: ["locality", "sublocality", "postal_code", "route", "street_address"],
                     region: "fr",
                     sessionToken: this.sessionToken,
@@ -131,14 +143,18 @@ export class ApiManager {
                 
                 return results;
             } else {
-                // Fallback : ancienne API
+                // Fallback : ancienne API avec strictBounds
                 return new Promise((resolve, reject) => {
                     const request = {
                         input: inputString,
                         sessionToken: this.sessionToken,
                         componentRestrictions: { country: 'fr' },
-                        location: new google.maps.LatLng(this.perigueuxCenter.lat, this.perigueuxCenter.lng),
-                        radius: this.perigueuxRadius,
+                        // Restriction stricte à la zone (pas juste location + radius)
+                        bounds: new google.maps.LatLngBounds(
+                            new google.maps.LatLng(this.perigueuxBounds.south, this.perigueuxBounds.west),
+                            new google.maps.LatLng(this.perigueuxBounds.north, this.perigueuxBounds.east)
+                        ),
+                        strictBounds: true, // IMPORTANT: force les résultats dans les bounds
                     };
 
                     this.placesService.getPlacePredictions(request, (predictions, status) => {
