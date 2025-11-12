@@ -1662,6 +1662,8 @@ details[open] .accordion-content {
     flex-direction: row; /* Panneau à gauche, carte à droite */
     flex: 1; /* Prend toute la hauteur restante sous le header */
     background: var(--bg-light);
+    /* Assure que le conteneur ne dépasse pas la hauteur de la vue */
+    height: calc(100vh - 65px); /* Hauteur de la vue - hauteur du header */
 }
 
 /* NOUVEAU : Panneau latéral (colonne) */
@@ -1785,7 +1787,7 @@ details[open] .accordion-content {
     display: flex;
     gap: 0.5rem;
     flex: 1;
-    align-items: center;
+    align-items: center; /* Aligne verticalement les segments et les flèches */
 }
 .route-line-badge {
     display: inline-flex;
@@ -1798,21 +1800,31 @@ details[open] .accordion-content {
     min-width: 28px;
     text-align: center;
 }
-.route-summary-icon {
+
+/* *** NOUVEAUX STYLES POUR LE RÉCAPITULATIF DE TRAJET *** */
+.summary-segment {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 0.25rem; /* Espace entre l'icône et la durée */
+    min-width: 40px; /* Donne un peu d'air */
+    text-align: center;
+}
+.summary-segment .segment-icon {
     color: var(--text-secondary);
 }
-.route-summary-icon svg {
-    width: 20px;
-    height: 20px;
+.summary-segment .segment-duration {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 600;
+    color: var(--text-secondary);
 }
 .route-summary-separator {
     color: var(--text-secondary);
     font-size: 0.8rem;
-    margin: 0 -0.15rem;
+    margin: 0 0.25rem;
+    padding-bottom: 1rem; /* Aligne la flèche avec les icônes, pas avec le texte */
 }
+/* *** FIN DES NOUVEAUX STYLES *** */
 
 
 .route-option-right {
@@ -1940,6 +1952,7 @@ details[open] .accordion-content {
     /* Rétablit la direction en colonne, avec la carte en HAUT */
     #itinerary-results-container {
         flex-direction: column-reverse;
+        height: calc(100vh - 65px); /* Hauteur fixe */
     }
     
     /* La carte a une hauteur fixe */
