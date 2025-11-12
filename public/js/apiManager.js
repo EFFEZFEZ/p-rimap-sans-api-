@@ -10,12 +10,14 @@ export class ApiManager {
         this.placesService = null;
         this.sessionToken = null;
 
-        // Limite l'autosuggestion à la Dordogne
-        this.dordogneBounds = {
-            south: 44.5,
-            west: 0.0,
-            north: 45.7,
-            east: 1.5,
+        // Centre sur Périgueux avec un rayon de 10km
+        // Coordonnées du centre de Périgueux : 45.184029, 0.7211149
+        this.locationBias = {
+            center: {
+                latitude: 45.184029,
+                longitude: 0.7211149
+            },
+            radius: 10000 // 10 km en mètres
         };
     }
 
@@ -110,10 +112,7 @@ export class ApiManager {
                 const request = {
                     input: inputString,
                     locationBias: {
-                        south: this.dordogneBounds.south,
-                        west: this.dordogneBounds.west,
-                        north: this.dordogneBounds.north,
-                        east: this.dordogneBounds.east,
+                        circle: this.locationBias
                     },
                     includedPrimaryTypes: ["locality", "sublocality", "postal_code", "route", "street_address"],
                     region: "fr",
@@ -137,10 +136,7 @@ export class ApiManager {
                         sessionToken: this.sessionToken,
                         componentRestrictions: { country: 'fr' },
                         locationBias: {
-                            south: this.dordogneBounds.south,
-                            west: this.dordogneBounds.west,
-                            north: this.dordogneBounds.north,
-                            east: this.dordogneBounds.east,
+                            circle: this.locationBias
                         },
                     };
 
