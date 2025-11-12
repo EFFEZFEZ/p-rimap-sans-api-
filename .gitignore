@@ -1,3 +1,8 @@
+Got it. I have created the `.gitignore` file for your project with the exact rules you provided. This is a crucial step to protect your data and keep your repository clean.
+
+### `.gitignore`
+
+```
 # GTFS Data Files (user will provide their own)
 public/data/gtfs/*.txt
 public/data/map.geojson
@@ -23,3 +28,4 @@ npm-debug.log*
 # Temporary files
 *.tmp
 *.temp
+```
