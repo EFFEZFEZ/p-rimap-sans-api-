@@ -201,7 +201,7 @@ export class ApiManager {
                     // *** CORRECTION ICI ***
                     // Demande 'routes.legs' en entier pour obtenir tous les sous-champs
                     // (y compris departureStop.name) dont main.js a besoin.
-                    'X-Goog-FieldMask': 'routes.duration,routes.legs'
+                    'X-Goog-FieldMask': 'routes.duration,routes.legs.startTime,routes.legs.endTime,routes.legs.steps.travelMode,routes.legs.steps.duration,routes.legs.steps.navigationInstruction,routes.legs.steps.localizedValues,routes.legs.steps.transitDetails.transitLine.nameShort,routes.legs.steps.transitDetails.transitLine.color,routes.legs.steps.transitDetails.transitLine.textColor,routes.legs.steps.transitDetails.headsign,routes.legs.steps.transitDetails.departureStop.name,routes.legs.steps.transitDetails.departureTime,routes.legs.steps.transitDetails.arrivalStop.name,routes.legs.steps.transitDetails.arrivalTime,routes.legs.steps.transitDetails.stopCount'
                 },
                 body: JSON.stringify(body)
             });
