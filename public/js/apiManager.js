@@ -124,7 +124,8 @@ export class ApiManager {
                         north: this.perigueuxBounds.north,
                         east: this.perigueuxBounds.east
                     },
-                    includedPrimaryTypes: ["locality", "sublocality", "postal_code", "route", "street_address"],
+                    // Retirer includedPrimaryTypes pour avoir TOUS les types de résultats
+                    // (adresses, lieux, établissements, POI, etc.)
                     region: "fr",
                     sessionToken: this.sessionToken,
                 };
