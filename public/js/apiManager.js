@@ -294,8 +294,27 @@ export class ApiManager {
      */
     _buildDateTime(searchTime) {
         const { date, hour, minute } = searchTime;
-        const dateObj = new Date(date);
-        dateObj.setHours(parseInt(hour), parseInt(minute), 0, 0);
+        
+        // Si date est vide ou "today", utiliser la date actuelle
+        let dateObj;
+        if (!date || date === 'today' || date === "Aujourd'hui") {
+            dateObj = new Date();
+        } else {
+            dateObj = new Date(date);
+        }
+        
+        // Vérifier que la date est valide
+        if (isNaN(dateObj.getTime())) {
+            console.warn("⚠️ Date invalide, utilisation de la date actuelle");
+            dateObj = new Date();
+        }
+        
+        // Définir l'heure et les minutes
+        const hourInt = parseInt(hour) || 0;
+        const minuteInt = parseInt(minute) || 0;
+        dateObj.setHours(hourInt, minuteInt, 0, 0);
+        
+        console.log("🕒 DateTime construit:", dateObj.toISOString());
         return dateObj.toISOString();
     }
 
