@@ -740,7 +740,7 @@ function processGoogleRoutesResponse(data) {
             departureTime: formatGoogleTime(leg.startTime),
             arrivalTime: formatGoogleTime(leg.endTime),
             duration: formatGoogleDuration(route.duration),
-            summaryIcons: [], 
+            summarySegments: [], // *** MODIFIÉ: Remplacer summaryIcons par summarySegments
             steps: [] 
         };
 
@@ -748,7 +748,11 @@ function processGoogleRoutesResponse(data) {
             const duration = formatGoogleDuration(step.duration);
             
             if (step.travelMode === 'WALK') {
-                itinerary.summaryIcons.push({ type: 'WALK' });
+                // *** MODIFIÉ: Ajouter la durée au segment ***
+                itinerary.summarySegments.push({ 
+                    type: 'WALK', 
+                    duration: duration 
+                });
                 itinerary.steps.push({
                     type: 'WALK',
                     icon: ICONS.WALK,
@@ -764,11 +768,13 @@ function processGoogleRoutesResponse(data) {
                     const color = line.color || '#3388ff';
                     const textColor = line.textColor || '#ffffff';
 
-                    itinerary.summaryIcons.push({
+                    // *** MODIFIÉ: Ajouter les détails + durée au segment ***
+                    itinerary.summarySegments.push({
                         type: 'BUS',
                         name: shortName,
                         color: color,
-                        textColor: textColor
+                        textColor: textColor,
+                        duration: duration // Ajout de la durée du trajet en bus
                     });
 
                     const stopDetails = transit.stopDetails || {};
@@ -793,9 +799,9 @@ function processGoogleRoutesResponse(data) {
             }
         });
 
-        // Nettoyer les icônes WALK consécutives
-        itinerary.summaryIcons = itinerary.summaryIcons.filter((icon, index, self) => 
-            icon.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
+        // *** MODIFIÉ: Nettoyer les segments de marche consécutifs ***
+        itinerary.summarySegments = itinerary.summarySegments.filter((segment, index, self) => 
+            segment.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
         );
 
         return itinerary;
@@ -826,23 +832,35 @@ function renderItineraryResults(itineraries) {
         const card = document.createElement('div');
         card.className = 'route-option';
 
-        const summaryHtml = itinerary.summaryIcons.map(icon => {
-            if (icon.type === 'WALK') {
-                return `<div class="route-summary-icon walk">${ICONS.WALK}</div>`;
-            } else { 
-                return `<div class="route-line-badge" style="background-color: ${icon.color}; color: ${icon.textColor};">${icon.name}</div>`;
+        // *** NOUVELLE LOGIQUE HTML POUR LE RÉCAPITULATIF ***
+        const summarySegmentsHtml = itinerary.summarySegments.map(segment => {
+            if (segment.type === 'WALK') {
+                return `
+                    <div class="summary-segment segment-walk">
+                        <div class="segment-icon">${ICONS.WALK}</div>
+                        <span class="segment-duration">${segment.duration}</span>
+                    </div>
+                `;
+            } else { // BUS
+                return `
+                    <div class="summary-segment segment-bus">
+                        <div class="route-line-badge" style="background-color: ${segment.color}; color: ${segment.textColor};">${segment.name}</div>
+                        <span class="segment-duration">${segment.duration}</span>
+                    </div>
+                `;
             }
         }).join('<span class="route-summary-separator">></span>');
 
         card.innerHTML = `
             <div class="route-option-left">
-                ${summaryHtml}
+                ${summarySegmentsHtml}
             </div>
             <div class="route-option-right">
                 <span class="route-time">${itinerary.departureTime} &gt; ${itinerary.arrivalTime}</span>
                 <span class="route-duration">${itinerary.duration}</span>
             </div>
         `;
+        // *** FIN DE LA NOUVELLE LOGIQUE HTML ***
         
         const details = document.createElement('div');
         details.className = 'route-details hidden'; 
@@ -910,6 +928,11 @@ function formatGoogleDuration(durationString) {
         const seconds = parseInt(durationString.slice(0, -1));
         const minutes = Math.round(seconds / 60);
         if (minutes < 1) return "< 1 min";
+        if (minutes > 60) {
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return m === 0 ? `${h}h` : `${h}h${m}`;
+        }
         return `${minutes} min`;
     } catch (e) {
         return "";
@@ -1167,8 +1190,12 @@ function showResultsView() {
     dashboardContainer.classList.add('hidden');
     itineraryResultsContainer.classList.remove('hidden');
     mapContainer.classList.add('hidden');
-    document.body.classList.add('view-is-locked');
+    document.body.classList.add('view-is-locked'); // Verrouille le scroll
 
+    // Doit invalider la taille DES DEUX cartes
+    if (mapRenderer && mapRenderer.map) {
+        mapRenderer.map.invalidateSize();
+    }
     if (resultsMapRenderer && resultsMapRenderer.map) {
         resultsMapRenderer.map.invalidateSize();
     }
