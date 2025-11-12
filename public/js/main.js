@@ -730,7 +730,7 @@ function processGoogleRoutesResponse(data) {
     }
     return data.routes.map(route => {
         const leg = route.legs[0];                 
-        
+        // *** CORRECTION : Utiliser localizedValues pour les heures ***
         const departureTime = leg.localizedValues?.departureTime?.time?.text || "--:--";
         const arrivalTime = leg.localizedValues?.arrivalTime?.time?.text || "--:--";
                 
@@ -738,7 +738,6 @@ function processGoogleRoutesResponse(data) {
             departureTime: departureTime,
             arrivalTime: arrivalTime,
             duration: formatGoogleDuration(route.duration),
-            polyline: route.polyline?.encodedPolyline || null, // *** AJOUT DE LA POLYLINE ***
             summarySegments: [], 
             steps: []
         };
@@ -897,101 +896,6 @@ function renderItineraryResults(itineraries) {
         const details = document.createElement('div');
         details.className = 'route-details hidden'; 
 
-        // *** AJOUTS À FAIRE DANS main.js ***
-
-// 1. Ajouter une variable globale en haut du fichier (ligne ~20)
-let currentPolyline = null; // Pour stocker le tracé actuel
-
-// 2. Ajouter la fonction de décodage de polyline (après les autres helpers)
-/**
- * Décode une polyline Google encodée en tableau de coordonnées [lat, lng]
- */
-function decodePolyline(encoded) {
-    const poly = [];
-    let index = 0, len = encoded.length;
-    let lat = 0, lng = 0;
-    
-    while (index < len) {
-        let b, shift = 0, result = 0;
-        do {
-            b = encoded.charCodeAt(index++) - 63;
-            result |= (b & 0x1f) << shift;
-            shift += 5;
-        } while (b >= 0x20);
-        const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
-        lat += dlat;
-        
-        shift = 0;
-        result = 0;
-        do {
-            b = encoded.charCodeAt(index++) - 63;
-            result |= (b & 0x1f) << shift;
-            shift += 5;
-        } while (b >= 0x20);
-        const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
-        lng += dlng;
-        
-        poly.push([lat / 1e5, lng / 1e5]);
-    }
-    return poly;
-}
-
-// 3. MODIFIER la fonction renderItineraryResults() pour ajouter le clic
-/**
- * Affiche les itinéraires formatés dans la liste des résultats
- */
-function renderItineraryResults(itineraries) {
-    if (!resultsListContainer) return;
-    
-    resultsListContainer.innerHTML = ''; 
-
-    if (itineraries.length === 0) {
-        resultsListContainer.innerHTML = '<p class="results-message">Aucun itinéraire en transport en commun trouvé.</p>';
-        return;
-    }
-
-    itineraries.forEach((itinerary, index) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'route-option-wrapper';
-        
-        if (index === 0) {
-            wrapper.innerHTML += `<p class="route-option-title">Suggéré</p>`;
-        }
-
-        const card = document.createElement('div');
-        card.className = 'route-option';
-
-        const summarySegmentsHtml = itinerary.summarySegments.map(segment => {
-            if (segment.type === 'WALK') {
-                return `
-                    <div class="summary-segment segment-walk">
-                        <div class="segment-icon">${ICONS.WALK}</div>
-                        <span class="segment-duration">${segment.duration}</span>
-                    </div>
-                `;
-            } else { // BUS
-                return `
-                    <div class="summary-segment segment-bus">
-                        <div class="route-line-badge" style="background-color: ${segment.color}; color: ${segment.textColor};">${segment.name}</div>
-                        <span class="segment-duration">${segment.duration}</span>
-                    </div>
-                `;
-            }
-        }).join('<span class="route-summary-separator">></span>');
-
-        card.innerHTML = `
-            <div class="route-option-left">
-                ${summarySegmentsHtml}
-            </div>
-            <div class="route-option-right">
-                <span class="route-time">${itinerary.departureTime} &gt; ${itinerary.arrivalTime}</span>
-                <span class="route-duration">${itinerary.duration}</span>
-            </div>
-        `;
-        
-        const details = document.createElement('div');
-        details.className = 'route-details hidden'; 
-
         details.innerHTML = itinerary.steps.map(step => {
             if (step.type === 'WALK') {
                 const hasSubSteps = step.subSteps && step.subSteps.length > 0;
@@ -1002,12 +906,6 @@ function renderItineraryResults(itineraries) {
                         </div>
                         <div class="step-info">
                             <span class="step-instruction">Marche <span class="step-duration-inline">(${step.duration})</span></span>
-                            
-                            ${step.startTime ? `
-                            <div class="step-stop-point">
-                                <span class="step-time-detail">${step.startTime} → ${step.endTime || '--:--'}</span>
-                            </div>
-                            ` : ''}
                             
                             ${hasSubSteps ? `
                             <details class="intermediate-stops">
@@ -1025,6 +923,7 @@ function renderItineraryResults(itineraries) {
                 `;
             } else { // BUS
                 const hasIntermediateStops = step.intermediateStops && step.intermediateStops.length > 0;
+                // Calcule le nombre d'arrêts intermédiaires
                 const intermediateStopCount = hasIntermediateStops ? step.intermediateStops.length : (step.numStops > 1 ? step.numStops - 1 : 0);
                 
                 let stopCountLabel = 'Direct';
@@ -1070,86 +969,6 @@ function renderItineraryResults(itineraries) {
                 `;
             }
         }).join('');
-
-        // *** MODIFICATION IMPORTANTE : Gestion du clic ***
-        card.addEventListener('click', () => {
-            details.classList.toggle('hidden');
-            card.classList.toggle('is-active');
-            
-            // Si on ouvre les détails, afficher le tracé sur la carte
-            if (!details.classList.contains('hidden')) {
-                displayRouteOnMap(itinerary);
-            } else {
-                // Si on ferme les détails, effacer le tracé
-                clearRouteFromMap();
-            }
-        });
-
-        wrapper.appendChild(card);
-        wrapper.appendChild(details);
-        resultsListContainer.appendChild(wrapper);
-    });
-}
-
-// 4. Ajouter les fonctions d'affichage du tracé
-/**
- * Affiche le tracé d'un itinéraire sur la carte
- */
-function displayRouteOnMap(itinerary) {
-    if (!resultsMapRenderer || !resultsMapRenderer.map) {
-        console.warn("La carte des résultats n'est pas initialisée");
-        return;
-    }
-    
-    // Effacer l'ancien tracé s'il existe
-    clearRouteFromMap();
-    
-    // Vérifier si la polyline existe
-    if (!itinerary.polyline) {
-        console.warn("Pas de polyline disponible pour cet itinéraire");
-        return;
-    }
-    
-    try {
-        // Décoder la polyline
-        const coordinates = decodePolyline(itinerary.polyline);
-        
-        if (coordinates.length === 0) {
-            console.warn("Polyline décodée vide");
-            return;
-        }
-        
-        // Créer la ligne Leaflet
-        currentPolyline = L.polyline(coordinates, {
-            color: '#2563eb',
-            weight: 4,
-            opacity: 0.8,
-            lineJoin: 'round',
-            lineCap: 'round'
-        }).addTo(resultsMapRenderer.map);
-        
-        // Zoomer sur le tracé
-        resultsMapRenderer.map.fitBounds(currentPolyline.getBounds(), {
-            padding: [50, 50]
-        });
-        
-        console.log(`✅ Tracé affiché: ${coordinates.length} points`);
-        
-    } catch (error) {
-        console.error("Erreur lors de l'affichage du tracé:", error);
-    }
-}
-
-/**
- * Efface le tracé actuel de la carte
- */
-function clearRouteFromMap() {
-    if (currentPolyline && resultsMapRenderer && resultsMapRenderer.map) {
-        resultsMapRenderer.map.removeLayer(currentPolyline);
-        currentPolyline = null;
-        console.log("🗑️ Tracé effacé");
-    }
-}
 
 
         card.addEventListener('click', () => {
