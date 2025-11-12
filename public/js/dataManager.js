@@ -213,8 +213,10 @@ export class DataManager {
             const stops = this.stopTimesByStop[stopId] || [];
             stops.forEach(st => {
                 const trip = this.tripsByTripId[st.trip_id];
-                // Compare avec l'ID normalisé
-                if (trip && trip.service_id === normalizedServiceId) {
+
+                // *** CORRECTION APPLIQUÉE ICI AUSSI (par sécurité) ***
+                // Compare avec l'ID normalisé en utilisant startsWith
+                if (trip && trip.service_id.startsWith(normalizedServiceId)) {
                     const departureSeconds = this.timeToSeconds(st.departure_time);
                     if (departureSeconds >= currentSeconds) {
                         allDepartures.push({
@@ -381,8 +383,13 @@ export class DataManager {
         const activeTrips = [];
 
         this.trips.forEach(trip => {
-            // Compare avec l'ID normalisé
-            if (trip.service_id === normalizedServiceId) {
+            
+            // *** CORRECTION APPLIQUÉE ICI ***
+            // Au lieu de (trip.service_id === normalizedServiceId),
+            // nous vérifions si l'ID du voyage COMMENCE PAR l'ID de base.
+            // Cela inclut ":Timetable:8" ET ":Timetable:8:1" (Lignes K, R, etc.)
+            if (trip.service_id.startsWith(normalizedServiceId)) {
+                
                 const stopTimes = this.stopTimesByTrip[trip.trip_id];
                 if (!stopTimes || stopTimes.length < 2) return;
 
@@ -405,7 +412,7 @@ export class DataManager {
             }
         });
 
-        console.log(`[getActiveTrips] ${activeTrips.length} voyages actifs trouvés.`);
+        console.log(`[getActiveTrips] ${activeTrips.length} voyages actifs trouvés (Corrigé).`);
 
         return activeTrips;
     }
@@ -440,7 +447,7 @@ export class DataManager {
             const endTime = this.timeToSeconds(lastStop.arrival_time || lastStop.departure_time);
 
             if (startTime < earliestStart) earliestStart = startTime;
-            if (endTime > latestEnd) latestEnd = endTime;
+            if (endTime > latestEnd) latestEnd = latestEnd;
         });
 
         if (earliestStart === Infinity) earliestStart = 0;
