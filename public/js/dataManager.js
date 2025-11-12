@@ -54,6 +54,16 @@ export class DataManager {
             this.calendarDates = calendarDates;
             this.geoJson = geoJson;
 
+            // *** DEBUG LOG ***
+            console.log(`[Debug] Données brutes chargées:`);
+            console.log(`[Debug] ${this.routes.length} routes`);
+            console.log(`[Debug] ${this.trips.length} trips`);
+            console.log(`[Debug] ${this.stopTimes.length} stop_times`);
+            console.log(`[Debug] ${this.stops.length} stops`);
+            console.log(`[Debug] ${this.calendar.length} calendar entries`);
+            console.log(`[Debug] ${this.calendarDates.length} calendar_dates`);
+            // *** FIN DEBUG LOG ***
+
             console.log('🛠️  Pré-traitement des données...');
 
             // Indexer les routes pour un accès rapide
@@ -188,7 +198,8 @@ export class DataManager {
             }
         });
 
-        console.log(`Arrêts regroupés: ${this.masterStops.length} arrêts maîtres.`);
+        // *** DEBUG LOG ***
+        console.log(`[Debug] ${this.masterStops.length} arrêts maîtres (groupés) trouvés.`);
     }
 
     /**
@@ -319,8 +330,13 @@ export class DataManager {
                            String(date.getMonth() + 1).padStart(2, '0') +
                            String(date.getDate()).padStart(2, '0');
 
+        // *** DEBUG LOG ***
+        console.log(`[Debug getServiceId] Recherche service pour date: ${dateString} (jour: ${dayOfWeek})`);
+
         const exception = this.calendarDates.find(d => d.date === dateString);
         if (exception) {
+            // *** DEBUG LOG ***
+            console.log(`[Debug getServiceId] Exception trouvée: type ${exception.exception_type}, service_id ${exception.service_id}`);
             return exception.exception_type === '1' ? exception.service_id : null;
         }
 
@@ -330,6 +346,13 @@ export class DataManager {
             s.end_date >= dateString
         );
 
+        // *** DEBUG LOG ***
+        if (service) {
+            console.log(`[Debug getServiceId] Service calendrier trouvé: ${service.service_id}`);
+        } else {
+            console.warn(`[Debug getServiceId] Aucun service (calendar.txt) trouvé pour ${dateString}.`);
+        }
+
         return service ? service.service_id : null;
     }
 
@@ -337,7 +360,15 @@ export class DataManager {
      * Récupère tous les trips actifs pour un temps et une date (V4)
      */
     getActiveTrips(currentSeconds, date) {
+        
+        // *** DEBUG LOG ***
+        console.log(`[Debug getActiveTrips] Recherche de voyages à ${currentSeconds}s pour ${date.toISOString()}`);
+
         const serviceId = this.getServiceId(date);
+
+        // *** DEBUG LOG ***
+        console.log(`[Debug getActiveTrips] Service ID utilisé: ${serviceId}`);
+
         if (!serviceId) {
             return [];
         }
@@ -352,9 +383,7 @@ export class DataManager {
                 const firstStop = stopTimes[0];
                 const lastStop = stopTimes[stopTimes.length - 1];
                 
-                // *** CORRECTION APPLIQUÉE ***
-                // L'heure de début doit être 'arrival_time' (quand le bus arrive au terminus)
-                // et non 'departure_time' (quand il repart).
+                // (Utilise la correction précédente : arrival_time)
                 const startTime = this.timeToSeconds(firstStop.arrival_time);
                 const endTime = this.timeToSeconds(lastStop.arrival_time);
 
@@ -368,6 +397,10 @@ export class DataManager {
                 }
             }
         });
+
+        // *** DEBUG LOG ***
+        console.log(`[Debug getActiveTrips] ${activeTrips.length} voyages actifs trouvés.`);
+
         return activeTrips;
     }
     
@@ -401,7 +434,7 @@ export class DataManager {
             const endTime = this.timeToSeconds(lastStop.arrival_time || lastStop.departure_time);
 
             if (startTime < earliestStart) earliestStart = startTime;
-            if (endTime > latestEnd) latestEnd = latestEnd;
+            if (endTime > latestEnd) latestEnd = endTime;
         });
 
         if (earliestStart === Infinity) earliestStart = 0;
