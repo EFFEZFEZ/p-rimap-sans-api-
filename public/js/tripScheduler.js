@@ -1,9 +1,10 @@
 /**
  * tripScheduler.js
- * * * CORRIGÉ (V7 - Finale): Logique "gap-less" ET "flicker-less".
- * * L'état "MOVING" est maintenu à la seconde exacte de l'arrivée pour
- * * empêcher le popup de clignoter. L'état "WAITING" commence
- * * une seconde APRÈS l'arrivée.
+ * * * CORRIGÉ (V8 - Suppression des bus à l'arrêt)
+ * * Ne retourne que les bus en mouvement (état "moving").
+ * * Les bus à l'arrêt (terminus ou intermédiaire) ne sont plus gérés
+ * * et ne sont pas retournés, ce qui les fait disparaître de la carte
+ * * pour éliminer le clignotement des popups.
  */
 
 export class TripScheduler {
@@ -12,7 +13,7 @@ export class TripScheduler {
     }
 
     /**
-     * Récupère tous les trips "en service" (en mouvement OU en attente à un arrêt)
+     * Récupère tous les trips "en service" (en mouvement UNIQUEMENT)
      */
     getActiveTrips(currentSeconds, date) {
         if (!this.dataManager.isLoaded) {
@@ -23,15 +24,16 @@ export class TripScheduler {
         const activeBuses = [];
 
         activeTrips.forEach(({ tripId, trip, stopTimes, route }) => {
+            // findCurrentState ne retourne plus que 'moving' ou 'null'
             const state = this.findCurrentState(stopTimes, currentSeconds); 
             
-            if (state) {
+            if (state) { // N'est vrai que si state.type === 'moving'
                 activeBuses.push({
                     tripId,
                     trip,
                     route,
-                    segment: state.type === 'moving' ? state : null, 
-                    position: state.type === 'waiting_at_stop' ? state.position : null,
+                    segment: state, // 'state' EST le segment 'moving'
+                    position: null, // La position stationnaire n'existe plus
                     currentSeconds
                 });
             }
@@ -42,48 +44,33 @@ export class TripScheduler {
 
 
     /**
-     * CORRIGÉ (Logique V7): "Gap-less" (anti-disparition) et "Flicker-less"
+     * CORRIGÉ (Logique V8): Ne retourne QUE l'état "moving".
+     * Si le bus n'est pas en mouvement, retourne null.
      */
     findCurrentState(stopTimes, currentSeconds) {
-        if (!stopTimes || stopTimes.length === 0) {
+        if (!stopTimes || stopTimes.length < 2) {
+            // A besoin d'au moins 2 arrêts (départ/arrivée) pour un segment de mouvement
             return null;
         }
 
-        const firstStop = stopTimes[0];
-        const firstArrivalTime = this.dataManager.timeToSeconds(firstStop.arrival_time);
-        const firstDepartureTime = this.dataManager.timeToSeconds(firstStop.departure_time);
+        // Cas 1 (Attente au premier arrêt) a été supprimé.
+        // Le bus n'apparaîtra pas avant son heure de départ du premier arrêt.
 
-        // Cas 1: En attente au premier arrêt (terminus de départ)
-        // Le bus ATTEND de [arrivée] jusqu'à [départ - 1 seconde]
-        // Si l'heure est EXACTEMENT l'heure de départ, il passe en "MOVING" (Cas 2)
-        if (currentSeconds >= firstArrivalTime && currentSeconds < firstDepartureTime) {
-            const stopInfo = this.dataManager.getStop(firstStop.stop_id);
-            if (!stopInfo) return null;
-            
-            return {
-                type: 'waiting_at_stop',
-                position: { lat: parseFloat(stopInfo.stop_lat), lon: parseFloat(stopInfo.stop_lon) },
-                stopInfo: stopInfo,
-                nextDepartureTime: firstDepartureTime
-            };
-        }
-        
-        // Cas 2: En mouvement ou en attente à un arrêt intermédiaire
+        // Cas 2: En mouvement
         for (let i = 1; i < stopTimes.length; i++) {
             const currentStop = stopTimes[i];
             const prevStop = stopTimes[i - 1];
 
             const arrivalTime = this.dataManager.timeToSeconds(currentStop.arrival_time);
-            const departureTime = this.dataManager.timeToSeconds(currentStop.departure_time);
             const prevDepartureTime = this.dataManager.timeToSeconds(prevStop.departure_time);
 
-            // *** NOUVELLE LOGIQUE V7 ***
-            // La logique est inversée pour donner la priorité à "MOVING"
-
-            // Priorité 1: Vérifier le mouvement (du départ jusqu'à l'arrivée INCLUSE)
+            // Vérifier le mouvement (du départ jusqu'à l'arrivée INCLUSE)
             // ex: Repart 10:00:00, arrive 10:02:00.
             //     Est "en mouvement" de 10:00:00 à 10:02:00 (inclus).
-            //     Cela empêche le clignotement à l'arrivée.
+            //
+            // À 10:02:01 (s'il attend) ou 10:00:01 (avant le départ), 
+            // cette condition est fausse et la fonction retourne null.
+            
             if (currentSeconds >= prevDepartureTime && currentSeconds <= arrivalTime) {
                 const prevStopInfo = this.dataManager.getStop(prevStop.stop_id);
                 const currentStopInfo = this.dataManager.getStop(currentStop.stop_id);
@@ -99,22 +86,10 @@ export class TripScheduler {
                 };
             }
 
-            // Priorité 2: Vérifier l'attente (COMMENCE 1s APRÈS l'arrivée)
-            // ex: Arrive 10:02:00, repart 10:03:00.
-            //     Est "en attente" de 10:02:01 à 10:03:00.
-            if (currentSeconds > arrivalTime && currentSeconds <= departureTime) {
-                const stopInfo = this.dataManager.getStop(currentStop.stop_id);
-                if (!stopInfo) return null;
-                
-                return {
-                    type: 'waiting_at_stop',
-                    position: { lat: parseFloat(stopInfo.stop_lat), lon: parseFloat(stopInfo.stop_lon) },
-                    stopInfo: stopInfo,
-                    nextDepartureTime: departureTime
-                };
-            }
+            // Cas d'attente à l'arrêt (Priorité 2) a été supprimé.
         }
         
+        // Si aucune condition de "mouvement" n'est remplie, le bus est à l'arrêt
         return null; 
     }
 
