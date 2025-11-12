@@ -2,13 +2,13 @@
  * mapRenderer.js - VERSION FINALE (Audit V4)
  * Gère l'affichage de la carte Leaflet et le rendu des bus et routes
  *
- * *** CORRECTION (V10 - Anti-clignotement) ***
- * - Supprime les fonctions updateMovingBusPopup et updateStationaryBusPopup.
- * - Modifie updateBusMarkers pour NE PLUS JAMAIS appeler setContent()
- * sur un popup déjà ouvert.
- * - Le contenu du popup est généré une seule fois à l'ouverture (dans 'popupopen')
- * et n'est plus jamais modifié, ce qui élimine le clignotement.
- * - Conserve le changement visuel de l'icône (classe 'bus-icon-waiting').
+ * *** CORRECTION (V11 - Anti-clignotement FINAL) ***
+ * - Supprime la ligne 'classList.toggle('bus-icon-waiting')'
+ * dans updateBusMarkers.
+ * - C'est ce changement de classe sur l'icône qui forçait le
+ * redessinage du marqueur par Leaflet et faisait clignoter le popup.
+ * - Le bus aura désormais la MÊME apparence (icône)
+ * qu'il soit en mouvement ou à l'arrêt.
  */
 
 export class MapRenderer {
@@ -211,9 +211,8 @@ export class MapRenderer {
     }
 
     /**
-     * MODIFIÉ (V10 - Anti-clignotement)
-     * Ne met à jour que la position (setLatLng) et l'icône (classe),
-     * mais NE TOUCHE PLUS au contenu du popup (setContent).
+     * MODIFIÉ (V11 - Anti-clignotement FINAL)
+     * La ligne 'classList.toggle' a été SUPPRIMÉE.
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -245,19 +244,19 @@ export class MapRenderer {
                 markerData.bus = bus; 
                 markerData.marker.setLatLng([lat, lon]);
                 
-                // bus.segment est 'null' si le bus est à l'arrêt
+                // *** CORRECTION V11 ***
+                // La ligne ci-dessous a été supprimée car elle
+                // causait le redessinage du marqueur et le clignotement du popup.
+                /*
                 const isWaiting = !bus.segment; 
                 const iconElement = markerData.marker.getElement();
                 if (iconElement) {
                     iconElement.classList.toggle('bus-icon-waiting', isWaiting);
                 }
+                */
                 
-                // *** CORRECTION V10 ***
-                // On ne fait RIEN si le popup est ouvert.
-                // On ne met PAS à jour son contenu pour éviter le clignotement.
+                // On ne touche toujours pas au popup s'il est ouvert.
                 
-                // (Suppression de la logique 'if (markerData.marker.isPopupOpen()) { ... }')
-
             } else {
                 // Nouveau marqueur
                 const markerData = this.createBusMarker(bus, tripScheduler, busId);
@@ -284,11 +283,6 @@ export class MapRenderer {
             }
         }
     }
-
-    /**
-     * FONCTIONS updateMovingBusPopup et updateStationaryBusPopup SUPPRIMÉES (V10)
-     */
-
 
     /**
      * Crée le contenu popup avec une structure HTML unifiée
@@ -332,13 +326,10 @@ export class MapRenderer {
             etaText = departureText;
         }
 
-        // Structure HTML unifiée (utilisée pour les DEUX états)
-        // Les data-update ne sont plus utilisés pour la mise à jour,
-        // mais ne posent pas de problème.
         const detailsHtml = `
-            <p><strong>Statut:</strong> <span data-update="state">${stateText}</span></p>
-            <p><strong data-update="next-stop-label">${nextStopLabelText}</strong> <span data-update="next-stop-value">${nextStopText}</span></p>
-            <p><strong data-update="eta-label">${etaLabelText}</strong> <span data-update="eta-value">${etaText}</span></p>
+            <p><strong>Statut:</strong> <span>${stateText}</span></p>
+            <p><strong>${nextStopLabelText}</strong> <span>${nextStopText}</span></p>
+            <p><strong>${etaLabelText}</strong> <span>${etaText}</span></p>
             <p class="realtime-notice"><em>État au moment du clic</em></p>
         `;
 
@@ -347,7 +338,7 @@ export class MapRenderer {
                 <div class="info-popup-header" style="background: ${routeColor}; color: ${textColor};">
                     Ligne ${routeShortName}
                 </div>
-                <div class.info-popup-body bus-details">
+                <div class="info-popup-body bus-details">
                     ${detailsHtml}
                 </div>
             </div>
@@ -356,7 +347,7 @@ export class MapRenderer {
 
     /**
      * Création d'un marqueur avec état initial
-     * (Logique 'isWaiting' conservée pour l'icône - V10)
+     * (Logique 'isWaiting' supprimée de className - V11)
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -365,9 +356,10 @@ export class MapRenderer {
         const routeColor = route?.route_color ? `#${route.route_color}` : '#FFC107';
         const textColor = route?.route_text_color ? `#${route.route_text_color}` : '#ffffff';
 
-        // L'état 'isWaiting' est important pour l'apparence de l'icône
-        const isWaiting = !bus.segment; 
-        const iconClassName = isWaiting ? 'bus-icon-rect bus-icon-waiting' : 'bus-icon-rect';
+        // *** CORRECTION V11 ***
+        // L'état 'isWaiting' n'est plus utilisé pour définir la classe
+        // pour empêcher le changement d'icône.
+        const iconClassName = 'bus-icon-rect'; 
 
         // Ajout d'une classe de statut (perturbation, etc.)
         const statusClass = bus.currentStatus ? `bus-status-${bus.currentStatus}` : 'bus-status-normal';
@@ -517,7 +509,7 @@ export class MapRenderer {
     createStopPopupContent(masterStop, departures, currentSeconds) {
         let html = `<div class="info-popup-content">`;
         html += `<div class="info-popup-header">${masterStop.stop_name}</div>`;
-        html += `<div class.info-popup-body">`; 
+        html += `<div class="info-popup-body">`; // Correction du typo 'class.'
 
         if (departures.length === 0) {
             html += `<div class="departure-item empty">Aucun prochain passage trouvé.</div>`;
