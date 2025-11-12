@@ -6,6 +6,14 @@
  * - Implémente la logique GTFS complète pour getServiceId (gère type 1 et 2)
  * - CORRIGE l'incohérence des service_id ('.timetable:' vs ':Timetable:')
  * en normalisant les ID dans getActiveTrips et getUpcomingDepartures.
+ *
+ * *** CORRECTION (Basée sur logs) ***
+ * - 'getServiceId' est remplacée par 'getServiceIds' (pluriel)
+ * - La fonction utilise 'filter'/'forEach' au lieu de 'find' pour
+ * récupérer TOUS les services actifs d'une journée (ex: service
+ * de jour + service de nuit) et pas seulement le premier.
+ * - 'getActiveTrips' et 'getUpcomingDepartures' sont mis à jour
+ * pour vérifier si un trip_id est DANS le tableau des services.
  */
 
 export class DataManager {
@@ -90,14 +98,13 @@ export class DataManager {
             console.log('✅ Données chargées et traitées.');
             this.isLoaded = true;
 
-            // --- AJOUT DEBUG (Étape 2) ---
+            // --- DEBUG : Log des service_id uniques dans trips.txt ---
             try {
                 const allTripServiceIds = new Set(this.trips.map(t => t.service_id));
                 console.log("[DEBUG] Tous les service_id uniques trouvés dans trips.txt :", allTripServiceIds);
             } catch (e) {
                 console.error("Erreur lors du debug des service_id", e);
             }
-            // --- FIN AJOUT DEBUG ---
 
         } catch (error) {
             console.error('Erreur fatale lors du chargement des données:', error);
@@ -207,14 +214,20 @@ export class DataManager {
 
     /**
      * Récupère les prochains départs pour une liste d'arrêts (V4)
+     * CORRIGÉ: Utilise getServiceIds (pluriel)
      */
     getUpcomingDepartures(stopIds, currentSeconds, date, limit = 5) {
-        const serviceId = this.getServiceId(date);
+        // --- MODIFICATION ---
+        // Récupère un TABLEAU de services actifs
+        const serviceIds = this.getServiceIds(date);
         
-        // *** CORRECTION INCOHÉRENCE GTFS ***
-        // Normalise l'ID pour correspondre à trips.txt
-        const normalizedServiceId = serviceId ? serviceId.replace(".timetable:", ":Timetable:") : null;
-        if (!normalizedServiceId) return [];
+        // Normalise TOUS les IDs et les met dans un Set pour recherche rapide
+        const normalizedServiceIds = new Set(
+            serviceIds.map(id => id ? id.replace(".timetable:", ":Timetable:") : null)
+        );
+        // --- FIN MODIFICATION ---
+        
+        if (normalizedServiceIds.size === 0) return [];
 
         let allDepartures = [];
 
@@ -222,8 +235,11 @@ export class DataManager {
             const stops = this.stopTimesByStop[stopId] || [];
             stops.forEach(st => {
                 const trip = this.tripsByTripId[st.trip_id];
-                // Compare avec l'ID normalisé
-                if (trip && trip.service_id === normalizedServiceId) {
+                
+                // --- MODIFICATION ---
+                // Vérifie si le service_id du voyage est DANS le Set
+                if (trip && normalizedServiceIds.has(trip.service_id)) {
+                // --- FIN MODIFICATION ---
                     const departureSeconds = this.timeToSeconds(st.departure_time);
                     if (departureSeconds >= currentSeconds) {
                         allDepartures.push({
@@ -296,7 +312,17 @@ export class DataManager {
      * Convertit le temps HH:MM:SS en secondes
      */
     timeToSeconds(timeStr) {
-        const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+        // Gère le cas où timeStr est undefined ou null
+        if (!timeStr) {
+            console.warn("Tentative de convertir un temps invalide en secondes:", timeStr);
+            return 0; 
+        }
+        const parts = timeStr.split(':').map(Number);
+        if (parts.length !== 3 || parts.some(isNaN)) {
+             console.warn("Format de temps invalide:", timeStr);
+             return 0;
+        }
+        const [hours, minutes, seconds] = parts;
         return hours * 3600 + minutes * 60 + seconds;
     }
     
@@ -319,24 +345,25 @@ export class DataManager {
 
     /**
      * *** FONCTION CORRIGÉE (LOGIQUE GTFS COMPLÈTE) ***
-     * Récupère le service_id pour la date donnée en respectant 
-     * la priorité de calendar_dates sur calendar.
+     * Récupère TOUS les service_id pour la date donnée
+     * (Renommée de getServiceId à getServiceIds)
      */
-    getServiceId(date) {
+    getServiceIds(date) {
         const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
         const dateString = date.getFullYear() +
                            String(date.getMonth() + 1).padStart(2, '0') +
                            String(date.getDate()).padStart(2, '0');
 
-        // Étape 1: Vérifier les AJOUTS (type 1) dans calendar_dates.txt
-        const addedService = this.calendarDates.find(d => 
-            d.date === dateString && d.exception_type === '1'
-        );
+        // --- NOUVELLE LOGIQUE ---
+        const activeServiceIds = new Set();
 
-        if (addedService) {
-            console.log(`[getServiceId] Service AJOUTÉ trouvé (type 1): ${addedService.service_id}`);
-            return addedService.service_id;
-        }
+        // Étape 1: Vérifier les AJOUTS (type 1) dans calendar_dates.txt
+        // Utilise forEach au lieu de find pour en récupérer plusieurs
+        this.calendarDates.forEach(d => {
+            if (d.date === dateString && d.exception_type === '1') {
+                activeServiceIds.add(d.service_id);
+            }
+        });
 
         // Étape 2: Si aucun ajout, trouver les SUPPRESSIONS (type 2) pour aujourd'hui
         const removedServiceIds = new Set();
@@ -346,47 +373,57 @@ export class DataManager {
             }
         });
 
-        if (removedServiceIds.size > 0) {
-            console.log(`[getServiceId] Services SUPPRIMÉS (type 2) trouvés:`, Array.from(removedServiceIds));
-        }
-
         // Étape 3: Vérifier le calendrier régulier (calendar.txt)
-        const regularService = this.calendar.find(s => 
-            s[dayOfWeek] === '1' &&
-            s.start_date <= dateString &&
-            s.end_date >= dateString &&
-            !removedServiceIds.has(s.service_id) // IMPORTANT: Ne doit pas être supprimé
-        );
+        // Utilise forEach au lieu de find
+        this.calendar.forEach(s => {
+            if (s[dayOfWeek] === '1' &&
+                s.start_date <= dateString &&
+                s.end_date >= dateString &&
+                !removedServiceIds.has(s.service_id)) // IMPORTANT: Ne doit pas être supprimé
+            {
+                activeServiceIds.add(s.service_id);
+            }
+        });
 
-        if (regularService) {
-            console.log(`[getServiceId] Service régulier (calendar.txt) trouvé: ${regularService.service_id}`);
-            return regularService.service_id;
+        // Étape 4: Gérer les suppressions d'ajouts (rare, mais correct)
+        // Si un service a été AJOUTÉ (type 1) mais aussi SUPPRIMÉ (type 2)
+        removedServiceIds.forEach(removedId => {
+            if (activeServiceIds.has(removedId)) {
+                activeServiceIds.delete(removedId);
+            }
+        });
+
+        // Étape 5: Retourner le résultat
+        if (activeServiceIds.size === 0) {
+            console.warn(`[getServiceIds] Aucun service valide trouvé pour ${dateString}.`);
+            return [];
         }
 
-        // Étape 4: Aucun service trouvé
-        console.warn(`[getServiceId] Aucun service valide trouvé pour ${dateString}.`);
-        return null;
+        const servicesArray = Array.from(activeServiceIds);
+        console.log(`[getServiceIds] Services actifs trouvés (${servicesArray.length}):`, servicesArray);
+        return servicesArray;
     }
+
 
     /**
      * Récupère tous les trips actifs pour un temps et une date (V4)
+     * CORRIGÉ: Utilise getServiceIds (pluriel)
      */
     getActiveTrips(currentSeconds, date) {
         
-        const serviceId = this.getServiceId(date); // Ex: .timetable:8
-
-        // --- AJOUT DEBUG (Étape 1) ---
-        console.log("[DEBUG] Service ID trouvé dans calendar.txt pour aujourd'hui :", serviceId);
-        // --- FIN AJOUT DEBUG ---
+        // --- MODIFICATION ---
+        // Récupère un TABLEAU de services
+        const serviceIds = this.getServiceIds(date);
         
-        // *** CORRECTION DE L'INCOHÉRENCE GTFS ***
-        // Normalise l'ID pour correspondre au format de trips.txt (ex: :Timetable:8)
-        const normalizedServiceId = serviceId ? serviceId.replace(".timetable:", ":Timetable:") : null;
-
-        console.log(`[getActiveTrips] Service ID original (calendar): ${serviceId}`);
-        console.log(`[getActiveTrips] Service ID normalisé (trips): ${normalizedServiceId}`);
+        // Normalise TOUS les IDs et les met dans un Set pour recherche rapide
+        const normalizedServiceIds = new Set(
+            serviceIds.map(id => id ? id.replace(".timetable:", ":Timetable:") : null)
+        );
+        // --- FIN MODIFICATION ---
         
-        if (!normalizedServiceId) {
+        console.log(`[getActiveTrips] Service IDs normalisés (trips):`, normalizedServiceIds);
+        
+        if (normalizedServiceIds.size === 0) {
             console.warn("[getActiveTrips] Aucun Service ID trouvé pour aujourd'hui. Aucun bus ne sera affiché.");
             return [];
         }
@@ -394,16 +431,16 @@ export class DataManager {
         const activeTrips = [];
 
         this.trips.forEach(trip => {
-            // Compare avec l'ID normalisé
-            if (trip.service_id === normalizedServiceId) {
+            // --- MODIFICATION ---
+            // Compare en utilisant le Set
+            if (normalizedServiceIds.has(trip.service_id)) {
+            // --- FIN MODIFICATION ---
                 const stopTimes = this.stopTimesByTrip[trip.trip_id];
                 if (!stopTimes || stopTimes.length < 2) return;
 
                 const firstStop = stopTimes[0];
                 const lastStop = stopTimes[stopTimes.length - 1];
                 
-                // *** CORRECTION (V2) *** // Utilise arrival_time pour le début (pour inclure l'attente au terminus)
-                // et arrival_time pour la fin.
                 const startTime = this.timeToSeconds(firstStop.arrival_time);
                 const endTime = this.timeToSeconds(lastStop.arrival_time);
 
