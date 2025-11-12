@@ -4,7 +4,8 @@
  * Ce module nécessitera l'activation des API "Places API" et "Routes API"
  * dans votre console Google Cloud, ainsi qu'une clé d'API.
  *
- * CORRECTION : Revient au constructeur correct "AutocompleteService"
+ * CORRECTION : Charge la v=beta de l'API Google Maps
+ * et utilise le constructeur "PlaceAutocompleteService" moderne.
  */
 
 export class ApiManager {
@@ -36,15 +37,18 @@ export class ApiManager {
 
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            // Nous chargeons la bibliothèque "places"
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places&callback=onGoogleMapsApiLoaded`;
+            
+            // *** CORRECTION ICI ***
+            // Ajout de "v=beta" pour charger les nouveaux services
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places&v=beta&callback=onGoogleMapsApiLoaded`;
+            
             script.async = true;
             script.defer = true;
             document.head.appendChild(script);
             
             // Le script ci-dessus appellera cette fonction globale
             window.onGoogleMapsApiLoaded = () => {
-                console.log("API Google Maps chargée avec succès.");
+                console.log("API Google Maps (v=beta) chargée avec succès.");
                 this.initServices();
                 resolve();
             };
@@ -65,13 +69,13 @@ export class ApiManager {
         }
         
         // *** CORRECTION ICI ***
-        // Utilise le service "AutocompleteService" (sans "Place")
-        this.autocompleteService = new window.google.maps.places.AutocompleteService();
+        // Utilise le service moderne "PlaceAutocompleteService"
+        this.autocompleteService = new window.google.maps.places.PlaceAutocompleteService();
         
         // Crée un jeton de session pour l'autocomplétion (meilleure facturation)
         this.sessionToken = new window.google.maps.places.AutocompleteSessionToken();
         
-        console.log("Service d'autocomplétion Google initialisé.");
+        console.log("Service d'autocomplétion Google (moderne) initialisé.");
     }
 
     /**
@@ -95,7 +99,8 @@ export class ApiManager {
                 bounds: this.dordogneBounds, 
                 strictBounds: false, // Ne pas limiter *strictement* à la Dordogne, juste préférer
             }, (predictions, status) => {
-                if (status !== window.google.maps.places.PlacesServiceStatus.OK || !predictions) {
+                // Le statut de la nouvelle API est juste une chaîne, pas un objet enum
+                if (status !== "OK" || !predictions) {
                     console.warn("Échec de l'autocomplétion Places:", status);
                     resolve([]); // Renvoyer une liste vide en cas d'échec
                 } else {
