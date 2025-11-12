@@ -108,13 +108,10 @@ let mapContainer, btnShowMap, btnBackToDashboardFromMap;
 
 // ÉLÉMENTS DOM (VUE 3: RÉSULTATS)
 let itineraryResultsContainer, btnBackToDashboardFromResults, resultsListContainer;
-// RÉCAPITULATIF STATIQUE
-let itinerarySummaryDisplay, summaryFrom, summaryTo, summaryWhen, btnShowPlannerEdit;
-// PLANIFICATEUR D'ÉDITION
-let itineraryPlannerEdit, resultsFromInput, resultsToInput, resultsFromSuggestions, resultsToSuggestions;
+// PLANIFICATEUR (RÉSULTATS)
+let resultsFromInput, resultsToInput, resultsFromSuggestions, resultsToSuggestions;
 let resultsSwapBtn, resultsWhenBtn, resultsPopover, resultsDate, resultsHour, resultsMinute;
 let resultsPopoverSubmitBtn, resultsPlannerSubmitBtn;
-
 
 // --- ÉLÉMENTS DOM (PLANIFICATEUR DU HALL) ---
 let hallPlannerSubmitBtn, hallFromInput, hallToInput, hallFromSuggestions, hallToSuggestions;
@@ -169,16 +166,8 @@ async function initializeApp() {
     itineraryResultsContainer = document.getElementById('itinerary-results-container');
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
     resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
-
-    // VUE 3: RÉCAPITULATIF STATIQUE
-    itinerarySummaryDisplay = document.getElementById('itinerary-summary-display');
-    summaryFrom = document.getElementById('summary-from');
-    summaryTo = document.getElementById('summary-to');
-    summaryWhen = document.getElementById('summary-when');
-    btnShowPlannerEdit = document.getElementById('btn-show-planner-edit');
     
-    // VUE 3: PLANIFICATEUR D'ÉDITION
-    itineraryPlannerEdit = document.getElementById('itinerary-planner-edit');
+    // VUE 3: PLANIFICATEUR (RÉSULTATS)
     resultsFromInput = document.getElementById('results-planner-from');
     resultsToInput = document.getElementById('results-planner-to');
     resultsFromSuggestions = document.getElementById('results-from-suggestions');
@@ -192,7 +181,7 @@ async function initializeApp() {
     resultsPopoverSubmitBtn = document.getElementById('results-popover-submit-btn');
     resultsPlannerSubmitBtn = document.getElementById('results-planner-submit-btn');
 
-    // VUE 1: PLANIFICATEUR DU HALL
+    // VUE 1: PLANIFICATEUR (HALL)
     hallPlannerSubmitBtn = document.getElementById('planner-submit-btn');
     hallFromInput = document.getElementById('hall-planner-from');
     hallToInput = document.getElementById('hall-planner-to');
@@ -353,16 +342,9 @@ function setupStaticEventListeners() {
     
     // --- Boutons de retour ---
     btnBackToDashboardFromMap.addEventListener('click', showDashboardHall);
-    btnBackToDashboardFromResults.addEventListener('click', showDashboardHall);
+    btnBackToDashboardFromResults.addEventListener('click', showDashboardHall); // Bouton "Retour" dans le panneau d'édition
     btnBackToHall.addEventListener('click', showDashboardHall);
     
-    // --- NOUVELLE LOGIQUE DE VUE RÉSULTATS ---
-    btnShowPlannerEdit.addEventListener('click', () => {
-        itinerarySummaryDisplay.classList.add('hidden');
-        itineraryPlannerEdit.classList.remove('hidden');
-        prefillEditPlanner();
-    });
-
 
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
     
@@ -466,15 +448,21 @@ function setupStaticEventListeners() {
         if (searchResultsContainer && !e.target.closest('#horaires-search-container')) {
             searchResultsContainer.classList.add('hidden');
         }
+        
         // Fermer les popovers des deux formulaires
-        if (hallPopover && !e.target.closest('.form-group-when') && !e.target.closest('#planner-options-popover')) {
-            hallPopover.classList.add('hidden');
-            hallWhenBtn.classList.remove('popover-active');
+        if (hallPopover && !e.target.closest('#hall-planner-from') && !e.target.closest('#hall-planner-to') && !e.target.closest('.form-group-when')) {
+            if (!hallPopover.classList.contains('hidden')) {
+                hallPopover.classList.add('hidden');
+                hallWhenBtn.classList.remove('popover-active');
+            }
         }
-        if (resultsPopover && !e.target.closest('.form-group-when') && !e.target.closest('#results-planner-options-popover')) {
-            resultsPopover.classList.add('hidden');
-            resultsWhenBtn.classList.remove('popover-active');
+        if (resultsPopover && !e.target.closest('#results-planner-from') && !e.target.closest('#results-planner-to') && !e.target.closest('.form-group-when')) {
+            if (!resultsPopover.classList.contains('hidden')) {
+                resultsPopover.classList.add('hidden');
+                resultsWhenBtn.classList.remove('popover-active');
+            }
         }
+
         // Fermer les suggestions des deux formulaires
         if (!e.target.closest('.form-group')) {
             if (hallFromSuggestions) hallFromSuggestions.style.display = 'none';
@@ -504,12 +492,6 @@ function setupPlannerListeners(source, elements) {
         
         // Exécuter la recherche
         await executeItinerarySearch(source, elements);
-
-        // Si la recherche vient des "résultats", cacher le formulaire et montrer le résumé
-        if (source === 'results') {
-            itineraryPlannerEdit.classList.add('hidden');
-            itinerarySummaryDisplay.classList.remove('hidden');
-        }
     });
 
     // Autocomplétion "Départ"
@@ -586,16 +568,10 @@ function setupPlannerListeners(source, elements) {
  * NOUVELLE FONCTION REFACTORISÉE
  * Exécute la recherche d'itinéraire en lisant les valeurs du formulaire source.
  * @param {string} source - 'hall' ou 'results'
+ * @param {object} sourceElements - Éléments DOM du formulaire qui a lancé la recherche
  */
-async function executeItinerarySearch(source) {
-    let elements;
-    if (source === 'hall') {
-        elements = { fromInput: hallFromInput, toInput: hallToInput, dateSelect: hallDate, hourSelect: hallHour, minuteSelect: hallMinute, popover: hallPopover };
-    } else {
-        elements = { fromInput: resultsFromInput, toInput: resultsToInput, dateSelect: resultsDate, hourSelect: resultsHour, minuteSelect: resultsMinute, popover: resultsPopover };
-    }
-
-    const { fromInput, toInput, dateSelect, hourSelect, minuteSelect, popover } = elements;
+async function executeItinerarySearch(source, sourceElements) {
+    const { fromInput, toInput, dateSelect, hourSelect, minuteSelect, popover } = sourceElements;
 
     if (!fromPlaceId || !toPlaceId) {
         alert("Veuillez sélectionner un point de départ et d'arrivée depuis les suggestions.");
@@ -610,8 +586,8 @@ async function executeItinerarySearch(source) {
         minute: minuteSelect.value
     };
     
-    // Mettre à jour la barre de résumé (visible ou non)
-    updateItinerarySummary(fromInput.value, toInput.value, searchTime, dateSelect);
+    // Synchroniser l'autre formulaire
+    prefillOtherPlanner(source, sourceElements);
 
     console.log(`Recherche Google API (source: ${source}):`, { from: fromPlaceId, to: toPlaceId, time: searchTime });
     
@@ -657,58 +633,47 @@ function setupDataDependentEventListeners() {
 
 /**
  * NOUVELLE FONCTION
- * Pré-remplit le formulaire d'édition avec les valeurs du formulaire principal.
+ * Pré-remplit l' *autre* formulaire avec les valeurs du formulaire source.
+ * @param {string} sourceFormName - 'hall' ou 'results'
+ * @param {object} sourceElements - Les éléments DOM du formulaire *source*
  */
-function prefillEditPlanner() {
+function prefillOtherPlanner(sourceFormName, sourceElements) {
+    let targetElements;
+    
+    if (sourceFormName === 'hall') {
+        targetElements = {
+            fromInput: resultsFromInput, toInput: resultsToInput,
+            dateSelect: resultsDate, hourSelect: resultsHour, minuteSelect: resultsMinute,
+            whenBtn: resultsWhenBtn, popover: resultsPopover, popoverSubmitBtn: resultsPopoverSubmitBtn
+        };
+    } else {
+        targetElements = {
+            fromInput: hallFromInput, toInput: hallToInput,
+            dateSelect: hallDate, hourSelect: hallHour, minuteSelect: hallMinute,
+            whenBtn: hallWhenBtn, popover: hallPopover, popoverSubmitBtn: hallPopoverSubmitBtn
+        };
+    }
+
     // Copier les valeurs de texte
-    resultsFromInput.value = hallFromInput.value;
-    resultsToInput.value = hallToInput.value;
+    targetElements.fromInput.value = sourceElements.fromInput.value;
+    targetElements.toInput.value = sourceElements.toInput.value;
     
     // Copier les sélections
-    resultsDate.value = hallDate.value;
-    resultsHour.value = hallHour.value;
-    resultsMinute.value = hallMinute.value;
+    targetElements.dateSelect.value = sourceElements.dateSelect.value;
+    targetElements.hourSelect.value = sourceElements.hourSelect.value;
+    targetElements.minuteSelect.value = sourceElements.minuteSelect.value;
     
     // Copier l'état du tab "Partir/Arriver"
-    const hallActiveTab = hallPopover.querySelector('.popover-tab.active').dataset.tab;
-    resultsPopover.querySelectorAll('.popover-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.tab === hallActiveTab);
+    const sourceActiveTab = sourceElements.popover.querySelector('.popover-tab.active').dataset.tab;
+    targetElements.popover.querySelectorAll('.popover-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === sourceActiveTab);
     });
     
     // Mettre à jour le texte du bouton "Quand"
-    resultsWhenBtn.querySelector('span').textContent = hallWhenBtn.querySelector('span').textContent;
+    targetElements.whenBtn.querySelector('span').textContent = sourceElements.whenBtn.querySelector('span').textContent;
 
     // Mettre à jour le texte du bouton de soumission du popover
-    resultsPopoverSubmitBtn.textContent = (hallActiveTab === 'arriver') ? "Valider l'arrivée" : 'Partir maintenant';
-}
-
-
-/**
- * Met à jour la barre de résumé statique
- * @param {string} fromText 
- * @param {string} toText 
- * @param {object} searchTime 
- * @param {HTMLSelectElement} dateSelect 
- */
-function updateItinerarySummary(fromText, toText, searchTime, dateSelect) {
-    if (summaryFrom) {
-        summaryFrom.textContent = fromText;
-    }
-    if (summaryTo) {
-        summaryTo.textContent = toText;
-    }
-    if (summaryWhen) {
-        const dateText = dateSelect.options[dateSelect.selectedIndex].text;
-        const hourText = String(searchTime.hour).padStart(2, '0');
-        const minuteText = String(searchTime.minute).padStart(2, '0');
-        const prefix = (searchTime.type === 'arriver') ? "Arrivée" : "Départ";
-        
-        if (dateText === "Aujourd'hui") {
-            summaryWhen.textContent = `${prefix} à ${hourText}h${minuteText}`;
-        } else {
-            summaryWhen.textContent = `${prefix} ${dateText.toLowerCase()} à ${hourText}h${minuteText}`;
-        }
-    }
+    targetElements.popoverSubmitBtn.textContent = (sourceActiveTab === 'arriver') ? "Valider l'arrivée" : 'Partir maintenant';
 }
 
 
@@ -1196,10 +1161,6 @@ function showDashboardHall() {
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
     });
-
-    // Réinitialiser la vue des résultats lors du retour au hall
-    itinerarySummaryDisplay.classList.remove('hidden');
-    itineraryPlannerEdit.classList.add('hidden');
 }
 
 function showResultsView() {
