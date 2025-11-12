@@ -1462,14 +1462,20 @@ function onSearchResultClick(stop) {
 
 /**
  * Fonction de mise à jour principale (pour la carte temps réel)
+ *
+ * *** CORRECTION APPLIQUÉE ***
+ * Suppression du paramètre 'timeInfo'. La fonction va maintenant
+ * chercher elle-même l'heure et la date auprès du 'timeManager',
+ * ce qui la rend plus robuste et moins dépendante du contexte d'appel.
  */
-function updateData(timeInfo) {
+function updateData() {
     if (!timeManager || !tripScheduler || !busPositionCalculator || !mapRenderer) {
         return;
     }
 
-    const currentSeconds = timeInfo ? timeInfo.seconds : timeManager.getCurrentSeconds();
-    const currentDate = timeInfo ? timeInfo.date : new Date(); 
+    // *** CORRECTION *** : Toujours sourcer le temps depuis le TimeManager
+    const currentSeconds = timeManager.getCurrentSeconds();
+    const currentDate = timeManager.getCurrentDate(); 
     
     updateClock(currentSeconds);
     
