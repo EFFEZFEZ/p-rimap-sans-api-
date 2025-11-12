@@ -1,5 +1,5 @@
 /**
- * apiManager.js - VERSION CORRIGÉE
+ * apiManager.js - VERSION CORRIGÉE avec arrêts intermédiaires
  * Gère tous les appels aux API externes (Google Places & Google Routes).
  * Utilise la NOUVELLE API Places (AutocompleteSuggestion) recommandée depuis mars 2025.
  *
@@ -7,7 +7,8 @@
  * 1. FieldMask corrigé selon la documentation officielle Google
  * 2. Utilisation de 'routes.legs.steps.transitDetails' (validé par la doc)
  * 3. Ajout de tous les champs nécessaires pour l'affichage
- * 4. Gestion d'erreurs améliorée
+ * 4. Ajout des arrêts intermédiaires (intermediateStops)
+ * 5. Gestion d'erreurs améliorée
  */
 
 export class ApiManager {
@@ -221,7 +222,11 @@ export class ApiManager {
                     //     "arrivalStop": { "name": "...", "location": {...} },
                     //     "departureStop": { "name": "...", "location": {...} },
                     //     "arrivalTime": "2023-08-26T10:49:42Z",
-                    //     "departureTime": "2023-08-26T10:35:15Z"
+                    //     "departureTime": "2023-08-26T10:35:15Z",
+                    //     "intermediateStops": [
+                    //       { "name": "Arrêt B", "location": {...} },
+                    //       { "name": "Arrêt C", "location": {...} }
+                    //     ]
                     //   },
                     //   "localizedValues": { "arrivalTime": {...}, "departureTime": {...} },
                     //   "headsign": "Direction name",
@@ -239,9 +244,9 @@ export class ApiManager {
                     //   "stopCount": 5
                     // }
                     //
-                    // NOTE CRITIQUE: Quand vous spécifiez "routes.legs.steps.transitDetails" sans
-                    // sous-champs, l'API retourne AUTOMATIQUEMENT tous les champs imbriqués.
-                    // C'est confirmé par la doc officielle et les exemples.
+                    // NOTE CRITIQUE: En spécifiant "routes.legs.steps.transitDetails", l'API retourne
+                    // automatiquement TOUS les sous-champs, y compris intermediateStops.
+                    // C'est confirmé par la documentation officielle.
                     'X-Goog-FieldMask': 'routes.duration,routes.legs.steps.travelMode,routes.legs.steps.localizedValues,routes.legs.steps.navigationInstruction,routes.legs.steps.transitDetails'
                 },
                 body: JSON.stringify(body)
@@ -288,6 +293,18 @@ export class ApiManager {
 
             const data = await response.json();
             console.log("✅ Réponse de l'API Routes:", data);
+            
+            // Log des arrêts intermédiaires pour vérification
+            if (data.routes && data.routes[0]?.legs) {
+                data.routes[0].legs.forEach((leg, legIndex) => {
+                    leg.steps?.forEach((step, stepIndex) => {
+                        if (step.transitDetails?.stopDetails?.intermediateStops) {
+                            const count = step.transitDetails.stopDetails.intermediateStops.length;
+                            console.log(`✅ Étape ${legIndex}-${stepIndex}: ${count} arrêts intermédiaires trouvés`);
+                        }
+                    });
+                });
+            }
             
             // Vérifier si des routes ont été trouvées
             if (!data.routes || data.routes.length === 0) {
