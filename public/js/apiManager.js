@@ -117,7 +117,7 @@ export class ApiManager {
             if (this.placesService === google.maps.places.AutocompleteSuggestion) {
                 const request = {
                     input: inputString,
-                    // RESTRICTION stricte à la zone du Grand Périgueux (pas juste un biais)
+                    // RESTRICTION stricte à la zone du Grand Périgueux
                     locationRestriction: {
                         south: this.perigueuxBounds.south,
                         west: this.perigueuxBounds.west,
@@ -125,7 +125,6 @@ export class ApiManager {
                         east: this.perigueuxBounds.east
                     },
                     // Retirer includedPrimaryTypes pour avoir TOUS les types de résultats
-                    // (adresses, lieux, établissements, POI, etc.)
                     region: "fr",
                     sessionToken: this.sessionToken,
                 };
@@ -191,16 +190,22 @@ export class ApiManager {
 
         const API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
+        // Format simplifié basé sur la documentation officielle
+        // IMPORTANT: Ne pas inclure polylineQuality ou polylineEncoding avec TRANSIT
         const body = {
-            origin: { placeId: fromPlaceId },
-            destination: { placeId: toPlaceId },
-            travelMode: "TRANSIT",
-            
-            // Format correct selon la documentation Google
-            transitPreferences: {
-                allowedTravelModes: ["BUS"], // Uniquement le bus (pas SUBWAY, TRAIN, LIGHT_RAIL, RAIL)
-                routingPreference: "LESS_WALKING" // Minimiser la marche
+            origin: { 
+                placeId: fromPlaceId 
             },
+            destination: { 
+                placeId: toPlaceId 
+            },
+            travelMode: "TRANSIT",
+            transitPreferences: {
+                allowedTravelModes: ["BUS"], // Uniquement le bus
+                routingPreference: "LESS_WALKING"
+            },
+            languageCode: "fr",
+            units: "METRIC"
         };
 
         console.log("📤 Requête envoyée:", JSON.stringify(body, null, 2));
@@ -211,8 +216,8 @@ export class ApiManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
-                    // FieldMask simplifié pour TRANSIT
-                    'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.legs.steps'
+                    // FieldMask pour TRANSIT - simplifié et testé
+                    'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.legs.steps.transitDetails,routes.legs.steps.travelMode'
                 },
                 body: JSON.stringify(body)
             });
@@ -261,9 +266,15 @@ export class ApiManager {
         const API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
         const body = {
-            origin: { placeId: fromPlaceId },
-            destination: { placeId: toPlaceId },
-            travelMode: "BICYCLE", // Mode vélo
+            origin: { 
+                placeId: fromPlaceId 
+            },
+            destination: { 
+                placeId: toPlaceId 
+            },
+            travelMode: "BICYCLE",
+            languageCode: "fr",
+            units: "METRIC"
         };
 
         console.log("📤 Requête vélo envoyée:", JSON.stringify(body, null, 2));
@@ -274,7 +285,7 @@ export class ApiManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
-                    'X-Goog-FieldMask': 'routes.legs,routes.duration,routes.distanceMeters,routes.polyline,routes.steps'
+                    'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline'
                 },
                 body: JSON.stringify(body)
             });
