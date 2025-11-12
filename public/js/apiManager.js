@@ -196,11 +196,9 @@ export class ApiManager {
             destination: { placeId: toPlaceId },
             travelMode: "TRANSIT",
             
-            // IMPORTANT: allowedTravelModes ne supporte que les modes de transport en commun
-            // BUS uniquement (pas SUBWAY, TRAIN, LIGHT_RAIL, RAIL)
-            // La MARCHE est automatiquement incluse pour rejoindre les arrêts
+            // Format correct selon la documentation Google
             transitPreferences: {
-                allowedTravelModes: ["BUS"], // Uniquement le bus
+                allowedTravelModes: ["BUS"], // Uniquement le bus (pas SUBWAY, TRAIN, LIGHT_RAIL, RAIL)
                 routingPreference: "LESS_WALKING" // Minimiser la marche
             },
         };
@@ -213,15 +211,25 @@ export class ApiManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Goog-Api-Key': this.apiKey,
-                    'X-Goog-FieldMask': 'routes.legs,routes.duration,routes.distanceMeters,routes.polyline,routes.steps'
+                    // FieldMask simplifié pour TRANSIT
+                    'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.legs.steps'
                 },
                 body: JSON.stringify(body)
             });
 
+            console.log("📥 Statut de la réponse:", response.status);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error("❌ Erreur de l'API Routes:", errorData);
-                throw new Error(`API Routes a échoué: ${errorData.error?.message || response.statusText}`);
+                const errorText = await response.text();
+                console.error("❌ Texte d'erreur brut:", errorText);
+                
+                try {
+                    const errorData = JSON.parse(errorText);
+                    console.error("❌ Erreur de l'API Routes:", errorData);
+                    throw new Error(`API Routes a échoué: ${errorData.error?.message || response.statusText}`);
+                } catch (parseError) {
+                    throw new Error(`API Routes a échoué (${response.status}): ${errorText}`);
+                }
             }
 
             const data = await response.json();
