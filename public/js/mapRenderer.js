@@ -6,6 +6,10 @@
  * - Supprime l'appel destructeur à popup.setContent() pour les changements d'état.
  * - Unifie la logique de mise à jour atomique du DOM pour tous les états
  * (moving/stationary) afin d'éliminer le clignotement.
+ *
+ * *** CORRECTION 2 (basée sur retour utilisateur) ***
+ * - Suppression de la logique 'reopenPopupAt' (transfert au terminus)
+ * car les fichiers GTFS fournis n'utilisent pas de 'block_id'.
  */
 
 export class MapRenderer {
@@ -205,25 +209,26 @@ export class MapRenderer {
     }
 
     /**
-     * MODIFIÉ (Section 6.2 de l'audit)
+     * MODIFIÉ (Section 6.2 de l'audit ET suppression logique 'block_id')
      * Logique de mise à jour unifiée pour éliminer setContent()
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
         const markersToRemove = [];
         const activeBusIds = new Set();
-        let reopenPopupAt = null; // Pour le clignotement AU TERMINUS (sans block_id)
+        
+        // *** SUPPRIMÉ *** : let reopenPopupAt = null;
 
-        // 1. Trouver les marqueurs à supprimer (gère le clignotement au terminus)
+        // 1. Trouver les marqueurs à supprimer
         busesWithPositions.forEach(bus => activeBusIds.add(bus.tripId));
 
         Object.keys(this.busMarkers).forEach(busId => {
             if (!activeBusIds.has(busId)) {
-                // Ce marqueur va être supprimé (ex: Ligne D)
+                // Ce marqueur va être supprimé
                 const markerData = this.busMarkers[busId];
-                if (markerData.marker.isPopupOpen()) {
-                    reopenPopupAt = markerData.marker.getLatLng();
-                }
+                
+                // *** SUPPRIMÉ *** : Logique de capture 'reopenPopupAt'
+                
                 markersToRemove.push(markerData.marker);
                 delete this.busMarkers[busId];
             }
@@ -255,7 +260,6 @@ export class MapRenderer {
                     if (!popup.getElement()) {
                         // Le popup est en cours d'ouverture mais pas encore dans le DOM,
                         // setContent sera appelé par l'événement 'popupopen'.
-                        // Ne rien faire ici.
                     } else {
                         const popupElement = popup.getElement();
                         const currentState = bus.segment ? 'moving' : 'stationary';
@@ -281,12 +285,8 @@ export class MapRenderer {
                 // Nouveau marqueur
                 const markerData = this.createBusMarker(bus, tripScheduler, busId);
                 
-                // Si un popup était ouvert au même endroit (transfert terminus)
-                if (reopenPopupAt && markerData.marker.getLatLng().equals(reopenPopupAt, 0.0001)) {
-                    markerData.marker.openPopup();
-                    reopenPopupAt = null; 
-                }
-
+                // *** SUPPRIMÉ *** : Logique d'ouverture 'reopenPopupAt'
+                
                 this.busMarkers[busId] = markerData;
                 markersToAdd.push(markerData.marker);
             }
@@ -344,7 +344,8 @@ export class MapRenderer {
             // 'bus.position' contient les infos de l'arrêt (cf tripScheduler)
             const stopName = bus.position.stopInfo.stop_name;
             const departureTime = bus.position.nextDepartureTime;
-            const departureText = tripScheduler.dataManager.secondsToTime(departureTime).substring(0, 5);
+            // *** CORRECTION *** : Utilisation de dataManager.formatTime
+            const departureText = tripScheduler.dataManager.formatTime(departureTime).substring(0, 5);
             
             const stateText = `À l'arrêt`;
             const nextStopLabelText = "Arrêt actuel :";
@@ -400,7 +401,8 @@ export class MapRenderer {
             // Cas 2: Bus en attente à un arrêt
             const stopName = bus.position.stopInfo.stop_name;
             const departureTime = bus.position.nextDepartureTime;
-            const departureText = tripScheduler.dataManager.secondsToTime(departureTime).substring(0, 5);
+            // *** CORRECTION *** : Utilisation de dataManager.formatTime
+            const departureText = tripScheduler.dataManager.formatTime(departureTime).substring(0, 5);
             
             stateText = `À l'arrêt`;
             nextStopLabelText = "Arrêt actuel :";
@@ -616,13 +618,13 @@ export class MapRenderer {
                 html += `
                     <div class="departure-item">
                         <div class="departure-info">
-                            <span class="departure-badge" style="background-color: ${dep.routeColor}; color: ${dep.routeTextColor};">
+                            <span class="departure-badge" style="background-color: #${dep.routeColor}; color: #${dep.routeTextColor};">
                                 ${dep.routeShortName}
                             </span>
                             <span class="departure-dest">${dep.destination}</span>
                         </div>
                         <div class="departure-time">
-                            <strong>${dep.time}</strong>
+                            <strong>${dep.time.substring(0, 5)}</strong>
                             ${waitTime}
                         </div>
                     </div>
