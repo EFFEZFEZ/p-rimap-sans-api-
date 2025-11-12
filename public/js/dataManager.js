@@ -352,7 +352,10 @@ export class DataManager {
                 const firstStop = stopTimes[0];
                 const lastStop = stopTimes[stopTimes.length - 1];
                 
-                const startTime = this.timeToSeconds(firstStop.departure_time);
+                // *** CORRECTION APPLIQUÉE ***
+                // L'heure de début doit être 'arrival_time' (quand le bus arrive au terminus)
+                // et non 'departure_time' (quand il repart).
+                const startTime = this.timeToSeconds(firstStop.arrival_time);
                 const endTime = this.timeToSeconds(lastStop.arrival_time);
 
                 if (currentSeconds >= startTime && currentSeconds <= endTime) {
@@ -398,7 +401,7 @@ export class DataManager {
             const endTime = this.timeToSeconds(lastStop.arrival_time || lastStop.departure_time);
 
             if (startTime < earliestStart) earliestStart = startTime;
-            if (endTime > latestEnd) latestEnd = endTime;
+            if (endTime > latestEnd) latestEnd = latestEnd;
         });
 
         if (earliestStart === Infinity) earliestStart = 0;
