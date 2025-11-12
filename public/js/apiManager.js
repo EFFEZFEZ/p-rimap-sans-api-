@@ -2,6 +2,11 @@
  * apiManager.js
  * Gère tous les appels aux API externes (Google Places & Google Routes).
  * Utilise la NOUVELLE API Places (AutocompleteSuggestion) recommandée depuis mars 2025.
+ * 
+ * MODES DE TRANSPORT:
+ * - BUS uniquement (pas de train/métro/tramway)
+ * - MARCHE automatiquement incluse pour rejoindre les arrêts
+ * - Pour le vélo, une requête séparée sera nécessaire
  */
 
 export class ApiManager {
@@ -10,15 +15,10 @@ export class ApiManager {
         this.placesService = null;
         this.sessionToken = null;
 
-        // Centre sur Périgueux avec un rayon de 10km
+        // Centre sur le canton de Périgueux
         // Coordonnées du centre de Périgueux : 45.184029, 0.7211149
-        this.locationBias = {
-            center: {
-                latitude: 45.184029,
-                longitude: 0.7211149
-            },
-            radius: 10000 // 10 km en mètres
-        };
+        this.perigueuxCenter = { lat: 45.184029, lng: 0.7211149 };
+        this.perigueuxRadius = 10000; // 10 km en mètres
     }
 
     /**
@@ -26,7 +26,7 @@ export class ApiManager {
      */
     loadGoogleMapsAPI() {
         if (window.google && window.google.maps && window.google.maps.places) {
-            console.log("API Google Maps déjà chargée.");
+            console.log("✅ API Google Maps déjà chargée.");
             this.initServices();
             return Promise.resolve();
         }
@@ -41,21 +41,21 @@ export class ApiManager {
             script.defer = true;
             
             script.onload = () => {
-                console.log("API Google Maps (v=beta) chargée avec succès.");
+                console.log("✅ API Google Maps (v=beta) chargée avec succès.");
                 // Petit délai pour s'assurer que tout est chargé
                 setTimeout(() => {
                     if (window.google && window.google.maps && window.google.maps.places) {
                         this.initServices();
                         resolve();
                     } else {
-                        console.error("google.maps.places n'est pas disponible après le chargement");
+                        console.error("❌ google.maps.places n'est pas disponible après le chargement");
                         reject(new Error("Bibliothèque places non disponible"));
                     }
                 }, 100);
             };
             
             script.onerror = () => {
-                console.error("Erreur lors du chargement du script Google Maps.");
+                console.error("❌ Erreur lors du chargement du script Google Maps.");
                 reject(new Error("Impossible de charger Google Maps API."));
             };
             
@@ -68,7 +68,7 @@ export class ApiManager {
      */
     initServices() {
         if (!window.google || !window.google.maps || !window.google.maps.places) {
-            console.error("La bibliothèque Google Maps 'places' n'est pas disponible.");
+            console.error("❌ La bibliothèque Google Maps 'places' n'est pas disponible.");
             return;
         }
         
@@ -87,7 +87,7 @@ export class ApiManager {
             this.sessionToken = new google.maps.places.AutocompleteSessionToken();
             
         } catch (error) {
-            console.error("Erreur lors de l'initialisation des services:", error);
+            console.error("❌ Erreur lors de l'initialisation des services:", error);
         }
     }
 
@@ -98,10 +98,10 @@ export class ApiManager {
      */
     async getPlaceAutocomplete(inputString) {
         if (!this.placesService) {
-            console.warn("Service d'autocomplétion non initialisé. Tentative de chargement...");
+            console.warn("⚠️ Service d'autocomplétion non initialisé. Tentative de chargement...");
             await this.loadGoogleMapsAPI();
             if (!this.placesService) {
-                console.error("Impossible d'initialiser le service d'autocomplétion");
+                console.error("❌ Impossible d'initialiser le service d'autocomplétion");
                 return [];
             }
         }
@@ -111,16 +111,18 @@ export class ApiManager {
             if (this.placesService === google.maps.places.AutocompleteSuggestion) {
                 const request = {
                     input: inputString,
-                    locationBias: {
-                        circle: this.locationBias
-                    },
+                    locationBias: this.perigueuxCenter,
                     includedPrimaryTypes: ["locality", "sublocality", "postal_code", "route", "street_address"],
                     region: "fr",
                     sessionToken: this.sessionToken,
                 };
 
+                console.log("🔍 Recherche autocomplétion:", inputString);
+
                 // Utilisation de la méthode fetchAutocompleteSuggestions
                 const { suggestions } = await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+                
+                console.log(`✅ ${suggestions.length} suggestions trouvées`);
                 
                 const results = suggestions.map(s => ({
                     description: s.placePrediction.text.text,
@@ -135,16 +137,16 @@ export class ApiManager {
                         input: inputString,
                         sessionToken: this.sessionToken,
                         componentRestrictions: { country: 'fr' },
-                        locationBias: {
-                            circle: this.locationBias
-                        },
+                        location: new google.maps.LatLng(this.perigueuxCenter.lat, this.perigueuxCenter.lng),
+                        radius: this.perigueuxRadius,
                     };
 
                     this.placesService.getPlacePredictions(request, (predictions, status) => {
                         if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
-                            console.warn("Échec de l'autocomplétion Places:", status);
+                            console.warn("⚠️ Échec de l'autocomplétion Places:", status);
                             resolve([]);
                         } else {
+                            console.log(`✅ ${predictions.length} suggestions trouvées (ancienne API)`);
                             const results = predictions.map(p => ({
                                 description: p.description,
                                 placeId: p.place_id,
@@ -155,19 +157,20 @@ export class ApiManager {
                 });
             }
         } catch (error) {
-            console.error("Erreur lors de l'autocomplétion:", error);
+            console.error("❌ Erreur lors de l'autocomplétion:", error);
             return [];
         }
     }
 
     /**
-     * Calcule un itinéraire (API Google Routes)
+     * Calcule un itinéraire en transport en commun (BUS uniquement, pas de train)
+     * Note: La marche est automatiquement incluse pour rejoindre les arrêts
      * @param {string} fromPlaceId - L'ID de lieu Google du départ
      * @param {string} toPlaceId - L'ID de lieu Google de l'arrivée
      * @returns {Promise<Object>} Un objet d'itinéraire
      */
     async fetchItinerary(fromPlaceId, toPlaceId) {
-        console.log(`API Google Routes: Calcul de ${fromPlaceId} à ${toPlaceId}`);
+        console.log(`🚍 API Google Routes: Calcul de ${fromPlaceId} à ${toPlaceId}`);
 
         const API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
@@ -176,10 +179,16 @@ export class ApiManager {
             destination: { placeId: toPlaceId },
             travelMode: "TRANSIT",
             
+            // IMPORTANT: allowedTravelModes ne supporte que les modes de transport en commun
+            // BUS uniquement (pas SUBWAY, TRAIN, LIGHT_RAIL, RAIL)
+            // La MARCHE est automatiquement incluse pour rejoindre les arrêts
             transitPreferences: {
-                allowedTravelModes: ["BUS", "WALK"],
+                allowedTravelModes: ["BUS"], // Uniquement le bus
+                routingPreference: "LESS_WALKING" // Minimiser la marche
             },
         };
+
+        console.log("📤 Requête envoyée:", JSON.stringify(body, null, 2));
 
         try {
             const response = await fetch(API_URL, {
@@ -194,13 +203,13 @@ export class ApiManager {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error("Erreur de l'API Routes:", errorData);
+                console.error("❌ Erreur de l'API Routes:", errorData);
                 throw new Error(`API Routes a échoué: ${errorData.error?.message || response.statusText}`);
             }
 
             const data = await response.json();
             
-            console.log("Réponse de l'API Routes:", data);
+            console.log("✅ Réponse de l'API Routes:", data);
             
             // Réinitialise le jeton de session après une recherche réussie
             if (window.google && window.google.maps && window.google.maps.places) {
@@ -210,7 +219,55 @@ export class ApiManager {
             return data;
 
         } catch (error) {
-            console.error("Erreur lors de l'appel à fetchItinerary:", error);
+            console.error("❌ Erreur lors de l'appel à fetchItinerary:", error);
+            throw error;
+        }
+    }
+
+    /**
+     * Calcule un itinéraire à vélo
+     * @param {string} fromPlaceId - L'ID de lieu Google du départ
+     * @param {string} toPlaceId - L'ID de lieu Google de l'arrivée
+     * @returns {Promise<Object>} Un objet d'itinéraire
+     */
+    async fetchBicycleRoute(fromPlaceId, toPlaceId) {
+        console.log(`🚴 API Google Routes (VÉLO): Calcul de ${fromPlaceId} à ${toPlaceId}`);
+
+        const API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
+
+        const body = {
+            origin: { placeId: fromPlaceId },
+            destination: { placeId: toPlaceId },
+            travelMode: "BICYCLE", // Mode vélo
+        };
+
+        console.log("📤 Requête vélo envoyée:", JSON.stringify(body, null, 2));
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Goog-Api-Key': this.apiKey,
+                    'X-Goog-FieldMask': 'routes.legs,routes.duration,routes.distanceMeters,routes.polyline,routes.steps'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("❌ Erreur de l'API Routes (vélo):", errorData);
+                throw new Error(`API Routes (vélo) a échoué: ${errorData.error?.message || response.statusText}`);
+            }
+
+            const data = await response.json();
+            
+            console.log("✅ Réponse de l'API Routes (vélo):", data);
+
+            return data;
+
+        } catch (error) {
+            console.error("❌ Erreur lors de l'appel à fetchBicycleRoute:", error);
             throw error;
         }
     }
