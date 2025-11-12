@@ -13,7 +13,7 @@ import { ApiManager } from './apiManager.js';
 
 // *** ACTION REQUISE ***
 // Remplacez cette chaîne par votre clé d'API Google Cloud
-const GOOGLE_API_KEY = "AIzaSyBYDN_8hSHSx_irp_fxLw--XyxuLiixaW4";
+const GOOGLE_API_KEY = "VOTRE_CLE_API_GOOGLE_ICI";
 
 // Modules
 let dataManager;
@@ -230,8 +230,10 @@ function setupDashboardContent() {
     setupAdminConsole();
 }
 
+// *** DÉBUT DE LA FONCTION MODIFIÉE ***
 /**
- * NOUVELLE FONCTION : Remplit les listes <select> pour l'heure et les minutes
+ * Remplit les listes <select> pour l'heure et les minutes
+ * ET initialise le champ date
  */
 function populateTimeSelects() {
     const now = new Date();
@@ -245,28 +247,61 @@ function populateTimeSelects() {
         selectedHour = (currentHour + 1) % 24; 
     }
 
-    // Remplir les heures (0-23)
-    for (let h = 0; h < 24; h++) {
-        const option = document.createElement('option');
-        option.value = h;
-        option.textContent = `${h} h`;
-        if (h === selectedHour) {
-            option.selected = true;
+    // ✅ Initialiser le champ date
+    const today = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
+    if (popoverDate) {
+        // Vider d'abord (au cas où)
+        popoverDate.innerHTML = '';
+        
+        // Si c'est un <select> (ce que c'est maintenant)
+        if (popoverDate.tagName === 'SELECT') {
+            // Ajouter "Aujourd'hui"
+            const todayOption = document.createElement('option');
+            todayOption.value = today;
+            todayOption.textContent = "Aujourd'hui";
+            todayOption.selected = true;
+            popoverDate.appendChild(todayOption);
+            
+            // Ajouter "Demain"
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowDate = tomorrow.toISOString().split('T')[0];
+            const tomorrowOption = document.createElement('option');
+            tomorrowOption.value = tomorrowDate;
+            tomorrowOption.textContent = "Demain";
+            popoverDate.appendChild(tomorrowOption);
         }
-        popoverHour.appendChild(option);
+    }
+
+    // Remplir les heures (0-23)
+    if (popoverHour) {
+        popoverHour.innerHTML = ''; // Vider d'abord
+        for (let h = 0; h < 24; h++) {
+            const option = document.createElement('option');
+            option.value = h;
+            option.textContent = `${h} h`;
+            if (h === selectedHour) {
+                option.selected = true;
+            }
+            popoverHour.appendChild(option);
+        }
     }
 
     // Remplir les minutes (00, 05, 10, ... 55)
-    for (let m = 0; m < 60; m += 5) {
-        const option = document.createElement('option');
-        option.value = m;
-        option.textContent = String(m).padStart(2, '0');
-        if (m === selectedMinute) {
-            option.selected = true;
+    if (popoverMinute) {
+        popoverMinute.innerHTML = ''; // Vider d'abord
+        for (let m = 0; m < 60; m += 5) {
+            const option = document.createElement('option');
+            option.value = m;
+            option.textContent = String(m).padStart(2, '0');
+            if (m === selectedMinute) {
+                option.selected = true;
+            }
+            popoverMinute.appendChild(option);
         }
-        popoverMinute.appendChild(option);
     }
 }
+// *** FIN DE LA FONCTION MODIFIÉE ***
 
 
 function setupStaticEventListeners() {
@@ -276,6 +311,7 @@ function setupStaticEventListeners() {
         console.error("Impossible de charger l'API Google:", error);
     }
 
+    // Remplit les sélecteurs de temps
     populateTimeSelects();
 
     // --- Navigation principale ---
@@ -373,9 +409,10 @@ function setupStaticEventListeners() {
             return;
         }
 
+        // Récupérer les infos de temps
         const searchTime = {
             type: document.querySelector('.popover-tab.active').dataset.tab, 
-            date: popoverDate.value,
+            date: popoverDate.value, // (sera YYYY-MM-DD)
             hour: popoverHour.value,
             minute: popoverMinute.value
         };
@@ -421,18 +458,18 @@ function setupStaticEventListeners() {
             tab.addEventListener('click', (e) => {
                 document.querySelectorAll('.popover-tab').forEach(t => t.classList.remove('active'));
                 e.currentTarget.classList.add('active');
-                const mainBtnText = document.querySelector('#planner-when-btn span');
+                
+                // Mettre à jour le texte du bouton de soumission
                 const popoverSubmitBtn = document.getElementById('popover-submit-btn');
                 if (e.currentTarget.dataset.tab === 'arriver') { 
-                    mainBtnText.textContent = 'Arriver à...'; 
                     popoverSubmitBtn.textContent = "Valider l'arrivée";
                 } else {
-                    mainBtnText.textContent = 'Partir maintenant';
                     popoverSubmitBtn.textContent = 'Partir maintenant';
                 }
             });
         });
         
+        // --- ÉCOUTEUR MIS À JOUR ---
         document.getElementById('popover-submit-btn').addEventListener('click', () => { 
              const dateText = popoverDate.options[popoverDate.selectedIndex].text;
              const hourText = String(popoverHour.value).padStart(2, '0');
@@ -442,9 +479,9 @@ function setupStaticEventListeners() {
              
              let prefix = (tab === 'arriver') ? "Arrivée" : "Départ";
              if (dateText === "Aujourd'hui") {
-                 mainBtnSpan.textContent = `${prefix} à ${hourText} h ${minuteText}`;
+                 mainBtnSpan.textContent = `${prefix} à ${hourText}h${minuteText}`;
              } else {
-                 mainBtnSpan.textContent = `${prefix} ${dateText.toLowerCase()} à ${hourText} h ${minuteText}`;
+                 mainBtnSpan.textContent = `${prefix} ${dateText.toLowerCase()} à ${hourText}h${minuteText}`;
              }
 
              plannerOptionsPopover.classList.add('hidden');
@@ -573,7 +610,6 @@ function processGoogleRoutesResponse(data) {
             steps: [] 
         };
 
-        // *** DÉBUT DE LA MODIFICATION (CORRECTION DU BUG) ***
         leg.steps.forEach(step => {
             const duration = formatGoogleDuration(step.duration);
             
@@ -586,12 +622,10 @@ function processGoogleRoutesResponse(data) {
                     duration: duration
                 });
             } else if (step.travelMode === 'TRANSIT' && step.transitDetails) {
-                // Ajout de la vérification "&& step.transitDetails"
                 
                 const transit = step.transitDetails;
                 const line = transit.transitLine;
 
-                // Ajout d'une vérification pour ignorer les transferts sans "ligne"
                 if (line) { 
                     const shortName = line.nameShort || 'BUS';
                     const color = line.color || '#3388ff';
@@ -620,7 +654,6 @@ function processGoogleRoutesResponse(data) {
                 }
             }
         });
-        // *** FIN DE LA MODIFICATION ***
 
         itinerary.summaryIcons = itinerary.summaryIcons.filter((icon, index, self) => 
             icon.type !== 'WALK' || (index === 0) || (index > 0 && self[index - 1].type !== 'WALK')
