@@ -898,31 +898,37 @@ function renderItineraryResults(itineraries) {
         details.className = 'route-details hidden'; 
 
         details.innerHTML = itinerary.steps.map(step => {
-            if (step.type === 'WALK') {
-                const hasSubSteps = step.subSteps && step.subSteps.length > 0;
-                return `
-                    <div class="step-detail walk">
-                        <div class="step-icon">
-                            ${ICONS.WALK}
-                        </div>
-                        <div class="step-info">
-                            <span class="step-instruction">Marche <span class="step-duration-inline">(${step.duration})</span></span>
-                            
-                            ${hasSubSteps ? `
-                            <details class="intermediate-stops">
-                                <summary>
-                                    <span>Environ ${step.duration}, ${step.distance}</span>
-                                    <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                                </summary>
-                                <ul class="intermediate-stops-list walk-steps">
-                                    ${step.subSteps.map(subStep => `<li>${subStep.instruction} ${subStep.distance ? `(${subStep.distance})` : ''}</li>`).join('')}
-                                </ul>
-                            </details>
-                            ` : `<span class="step-sub-instruction">${step.instruction}</span>`}
-                        </div>
+    if (step.type === 'WALK') {
+        const hasSubSteps = step.subSteps && step.subSteps.length > 0;
+        return `
+            <div class="step-detail walk">
+                <div class="step-icon">
+                    ${ICONS.WALK}
+                </div>
+                <div class="step-info">
+                    <span class="step-instruction">Marche <span class="step-duration-inline">(${step.duration})</span></span>
+                    
+                    ${step.startTime ? `
+                    <div class="step-stop-point">
+                        <span class="step-time-detail">${step.startTime} → ${step.endTime || '--:--'}</span>
                     </div>
-                `;
-            } else { // BUS
+                    ` : ''}
+                    
+                    ${hasSubSteps ? `
+                    <details class="intermediate-stops">
+                        <summary>
+                            <span>Environ ${step.duration}, ${step.distance}</span>
+                            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                        </summary>
+                        <ul class="intermediate-stops-list walk-steps">
+                            ${step.subSteps.map(subStep => `<li>${subStep.instruction} ${subStep.distance ? `(${subStep.distance})` : ''}</li>`).join('')}
+                        </ul>
+                    </details>
+                    ` : `<span class="step-sub-instruction">${step.instruction}</span>`}
+                </div>
+            </div>
+        `;
+    } else { // BUS
                 const hasIntermediateStops = step.intermediateStops && step.intermediateStops.length > 0;
                 // Calcule le nombre d'arrêts intermédiaires
                 const intermediateStopCount = hasIntermediateStops ? step.intermediateStops.length : (step.numStops > 1 ? step.numStops - 1 : 0);
