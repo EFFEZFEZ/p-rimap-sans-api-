@@ -1962,6 +1962,9 @@ details[open] .accordion-content {
     color: var(--text-secondary);
     margin-left: 0.25rem;
 }
+.step-stop-point strong {
+    font-weight: 700;
+}
 
 /* NOUVEAU: Accordéon pour arrêts intermédiaires */
 .intermediate-stops {
@@ -2009,6 +2012,18 @@ details[open] .accordion-content {
     height: 4px;
     border-radius: 50%;
     background: var(--border);
+}
+/* NOUVEAU: Style pour les instructions de marche */
+.intermediate-stops-list.walk-steps {
+    border-left-color: transparent;
+    padding-left: 0;
+    margin-left: 0;
+}
+.intermediate-stops-list.walk-steps li {
+    padding-left: 0;
+}
+.intermediate-stops-list.walk-steps li::before {
+    display: none;
 }
 
 
