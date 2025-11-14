@@ -1,14 +1,13 @@
 /**
  * tripScheduler.js
- * * * CORRIGÉ (V12 - Logique "Mouvement Continu")
- * * Basé sur la clarification: le bus ne s'arrête jamais.
- * * L'état "MOVING" est calculé du DÉPART (Arrêt A) jusqu'au
- * * DÉPART (Arrêt B).
- * * Le temps d'attente est absorbé dans la progression,
- * * le bus ralentit en approchant de l'arrêt.
+ * * * CORRIGÉ (V15 - Logique Stricte)
+ * * Basé sur la clarification: le bus ne doit exister
+ * * que du DÉPART du premier arrêt à l'ARRIVÉE du dernier arrêt.
  * *
- * * Cela élimine l'état "WAITING_AT_STOP" (sauf au terminus)
- * * et résout définitivement le problème de clignotement.
+ * * - SUPPRESSION de l'état "waiting_at_stop".
+ * *
+ * * Le bus n'apparaît plus avant son heure de départ
+ * * et disparaît après son heure d'arrivée.
  */
 
 export class TripScheduler {
@@ -31,13 +30,13 @@ export class TripScheduler {
             const state = this.findCurrentState(stopTimes, currentSeconds); 
             
             if (state) {
+                // state est toujours de type 'moving'
                 activeBuses.push({
                     tripId,
                     trip,
                     route,
-                    // L'état est soit 'moving' (V12), soit 'waiting' (Terminus)
-                    segment: state.type === 'moving' ? state : null, 
-                    position: state.type === 'waiting_at_stop' ? state.position : null,
+                    segment: state, // 'state' est 'moving'
+                    position: null, // 'position' n'est jamais utilisé
                     currentSeconds
                 });
             }
@@ -48,33 +47,20 @@ export class TripScheduler {
 
 
     /**
-     * CORRIGÉ (Logique V12): "Mouvement Continu"
+     * CORRIGÉ (Logique V15): "Logique Stricte"
      */
     findCurrentState(stopTimes, currentSeconds) {
         if (!stopTimes || stopTimes.length < 2) {
             return null;
         }
 
-        const firstStop = stopTimes[0];
-        const firstArrivalTime = this.dataManager.timeToSeconds(firstStop.arrival_time);
-        const firstDepartureTime = this.dataManager.timeToSeconds(firstStop.departure_time);
-
-        // Cas 1: En attente au premier arrêt (terminus de départ)
-        // Cet état est nécessaire pour que le bus apparaisse avant
-        // le début de son premier trajet.
-        if (currentSeconds >= firstArrivalTime && currentSeconds < firstDepartureTime) {
-            const stopInfo = this.dataManager.getStop(firstStop.stop_id);
-            if (!stopInfo) return null;
-            
-            return {
-                type: 'waiting_at_stop',
-                position: { lat: parseFloat(stopInfo.stop_lat), lon: parseFloat(stopInfo.stop_lon) },
-                stopInfo: stopInfo,
-                nextDepartureTime: firstDepartureTime
-            };
-        }
+        // *** CORRECTION V15 ***
+        // Le bloc "Cas 1: En attente au premier arrêt" a été supprimé.
+        // Le bus n'existera pas avant 'firstDepartureTime'.
         
         // Cas 2: En mouvement (Logique V12)
+        // La boucle 'for' gère implicitement le premier segment
+        // (stopTimes[0].departureTime à stopTimes[1].departureTime)
         for (let i = 1; i < stopTimes.length; i++) {
             const currentStop = stopTimes[i];
             const prevStop = stopTimes[i - 1];
@@ -126,6 +112,8 @@ export class TripScheduler {
              };
         }
         
+        // Si currentSeconds est avant le premier départ
+        // ou après la dernière arrivée, on retourne null.
         return null; 
     }
 
@@ -151,6 +139,16 @@ export class TripScheduler {
         const remainingSeconds = segment.arrivalTime - currentSeconds;
         const minutes = Math.max(0, Math.floor(remainingSeconds / 60));
         const seconds = Math.max(0, Math.floor(remainingSeconds % 60));
+        
+        // *** CORRECTION V15 ***
+        // Gère le cas où le bus est arrivé au terminus (progress 1)
+        // (Concerne le 'dernier segment' de findCurrentState)
+         if (segment.progress === 1) {
+            return {
+                seconds: 0,
+                formatted: "Terminus"
+            };
+        }
 
         return {
             seconds: remainingSeconds,
