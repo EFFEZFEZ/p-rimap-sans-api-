@@ -1,11 +1,12 @@
 /**
- * mapRenderer.js - VERSION FINALE (V17 - Dynamique sans clignotement)
+ * mapRenderer.js - VERSION V17 (Mise à jour dynamique fluide)
  *
- * *** CORRECTION V17 ***
- * - Ré-intégration de la mise à jour dynamique (V17 user).
- * - Le "clignotement" est corrigé dans 'createBusPopupContent'
- * en ajoutant 'font-variant-numeric: tabular-nums' et 'min-width'
- * au span de l'ETA pour empêcher le "layout shift".
+ * *** MISE À JOUR V17 ***
+ * - Réactivation de la mise à jour en temps réel des popups
+ * - Utilisation de mise à jour intelligente : modification du texte
+ *   uniquement si nécessaire (pas de recréation du DOM)
+ * - Animation douce lors du changement d'arrêt
+ * - Pas de clignotement : le popup reste ouvert et seul son contenu change
  */
 
 export class MapRenderer {
@@ -241,11 +242,7 @@ export class MapRenderer {
                 
                 // *** V17 - Mise à jour dynamique du popup s'il est ouvert ***
                 if (markerData.marker.isPopupOpen()) {
-                    const popupEl = markerData.marker.getPopup().getElement();
-                    // Vérifie si le popup est bien rendu avant de le mettre à jour
-                    if (popupEl) {
-                        this.updateMovingBusPopupSmoothly(popupEl, bus, tripScheduler);
-                    }
+                    this.updateMovingBusPopupSmoothly(markerData.marker.getPopup().getElement(), bus, tripScheduler);
                 }
 
             } else {
@@ -276,11 +273,12 @@ export class MapRenderer {
     }
 
     /**
-     * (V17): Implémentation de la mise à jour 'Smooth'
-     * (Identique à V15, le 'smooth' vient du CSS)
+     * V17 - Mise à jour douce du popup sans recréation
+     * Compare les valeurs et ne met à jour que si nécessaire
      */
     updateMovingBusPopupSmoothly(popupElement, bus, tripScheduler) {
-        // 'popupElement' est déjà vérifié non-nul dans updateBusMarkers
+        if (!popupElement) return;
+        
         try {
             const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
             const destination = tripScheduler.getTripDestination(stopTimes);
@@ -288,33 +286,38 @@ export class MapRenderer {
             const nextStopETA = tripScheduler.getNextStopETA(bus.segment, bus.currentSeconds);
 
             const stateText = `En Ligne (vers ${destination})`;
-            const nextStopLabelText = "Prochain arrêt :";
             const nextStopText = nextStopName;
-            const etaLabelText = "Arrivée :"; 
             const etaText = nextStopETA ? nextStopETA.formatted : '...';
 
+            // Sélectionne les éléments à mettre à jour
             const stateEl = popupElement.querySelector('[data-update="state"]');
-            const nextStopLabelEl = popupElement.querySelector('[data-update="next-stop-label"]');
             const nextStopEl = popupElement.querySelector('[data-update="next-stop-value"]');
-            const etaLabelEl = popupElement.querySelector('[data-update="eta-label"]');
             const etaEl = popupElement.querySelector('[data-update="eta-value"]');
 
-            // Mise à jour atomique du 'textContent'
-            if (stateEl && stateEl.textContent !== stateText) stateEl.textContent = stateText;
-            if (nextStopLabelEl && nextStopLabelEl.textContent !== nextStopLabelText) nextStopLabelEl.textContent = nextStopLabelText;
-            if (nextStopEl && nextStopEl.textContent !== nextStopText) nextStopEl.textContent = nextStopText;
-            if (etaLabelEl && etaLabelEl.textContent !== etaLabelText) etaLabelEl.textContent = etaLabelText;
-            if (etaEl && etaEl.textContent !== etaText) etaEl.textContent = etaText;
+            // Met à jour uniquement si le contenu a changé (évite les repaint inutiles)
+            if (stateEl && stateEl.textContent !== stateText) {
+                stateEl.textContent = stateText;
+            }
+            if (nextStopEl && nextStopEl.textContent !== nextStopText) {
+                // Animation douce lors du changement d'arrêt
+                nextStopEl.style.transition = 'opacity 0.3s';
+                nextStopEl.style.opacity = '0.5';
+                setTimeout(() => {
+                    nextStopEl.textContent = nextStopText;
+                    nextStopEl.style.opacity = '1';
+                }, 150);
+            }
+            if (etaEl && etaEl.textContent !== etaText) {
+                etaEl.textContent = etaText;
+            }
             
         } catch (e) {
-             console.error("Erreur mise à jour popup 'moving':", e, bus);
+            console.error("Erreur mise à jour popup:", e);
         }
     }
 
-
     /**
      * Crée le contenu popup avec une structure HTML unifiée
-     * (V17): Ajout du style 'tabular-nums' et 'min-width'
      */
     createBusPopupContent(bus, tripScheduler) {
         const route = bus.route;
@@ -336,17 +339,11 @@ export class MapRenderer {
         etaLabelText = "Arrivée :";
         etaText = nextStopETA ? nextStopETA.formatted : '...';
 
-        // *** CORRECTION V17 (Anti-clignotement) ***
-        // Ajout de 'font-variant-numeric: tabular-nums' pour que les chiffres
-        // aient la même largeur, et 'min-width' pour empêcher le saut de ligne
-        // lorsque le texte change (ex: "59s" vs "1m 0s").
-        const etaStyle = "font-variant-numeric: tabular-nums; display: inline-block; min-width: 80px;";
-
+        // Structure HTML unifiée (avec data-update)
         const detailsHtml = `
             <p><strong>Statut:</strong> <span data-update="state">${stateText}</span></p>
             <p><strong data-update="next-stop-label">${nextStopLabelText}</strong> <span data-update="next-stop-value">${nextStopText}</span></p>
-            <p><strong data-update="eta-label">${etaLabelText}</strong> <span data-update="eta-value" style="${etaStyle}">${etaText}</span></p>
-            <p class="realtime-notice"><em>Mise à jour en temps réel</em></p>
+            <p><strong data-update="eta-label">${etaLabelText}</strong> <span data-update="eta-value">${etaText}</span></p>
         `;
 
         return `
@@ -362,7 +359,7 @@ export class MapRenderer {
     }
 
     /**
-     * Création d'un marqueur (V15 - Logique stricte)
+     * Création d'un marqueur avec état initial
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -468,7 +465,7 @@ export class MapRenderer {
         }
 
         const stopIcon = L.divIcon({
-            className: 'stop-marker-icon', // Style défini dans style.css
+            className: 'stop-marker-icon',
             iconSize: [10, 10],
             iconAnchor: [5, 5]
         });
