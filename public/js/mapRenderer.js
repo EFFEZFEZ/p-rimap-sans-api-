@@ -1,11 +1,16 @@
 /**
- * mapRenderer.js - VERSION V18 (Solution anti-clignotement avec DOM Element)
+ * mapRenderer.js - VERSION V20 (Solution définitive anti-clignotement)
  *
- * *** MISE À JOUR V18 - SOLUTION DÉFINITIVE ***
- * - Utilisation d'un élément DOM au lieu d'une chaîne HTML
- * - Leaflet ne reconstruit plus le contenu à chaque mise à jour
- * - La référence DOM reste stable, permettant des mises à jour fluides
- * - Plus aucun clignotement !
+ * *** SOLUTION V20 - BUG IDENTIFIÉ ***
+ * - Problème : Appeler setLatLng() sur un marqueur dans un MarkerClusterGroup
+ * ferme automatiquement son popup (bug connu de Leaflet.markercluster)
+ *
+ * - Solution : NE PAS appeler setLatLng() si le popup est ouvert
+ * → Le marqueur reste immobile pendant que son popup est affiché
+ * → Le contenu du popup se met à jour en temps réel
+ * → Quand le popup se ferme, le marqueur reprend sa mise à jour normale
+ *
+ * - Résultat : Plus aucun clignotement ! Le popup reste stable et fluide.
  */
 
 export class MapRenderer {
@@ -207,7 +212,8 @@ export class MapRenderer {
     }
 
     /**
-     * V18 - Mise à jour avec élément DOM stable
+     * V20 - SOLUTION DÉFINITIVE : Ne pas mettre à jour la position si le popup est ouvert
+     * Bug connu de Leaflet.markercluster : setLatLng ferme le popup
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -236,11 +242,19 @@ export class MapRenderer {
                 // Marqueur existant
                 const markerData = this.busMarkers[busId];
                 markerData.bus = bus;
-                markerData.marker.setLatLng([lat, lon]);
                 
-                // *** V18 - Mise à jour directe de l'élément DOM ***
-                if (markerData.marker.isPopupOpen() && markerData.popupDomElement) {
-                    this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
+                // *** V20 - CRITIQUE : NE PAS déplacer le marqueur si son popup est ouvert ***
+                const isPopupOpen = markerData.marker.isPopupOpen();
+                
+                if (!isPopupOpen) {
+                    // Popup fermé : on peut déplacer le marqueur normalement
+                    markerData.marker.setLatLng([lat, lon]);
+                } else {
+                    // Popup ouvert : on ne touche PAS au marqueur
+                    // On met UNIQUEMENT à jour le contenu du popup
+                    if (markerData.popupDomElement) {
+                        this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
+                    }
                 }
 
             } else {
@@ -271,8 +285,8 @@ export class MapRenderer {
     }
 
     /**
-     * V18 - Mise à jour du contenu sans recréation
-     * Modifie directement les éléments du DOM
+     * V20 - Mise à jour silencieuse du contenu
+     * Modifie uniquement le texte dans le DOM, sans toucher au popup
      */
     updateBusPopupContent(domElement, bus, tripScheduler) {
         try {
@@ -290,13 +304,13 @@ export class MapRenderer {
             const nextStopEl = domElement.querySelector('[data-update="next-stop-value"]');
             const etaEl = domElement.querySelector('[data-update="eta-value"]');
 
-            // Met à jour uniquement si le contenu a changé
+            // Met à jour uniquement si le contenu a changé (optimisation)
             if (stateEl && stateEl.textContent !== stateText) {
                 stateEl.textContent = stateText;
             }
             if (nextStopEl && nextStopEl.textContent !== nextStopText) {
-                // (Animation douce optionnelle - V18)
-                nextStopEl.style.transition = 'opacity 0.15s';
+                // Animation douce lors du changement d'arrêt
+                nextStopEl.style.transition = 'opacity 0.3s';
                 nextStopEl.style.opacity = '0.5';
                 setTimeout(() => {
                     nextStopEl.textContent = nextStopText;
@@ -313,7 +327,8 @@ export class MapRenderer {
     }
 
     /**
-     * V18 - Crée un élément DOM pour le popup (pas une string HTML)
+     * V20 - Crée un élément DOM pour le popup (pas une string HTML)
+     * L'élément créé reste stable et est mis à jour en place
      */
     createBusPopupDomElement(bus, tripScheduler) {
         const route = bus.route;
@@ -377,8 +392,7 @@ export class MapRenderer {
         const etaValue = document.createElement('span');
         etaValue.setAttribute('data-update', 'eta-value');
         etaValue.textContent = etaText;
-        // Correction V17 (Anti-layout shift)
-        etaValue.style.fontVariantNumeric = 'tabular-nums';
+        etaValue.style.fontVariantNumeric = 'tabular-nums'; // Anti-layout shift
         etaValue.style.display = 'inline-block';
         etaValue.style.minWidth = '80px';
         etaP.appendChild(etaLabel);
@@ -399,7 +413,8 @@ export class MapRenderer {
     }
 
     /**
-     * V18 - Création d'un marqueur avec élément DOM
+     * V20 - Création d'un marqueur avec popup stable
+     * Le popup est configuré pour ne pas se fermer au clic
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -421,7 +436,7 @@ export class MapRenderer {
 
         const marker = L.marker([lat, lon], { icon });
         
-        // *** V18 - CRÉER UN ÉLÉMENT DOM AU LIEU D'UNE STRING ***
+        // *** V20 - CRÉER UN ÉLÉMENT DOM + OPTIONS ANTI-CLIGNOTEMENT ***
         const popupDomElement = this.createBusPopupDomElement(bus, tripScheduler);
         
         // Créer l'objet markerData
@@ -431,8 +446,13 @@ export class MapRenderer {
             popupDomElement: popupDomElement
         };
         
-        // Bind le popup avec l'élément DOM
-        marker.bindPopup(popupDomElement);
+        // Bind le popup avec options anti-clignotement
+        marker.bindPopup(popupDomElement, {
+            autoClose: false,     // Ne pas fermer si un autre popup s'ouvre
+            closeOnClick: false,  // Ne pas fermer au clic sur la carte
+            closeButton: true,    // Garder le bouton de fermeture
+            autoPan: false        // Ne pas recentrer la carte (évite les sauts)
+        });
 
         return markerData;
     }
@@ -569,7 +589,7 @@ export class MapRenderer {
                 html += `
                     <div class="departure-item">
                         <div class="departure-info">
-                            <span class="departure-badge" style="background-color: #${dep.routeColor}; color: #${dep.routeTextColor};">
+                            <span class.departure-badge" style="background-color: #${dep.routeColor}; color: #${dep.routeTextColor};">
                                 ${dep.routeShortName}
                             </span>
                             <span class="departure-dest">${dep.destination}</span>
