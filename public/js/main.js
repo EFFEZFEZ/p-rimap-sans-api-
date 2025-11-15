@@ -970,11 +970,28 @@ function renderItineraryResults(itineraries) {
             }
         }).join('');
 
-
+        
+        // *** CORRECTION V30 (LOGIQUE ACCORDÉON) ***
         card.addEventListener('click', () => {
-            details.classList.toggle('hidden');
-            card.classList.toggle('is-active');
+            // 1. Vérifier si celui sur lequel on clique est déjà actif
+            const isAlreadyActive = card.classList.contains('is-active');
+            
+            // 2. Fermer tous les autres
+            resultsListContainer.querySelectorAll('.route-option.is-active').forEach(c => {
+                c.classList.remove('is-active');
+            });
+            resultsListContainer.querySelectorAll('.route-details:not(.hidden)').forEach(d => {
+                d.classList.add('hidden');
+            });
+            
+            // 3. Si celui-ci n'était pas actif, on l'ouvre
+            if (!isAlreadyActive) {
+                card.classList.add('is-active');
+                details.classList.remove('hidden');
+            }
         });
+        // *** FIN CORRECTION ***
+
 
         wrapper.appendChild(card);
         wrapper.appendChild(details);
@@ -1300,10 +1317,8 @@ function showDashboardView(viewName) {
     dashboardHall.classList.remove('view-is-active');
     dashboardContentView.classList.add('view-is-active');
 
-    const mainDashboard = document.getElementById('dashboard-main');
-    if (mainDashboard) {
-        mainDashboard.scrollTo({ top: 0, behavior: 'auto' });
-    }
+    // V27/V28 : On scrolle le body, pas le dashboard-main
+    window.scrollTo({ top: 0, behavior: 'auto' });
 
     document.querySelectorAll('#dashboard-content-view .card').forEach(card => {
         card.classList.remove('view-active');
@@ -1415,7 +1430,7 @@ function handleRouteFilterChange() {
     visibleRoutes.clear();
     dataManager.routes.forEach(route => {
         const checkbox = document.getElementById(`route-${route.route_id}`);
-        if (checkbox && checkbox.checked) { visibleRoutes.add(bus.route.route_id); }
+        if (checkbox && checkbox.checked) { visibleRoutes.add(route.route_id); }
     });
     if (dataManager.geoJson) {
         mapRenderer.displayMultiColorRoutes(dataManager.geoJson, dataManager, visibleRoutes);
