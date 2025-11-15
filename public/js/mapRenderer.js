@@ -1,18 +1,18 @@
 /**
- * mapRenderer.js - VERSION V22 (Retour à la V20 + V18)
+ * mapRenderer.js - VERSION V23 (Solution CSS Transition)
  *
- * *** SOLUTION DÉFINITIVE STABLE ***
- * - Le bug V21 (éjection du cluster) est abandonné (il cause des freezes).
+ * *** SOLUTION V23 - DÉFINITIVE ***
+ * - Le bug n'est pas le cluster, mais l'absence de transition CSS.
+ * - Le CSS (dans style.css) va gérer l'animation fluide
+ * des marqueurs ET des popups.
  *
- * - RETOUR à la logique V20 (la plus stable) :
- * 1. Quand un popup est OUVERT, on n'appelle PAS setLatLng().
- * (le marqueur gèle, mais le popup ne clignote plus).
- * 2. On utilise la logique V18 (bindPopup(DOMElement)) pour
- * permettre la mise à jour de l'ETA sans clignotement.
+ * - SUPPRESSION des logiques V20, V21, V22.
+ * - setLatLng() est TOUJOURS appelé.
+ * - updateBusPopupContent() est TOUJOURS appelé (si popup ouvert).
  *
  * - RÉSULTAT :
- * Le bus gèle quand on le clique, mais le popup est 100% stable
- * et l'ETA se met à jour fluidement.
+ * Le bus bouge, le popup suit, l'ETA se met à jour.
+ * Le tout de manière fluide grâce aux transitions CSS.
  */
 
 export class MapRenderer {
@@ -214,8 +214,7 @@ export class MapRenderer {
     }
 
     /**
-     * V22 - Retour à la logique V20 (la plus stable)
-     * Ne pas appeler setLatLng() si le popup est ouvert
+     * V23 - CSS gère l'animation. On appelle setLatLng() à chaque fois.
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -245,18 +244,13 @@ export class MapRenderer {
                 const markerData = this.busMarkers[busId];
                 markerData.bus = bus;
                 
-                // *** V22 - LOGIQUE V20 RÉTABLIE ***
-                const isPopupOpen = markerData.marker.isPopupOpen();
+                // *** V23 - TOUJOURS mettre à jour la position ***
+                // Le CSS (dans style.css) gérera l'animation fluide
+                markerData.marker.setLatLng([lat, lon]);
                 
-                if (!isPopupOpen) {
-                    // Popup fermé : on peut déplacer le marqueur normalement
-                    markerData.marker.setLatLng([lat, lon]);
-                } else {
-                    // Popup ouvert : on ne touche PAS au marqueur (il gèle)
-                    // On met UNIQUEMENT à jour le contenu du popup
-                    if (markerData.popupDomElement) {
-                        this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
-                    }
+                // Mettre à jour le contenu du popup (V18) si ouvert
+                if (markerData.marker.isPopupOpen() && markerData.popupDomElement) {
+                    this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
                 }
 
             } else {
@@ -287,7 +281,7 @@ export class MapRenderer {
     }
 
     /**
-     * V22 - Mise à jour silencieuse du contenu (Logique V18)
+     * V23 - Mise à jour silencieuse du contenu (Logique V18)
      */
     updateBusPopupContent(domElement, bus, tripScheduler) {
         try {
@@ -325,7 +319,7 @@ export class MapRenderer {
     }
 
     /**
-     * V22 - Crée un élément DOM pour le popup (Logique V18)
+     * V23 - Crée un élément DOM pour le popup (Logique V18)
      */
     createBusPopupDomElement(bus, tripScheduler) {
         const route = bus.route;
@@ -409,7 +403,7 @@ export class MapRenderer {
     }
 
     /**
-     * V22 - Création d'un marqueur (Logique V18)
+     * V23 - Création d'un marqueur (Logique V18)
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -440,7 +434,9 @@ export class MapRenderer {
         };
         
         // Bind le popup avec l'élément DOM stable
-        marker.bindPopup(popupDomElement);
+        // V23: Suppression des options (autoClose, closeOnClick)
+        // car le CSS gère le clignotement.
+        marker.bindPopup(popupDomElement); 
 
         return markerData;
     }
