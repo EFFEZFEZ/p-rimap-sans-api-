@@ -1,18 +1,22 @@
 /**
- * mapRenderer.js - VERSION V23 (Solution CSS Transition)
+ * mapRenderer.js - VERSION V24 (Solution Popup Indépendant)
  *
- * *** SOLUTION V23 - DÉFINITIVE ***
- * - Le bug n'est pas le cluster, mais l'absence de transition CSS.
- * - Le CSS (dans style.css) va gérer l'animation fluide
- * des marqueurs ET des popups.
+ * *** SOLUTION DÉFINITIVE V24 ***
+ * - Le bug est que marker.bindPopup() est incompatible
+ * avec setLatLng() appelé à chaque tick.
  *
- * - SUPPRESSION des logiques V20, V21, V22.
- * - setLatLng() est TOUJOURS appelé.
- * - updateBusPopupContent() est TOUJOURS appelé (si popup ouvert).
+ * - SOLUTION :
+ * 1. Ne PLUS utiliser marker.bindPopup().
+ * 2. Créer UN SEUL popup global (this.busPopup).
+ * 3. Utiliser marker.on('click') pour ouvrir ce popup global.
+ * 4. Mettre à jour la position du marqueur ET du popup
+ * séparément dans updateBusMarkers().
  *
  * - RÉSULTAT :
- * Le bus bouge, le popup suit, l'ETA se met à jour.
- * Le tout de manière fluide grâce aux transitions CSS.
+ * Le bus bouge (setLatLng sur le marqueur).
+ * Le popup suit (setLatLng sur le popup).
+ * L'ETA se met à jour (setContent sur le popup).
+ * ZÉRO CLIGNOTEMENT.
  */
 
 export class MapRenderer {
@@ -37,6 +41,11 @@ export class MapRenderer {
         /* Garder une référence aux managers */
         this.dataManager = dataManager;
         this.timeManager = timeManager;
+
+        /* V24 - Initialisation du Popup Indépendant */
+        this.busPopup = null;
+        this.busPopupDomElement = null; // Le DOM stable (V18)
+        this.selectedBusId = null; // Savoir quel bus est cliqué
 
         /* Initialisation du groupe de clusters */
         this.clusterGroup = L.markerClusterGroup({
@@ -70,6 +79,20 @@ export class MapRenderer {
                 this.map.removeLayer(this.tempStopMarker);
                 this.tempStopMarker = null;
             }
+        });
+
+        /* V24 - Créer le popup global et son DOM */
+        this.busPopupDomElement = this.createBusPopupDomElement(); // Crée la structure
+        this.busPopup = L.popup({
+            autoClose: true,
+            closeOnClick: true,
+            closeButton: true,
+            autoPan: true
+        });
+
+        // Quand le popup est fermé, on désélectionne le bus
+        this.busPopup.on('remove', () => {
+            this.selectedBusId = null;
         });
     }
 
@@ -214,7 +237,7 @@ export class MapRenderer {
     }
 
     /**
-     * V23 - CSS gère l'animation. On appelle setLatLng() à chaque fois.
+     * V24 - Logique de Popup Indépendant
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -226,6 +249,11 @@ export class MapRenderer {
 
         Object.keys(this.busMarkers).forEach(busId => {
             if (!activeBusIds.has(busId)) {
+                // Si le bus sélectionné disparaît, fermer le popup
+                if (busId === this.selectedBusId) {
+                    this.busPopup.close();
+                    this.selectedBusId = null;
+                }
                 const markerData = this.busMarkers[busId];
                 markersToRemove.push(markerData.marker);
                 delete this.busMarkers[busId];
@@ -244,14 +272,8 @@ export class MapRenderer {
                 const markerData = this.busMarkers[busId];
                 markerData.bus = bus;
                 
-                // *** V23 - TOUJOURS mettre à jour la position ***
-                // Le CSS (dans style.css) gérera l'animation fluide
+                // On met TOUJOURS à jour la position du marqueur
                 markerData.marker.setLatLng([lat, lon]);
-                
-                // Mettre à jour le contenu du popup (V18) si ouvert
-                if (markerData.marker.isPopupOpen() && markerData.popupDomElement) {
-                    this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
-                }
 
             } else {
                 // Nouveau marqueur
@@ -264,6 +286,17 @@ export class MapRenderer {
                 }
             }
         });
+        
+        // 3. (V24) Mettre à jour le popup s'il est ouvert
+        if (this.selectedBusId && this.busMarkers[this.selectedBusId]) {
+            const selectedMarkerData = this.busMarkers[this.selectedBusId];
+            
+            // Mettre à jour le contenu
+            this.updateBusPopupContent(this.busPopupDomElement, selectedMarkerData.bus, tripScheduler);
+            
+            // Mettre à jour la position du popup
+            this.busPopup.setLatLng(selectedMarkerData.marker.getLatLng());
+        }
 
         // Nettoyage final des couches
         if (this.clusterGroup) {
@@ -281,10 +314,15 @@ export class MapRenderer {
     }
 
     /**
-     * V23 - Mise à jour silencieuse du contenu (Logique V18)
+     * V24 - Mise à jour du DOM du popup global
      */
     updateBusPopupContent(domElement, bus, tripScheduler) {
         try {
+            const route = bus.route;
+            const routeShortName = route?.route_short_name || route?.route_id || '?';
+            const routeColor = route?.route_color ? `#${route.route_color}` : '#3B82F6';
+            const textColor = route?.route_text_color ? `#${route.route_text_color}` : '#ffffff';
+            
             const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
             const destination = tripScheduler.getTripDestination(stopTimes);
             const nextStopName = bus.segment?.toStopInfo?.stop_name || 'Inconnu';
@@ -294,24 +332,23 @@ export class MapRenderer {
             const nextStopText = nextStopName;
             const etaText = nextStopETA ? nextStopETA.formatted : '...';
 
+            // Sélectionne les éléments à mettre à jour
+            const headerEl = domElement.querySelector('.info-popup-header');
             const stateEl = domElement.querySelector('[data-update="state"]');
             const nextStopEl = domElement.querySelector('[data-update="next-stop-value"]');
             const etaEl = domElement.querySelector('[data-update="eta-value"]');
 
-            if (stateEl && stateEl.textContent !== stateText) {
-                stateEl.textContent = stateText;
+            // Mettre à jour le Header (couleur + texte)
+            if (headerEl) {
+                headerEl.style.background = routeColor;
+                headerEl.style.color = textColor;
+                headerEl.textContent = `Ligne ${routeShortName}`;
             }
-            if (nextStopEl && nextStopEl.textContent !== nextStopText) {
-                nextStopEl.style.transition = 'opacity 0.3s';
-                nextStopEl.style.opacity = '0.5';
-                setTimeout(() => {
-                    nextStopEl.textContent = nextStopText;
-                    nextStopEl.style.opacity = '1';
-                }, 150);
-            }
-            if (etaEl && etaEl.textContent !== etaText) {
-                etaEl.textContent = etaText;
-            }
+
+            // Mettre à jour le contenu
+            if (stateEl && stateEl.textContent !== stateText) stateEl.textContent = stateText;
+            if (nextStopEl && nextStopEl.textContent !== nextStopText) nextStopEl.textContent = nextStopText;
+            if (etaEl && etaEl.textContent !== etaText) etaEl.textContent = etaText;
             
         } catch (e) {
             console.error("Erreur mise à jour popup:", e);
@@ -319,32 +356,15 @@ export class MapRenderer {
     }
 
     /**
-     * V23 - Crée un élément DOM pour le popup (Logique V18)
+     * V24 - Crée la STRUCTURE DOM (vide) du popup global
      */
-    createBusPopupDomElement(bus, tripScheduler) {
-        const route = bus.route;
-        const routeShortName = route?.route_short_name || route?.route_id || '?';
-        const routeColor = route?.route_color ? `#${route.route_color}` : '#3B82F6';
-        const textColor = route?.route_text_color ? `#${route.route_text_color}` : '#ffffff';
-
-        const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
-        const destination = tripScheduler.getTripDestination(stopTimes);
-        const nextStopName = bus.segment?.toStopInfo?.stop_name || 'Inconnu';
-        const nextStopETA = tripScheduler.getNextStopETA(bus.segment, bus.currentSeconds);
-
-        const stateText = `En Ligne (vers ${destination})`;
-        const nextStopText = nextStopName;
-        const etaText = nextStopETA ? nextStopETA.formatted : '...';
-
+    createBusPopupDomElement() {
         const container = document.createElement('div');
         container.className = 'info-popup-content';
 
         // Header
         const header = document.createElement('div');
         header.className = 'info-popup-header';
-        header.style.background = routeColor;
-        header.style.color = textColor;
-        header.textContent = `Ligne ${routeShortName}`;
         container.appendChild(header);
 
         // Body
@@ -353,48 +373,31 @@ export class MapRenderer {
 
         // Statut
         const statusP = document.createElement('p');
-        const statusStrong = document.createElement('strong');
-        statusStrong.textContent = 'Statut: ';
-        const statusSpan = document.createElement('span');
-        statusSpan.setAttribute('data-update', 'state');
-        statusSpan.textContent = stateText;
-        statusP.appendChild(statusStrong);
-        statusP.appendChild(statusSpan);
+        statusP.innerHTML = '<strong>Statut: </strong><span data-update="state">Chargement...</span>';
         body.appendChild(statusP);
 
         // Prochain arrêt
         const nextStopP = document.createElement('p');
-        const nextStopLabel = document.createElement('strong');
-        nextStopLabel.setAttribute('data-update', 'next-stop-label');
-        nextStopLabel.textContent = 'Prochain arrêt : ';
-        const nextStopValue = document.createElement('span');
-        nextStopValue.setAttribute('data-update', 'next-stop-value');
-        nextStopValue.textContent = nextStopText;
-        nextStopP.appendChild(nextStopLabel);
-        nextStopP.appendChild(nextStopValue);
+        nextStopP.innerHTML = '<strong data-update="next-stop-label">Prochain arrêt : </strong><span data-update="next-stop-value">...</span>';
         body.appendChild(nextStopP);
 
         // Arrivée
         const etaP = document.createElement('p');
-        const etaLabel = document.createElement('strong');
-        etaLabel.setAttribute('data-update', 'eta-label');
-        etaLabel.textContent = 'Arrivée : ';
         const etaValue = document.createElement('span');
         etaValue.setAttribute('data-update', 'eta-value');
-        etaValue.textContent = etaText;
-        etaValue.style.fontVariantNumeric = 'tabular-nums'; // Anti-layout shift (V17)
+        etaValue.textContent = '...';
+        etaValue.style.fontVariantNumeric = 'tabular-nums'; 
         etaValue.style.display = 'inline-block';
         etaValue.style.minWidth = '80px';
-        etaP.appendChild(etaLabel);
+        
+        etaP.innerHTML = '<strong data-update="eta-label">Arrivée : </strong>';
         etaP.appendChild(etaValue);
         body.appendChild(etaP);
         
         // Notice temps réel
         const noticeP = document.createElement('p');
         noticeP.className = 'realtime-notice';
-        const noticeEm = document.createElement('em');
-        noticeEm.textContent = 'Mise à jour en temps réel';
-        noticeP.appendChild(noticeEm);
+        noticeP.innerHTML = '<em>Mise à jour en temps réel</em>';
         body.appendChild(noticeP);
 
         container.appendChild(body);
@@ -403,7 +406,7 @@ export class MapRenderer {
     }
 
     /**
-     * V23 - Création d'un marqueur (Logique V18)
+     * V24 - Crée un marqueur et lui attache un 'click' event
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -420,23 +423,34 @@ export class MapRenderer {
             html: `<div style="background-color: ${routeColor}; color: ${textColor};">${routeShortName}</div>`,
             iconSize: [40, 24],
             iconAnchor: [20, 12],
-            popupAnchor: [0, -12]
+            popupAnchor: [0, -12] // Gardé pour info, mais plus de popup lié
         });
 
         const marker = L.marker([lat, lon], { icon });
         
-        const popupDomElement = this.createBusPopupDomElement(bus, tripScheduler);
+        // *** V24 - NE PAS UTILISER bindPopup ***
+        // marker.bindPopup(...);
         
+        // Attacher un simple 'click'
+        marker.on('click', () => {
+            this.selectedBusId = busId;
+            const markerData = this.busMarkers[busId];
+            
+            // Mettre à jour le contenu AVANT de l'ouvrir
+            this.updateBusPopupContent(this.busPopupDomElement, markerData.bus, tripScheduler);
+            
+            // Ouvrir le popup global
+            this.busPopup
+                .setLatLng(marker.getLatLng())
+                .setContent(this.busPopupDomElement)
+                .openOn(this.map);
+        });
+        
+        // Créer l'objet markerData (sans popupDomElement, car il est global)
         const markerData = {
             marker: marker,
-            bus: bus,
-            popupDomElement: popupDomElement
+            bus: bus
         };
-        
-        // Bind le popup avec l'élément DOM stable
-        // V23: Suppression des options (autoClose, closeOnClick)
-        // car le CSS gère le clignotement.
-        marker.bindPopup(popupDomElement); 
 
         return markerData;
     }
@@ -553,7 +567,7 @@ export class MapRenderer {
     createStopPopupContent(masterStop, departures, currentSeconds) {
         let html = `<div class="info-popup-content">`;
         html += `<div class="info-popup-header">${masterStop.stop_name}</div>`;
-        html += `<div class="info-popup-body">`; 
+        html += `<div class.info-popup-body">`; 
 
         if (departures.length === 0) {
             html += `<div class="departure-item empty">Aucun prochain passage trouvé.</div>`;
