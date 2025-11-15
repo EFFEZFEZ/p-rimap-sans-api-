@@ -295,8 +295,8 @@ export class MapRenderer {
                 stateEl.textContent = stateText;
             }
             if (nextStopEl && nextStopEl.textContent !== nextStopText) {
-                // Animation douce lors du changement d'arrêt
-                nextStopEl.style.transition = 'opacity 0.3s';
+                // (Animation douce optionnelle - V18)
+                nextStopEl.style.transition = 'opacity 0.15s';
                 nextStopEl.style.opacity = '0.5';
                 setTimeout(() => {
                     nextStopEl.textContent = nextStopText;
@@ -377,9 +377,21 @@ export class MapRenderer {
         const etaValue = document.createElement('span');
         etaValue.setAttribute('data-update', 'eta-value');
         etaValue.textContent = etaText;
+        // Correction V17 (Anti-layout shift)
+        etaValue.style.fontVariantNumeric = 'tabular-nums';
+        etaValue.style.display = 'inline-block';
+        etaValue.style.minWidth = '80px';
         etaP.appendChild(etaLabel);
         etaP.appendChild(etaValue);
         body.appendChild(etaP);
+        
+        // Notice temps réel
+        const noticeP = document.createElement('p');
+        noticeP.className = 'realtime-notice';
+        const noticeEm = document.createElement('em');
+        noticeEm.textContent = 'Mise à jour en temps réel';
+        noticeP.appendChild(noticeEm);
+        body.appendChild(noticeP);
 
         container.appendChild(body);
 
@@ -421,16 +433,6 @@ export class MapRenderer {
         
         // Bind le popup avec l'élément DOM
         marker.bindPopup(popupDomElement);
-
-        // Événement à l'ouverture (optionnel, pour debug)
-        marker.on('popupopen', () => {
-            console.log('Popup ouvert pour bus:', busId);
-        });
-
-        // Nettoyage à la fermeture
-        marker.on('popupclose', () => {
-            console.log('Popup fermé pour bus:', busId);
-        });
 
         return markerData;
     }
@@ -497,7 +499,7 @@ export class MapRenderer {
         }
 
         const stopIcon = L.divIcon({
-            className: 'stop-marker-icon',
+            className: 'stop-marker-icon', // Style défini dans style.css
             iconSize: [10, 10],
             iconAnchor: [5, 5]
         });
@@ -508,8 +510,12 @@ export class MapRenderer {
             const lon = parseFloat(stop.stop_lon);
             if (isNaN(lat) || isNaN(lon)) return;
 
+            // zIndexOffset -100 pour que les bus passent TOUJOURS au-dessus
             const marker = L.marker([lat, lon], { icon: stopIcon, zIndexOffset: -100 });
+            
+            /* Attache un événement au lieu d'un popup statique */
             marker.on('click', () => this.onStopClick(stop));
+            
             stopsToDisplay.push(marker);
         });
 
