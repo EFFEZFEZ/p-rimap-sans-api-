@@ -1,12 +1,11 @@
 /**
- * mapRenderer.js - VERSION V17 (Mise à jour dynamique fluide)
+ * mapRenderer.js - VERSION V18 (Solution anti-clignotement avec DOM Element)
  *
- * *** MISE À JOUR V17 ***
- * - Réactivation de la mise à jour en temps réel des popups
- * - Utilisation de mise à jour intelligente : modification du texte
- *   uniquement si nécessaire (pas de recréation du DOM)
- * - Animation douce lors du changement d'arrêt
- * - Pas de clignotement : le popup reste ouvert et seul son contenu change
+ * *** MISE À JOUR V18 - SOLUTION DÉFINITIVE ***
+ * - Utilisation d'un élément DOM au lieu d'une chaîne HTML
+ * - Leaflet ne reconstruit plus le contenu à chaque mise à jour
+ * - La référence DOM reste stable, permettant des mises à jour fluides
+ * - Plus aucun clignotement !
  */
 
 export class MapRenderer {
@@ -208,7 +207,7 @@ export class MapRenderer {
     }
 
     /**
-     * MODIFIÉ (V17 - Mise à jour dynamique sans clignotement)
+     * V18 - Mise à jour avec élément DOM stable
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -220,7 +219,6 @@ export class MapRenderer {
 
         Object.keys(this.busMarkers).forEach(busId => {
             if (!activeBusIds.has(busId)) {
-                // Ce marqueur va être supprimé
                 const markerData = this.busMarkers[busId];
                 markersToRemove.push(markerData.marker);
                 delete this.busMarkers[busId];
@@ -237,12 +235,12 @@ export class MapRenderer {
             if (this.busMarkers[busId]) {
                 // Marqueur existant
                 const markerData = this.busMarkers[busId];
-                markerData.bus = bus; // Met à jour les données du bus
+                markerData.bus = bus;
                 markerData.marker.setLatLng([lat, lon]);
                 
-                // *** V17 - Mise à jour dynamique du popup s'il est ouvert ***
-                if (markerData.marker.isPopupOpen() && markerData.popupContentElement) {
-                    this.updateMovingBusPopupSmoothly(markerData.popupContentElement, bus, tripScheduler);
+                // *** V18 - Mise à jour directe de l'élément DOM ***
+                if (markerData.marker.isPopupOpen() && markerData.popupDomElement) {
+                    this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
                 }
 
             } else {
@@ -252,7 +250,7 @@ export class MapRenderer {
                 if (this.clusterGroup) {
                     markersToAdd.push(markerData.marker);
                 } else {
-                    markerData.marker.addTo(this.map); // Ajout direct si pas de cluster
+                    markerData.marker.addTo(this.map);
                 }
             }
         });
@@ -273,12 +271,10 @@ export class MapRenderer {
     }
 
     /**
-     * V17 - Mise à jour douce du popup sans recréation
-     * Compare les valeurs et ne met à jour que si nécessaire
+     * V18 - Mise à jour du contenu sans recréation
+     * Modifie directement les éléments du DOM
      */
-    updateMovingBusPopupSmoothly(popupElement, bus, tripScheduler) {
-        if (!popupElement) return;
-        
+    updateBusPopupContent(domElement, bus, tripScheduler) {
         try {
             const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
             const destination = tripScheduler.getTripDestination(stopTimes);
@@ -290,11 +286,11 @@ export class MapRenderer {
             const etaText = nextStopETA ? nextStopETA.formatted : '...';
 
             // Sélectionne les éléments à mettre à jour
-            const stateEl = popupElement.querySelector('[data-update="state"]');
-            const nextStopEl = popupElement.querySelector('[data-update="next-stop-value"]');
-            const etaEl = popupElement.querySelector('[data-update="eta-value"]');
+            const stateEl = domElement.querySelector('[data-update="state"]');
+            const nextStopEl = domElement.querySelector('[data-update="next-stop-value"]');
+            const etaEl = domElement.querySelector('[data-update="eta-value"]');
 
-            // Met à jour uniquement si le contenu a changé (évite les repaint inutiles)
+            // Met à jour uniquement si le contenu a changé
             if (stateEl && stateEl.textContent !== stateText) {
                 stateEl.textContent = stateText;
             }
@@ -317,49 +313,81 @@ export class MapRenderer {
     }
 
     /**
-     * Crée le contenu popup avec une structure HTML unifiée
+     * V18 - Crée un élément DOM pour le popup (pas une string HTML)
      */
-    createBusPopupContent(bus, tripScheduler) {
+    createBusPopupDomElement(bus, tripScheduler) {
         const route = bus.route;
         const routeShortName = route?.route_short_name || route?.route_id || '?';
         const routeColor = route?.route_color ? `#${route.route_color}` : '#3B82F6';
         const textColor = route?.route_text_color ? `#${route.route_text_color}` : '#ffffff';
 
-        let stateText, nextStopLabelText, nextStopText, etaLabelText, etaText;
-
         const stopTimes = tripScheduler.dataManager.stopTimesByTrip[bus.tripId];
         const destination = tripScheduler.getTripDestination(stopTimes);
-
         const nextStopName = bus.segment?.toStopInfo?.stop_name || 'Inconnu';
         const nextStopETA = tripScheduler.getNextStopETA(bus.segment, bus.currentSeconds);
 
-        stateText = `En Ligne (vers ${destination})`;
-        nextStopLabelText = "Prochain arrêt :";
-        nextStopText = nextStopName;
-        etaLabelText = "Arrivée :";
-        etaText = nextStopETA ? nextStopETA.formatted : '...';
+        const stateText = `En Ligne (vers ${destination})`;
+        const nextStopText = nextStopName;
+        const etaText = nextStopETA ? nextStopETA.formatted : '...';
 
-        // Structure HTML unifiée (avec data-update)
-        const detailsHtml = `
-            <p><strong>Statut:</strong> <span data-update="state">${stateText}</span></p>
-            <p><strong data-update="next-stop-label">${nextStopLabelText}</strong> <span data-update="next-stop-value">${nextStopText}</span></p>
-            <p><strong data-update="eta-label">${etaLabelText}</strong> <span data-update="eta-value">${etaText}</span></p>
-        `;
+        // Créer l'élément DOM au lieu d'une chaîne HTML
+        const container = document.createElement('div');
+        container.className = 'info-popup-content';
 
-        return `
-            <div class="info-popup-content"> 
-                <div class="info-popup-header" style="background: ${routeColor}; color: ${textColor};">
-                    Ligne ${routeShortName}
-                </div>
-                <div class="info-popup-body bus-details">
-                    ${detailsHtml}
-                </div>
-            </div>
-        `;
+        // Header
+        const header = document.createElement('div');
+        header.className = 'info-popup-header';
+        header.style.background = routeColor;
+        header.style.color = textColor;
+        header.textContent = `Ligne ${routeShortName}`;
+        container.appendChild(header);
+
+        // Body
+        const body = document.createElement('div');
+        body.className = 'info-popup-body bus-details';
+
+        // Statut
+        const statusP = document.createElement('p');
+        const statusStrong = document.createElement('strong');
+        statusStrong.textContent = 'Statut: ';
+        const statusSpan = document.createElement('span');
+        statusSpan.setAttribute('data-update', 'state');
+        statusSpan.textContent = stateText;
+        statusP.appendChild(statusStrong);
+        statusP.appendChild(statusSpan);
+        body.appendChild(statusP);
+
+        // Prochain arrêt
+        const nextStopP = document.createElement('p');
+        const nextStopLabel = document.createElement('strong');
+        nextStopLabel.setAttribute('data-update', 'next-stop-label');
+        nextStopLabel.textContent = 'Prochain arrêt : ';
+        const nextStopValue = document.createElement('span');
+        nextStopValue.setAttribute('data-update', 'next-stop-value');
+        nextStopValue.textContent = nextStopText;
+        nextStopP.appendChild(nextStopLabel);
+        nextStopP.appendChild(nextStopValue);
+        body.appendChild(nextStopP);
+
+        // Arrivée
+        const etaP = document.createElement('p');
+        const etaLabel = document.createElement('strong');
+        etaLabel.setAttribute('data-update', 'eta-label');
+        etaLabel.textContent = 'Arrivée : ';
+        const etaValue = document.createElement('span');
+        etaValue.setAttribute('data-update', 'eta-value');
+        etaValue.textContent = etaText;
+        etaP.appendChild(etaLabel);
+        etaP.appendChild(etaValue);
+        body.appendChild(etaP);
+
+        container.appendChild(body);
+
+        return container;
     }
 
     /**
-     * Création d'un marqueur avec état initial
+     * V18 - Création d'un marqueur avec élément DOM
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -381,35 +409,27 @@ export class MapRenderer {
 
         const marker = L.marker([lat, lon], { icon });
         
-        // Créer l'objet markerData qui sera retourné
+        // *** V18 - CRÉER UN ÉLÉMENT DOM AU LIEU D'UNE STRING ***
+        const popupDomElement = this.createBusPopupDomElement(bus, tripScheduler);
+        
+        // Créer l'objet markerData
         const markerData = {
             marker: marker,
             bus: bus,
-            popupContentElement: null
+            popupDomElement: popupDomElement
         };
         
-        // Popup est vide au début
-        marker.bindPopup("");
+        // Bind le popup avec l'élément DOM
+        marker.bindPopup(popupDomElement);
 
-        // Le contenu est généré UNIQUEMENT à l'ouverture
-        marker.on('popupopen', (e) => {
-            const freshBus = markerData.bus;
-            const freshPopupContent = this.createBusPopupContent(freshBus, tripScheduler);
-            e.popup.setContent(freshPopupContent);
-            
-            // Stocker la référence à l'élément de contenu du popup
-            // On attend un tick pour que le DOM soit mis à jour
-            setTimeout(() => {
-                const popupElement = e.popup.getElement();
-                if (popupElement) {
-                    markerData.popupContentElement = popupElement.querySelector('.info-popup-content');
-                }
-            }, 0);
+        // Événement à l'ouverture (optionnel, pour debug)
+        marker.on('popupopen', () => {
+            console.log('Popup ouvert pour bus:', busId);
         });
 
-        // Nettoyer la référence quand le popup se ferme
+        // Nettoyage à la fermeture
         marker.on('popupclose', () => {
-            markerData.popupContentElement = null;
+            console.log('Popup fermé pour bus:', busId);
         });
 
         return markerData;
@@ -488,12 +508,8 @@ export class MapRenderer {
             const lon = parseFloat(stop.stop_lon);
             if (isNaN(lat) || isNaN(lon)) return;
 
-            // zIndexOffset -100 pour que les bus passent TOUJOURS au-dessus
             const marker = L.marker([lat, lon], { icon: stopIcon, zIndexOffset: -100 });
-            
-            /* Attache un événement au lieu d'un popup statique */
             marker.on('click', () => this.onStopClick(stop));
-            
             stopsToDisplay.push(marker);
         });
 
