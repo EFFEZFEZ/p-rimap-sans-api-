@@ -44,7 +44,7 @@
     box-sizing: border-box;
 }
 
-/* *** CORRECTION V26 *** */
+/* *** CORRECTION V27 *** */
 html, body {
     height: 100%;
     width: 100%;
@@ -61,21 +61,14 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    /* L'état par défaut est 'hidden' (pour la carte/résultats) */
-    overflow-y: hidden;
-}
-
-/* * V26 - Règle de scroll principale :
- * Le BODY scrolle si on n'est PAS en vue 'locked' (carte/résultats)
- */
-body:not(.view-is-locked) {
+    /* *** CORRECTION V27 *** */
+    /* L'état par défaut est 'auto' (pour le dashboard) */
     overflow-y: auto;
-    overscroll-behavior: auto;
 }
 
-/* (V1) Verrouille le scroll (confirmé) */
+/* V27 - Verrouille le scroll (pour la carte/résultats) */
 body.view-is-locked {
-    overflow: hidden;
+    overflow-y: hidden;
     overscroll-behavior: none; 
 }
 
@@ -83,7 +76,7 @@ body.view-is-locked {
 /* Conteneurs de vue principaux */
 #dashboard-container {
     flex: 1 0 auto;
-    /* *** CORRECTION V26 *** */
+    /* *** CORRECTION V27 *** */
     /* Le dashboard ne scrolle plus ; c'est le body qui s'en charge */
     overflow-y: visible;
     overflow-x: hidden;
@@ -883,13 +876,8 @@ details[open] .accordion-content {
 @media (max-width: 768px) {
     
     /* *** CORRECTION V26 *** */
-    /* Cette règle était la cause du bug de scroll imbriqué */
-    /* Elle est maintenant gérée par la règle globale body:not(.view-is-locked) */
-    /*
-    body:not(.view-is-locked) {
-        overflow-y: auto;
-    }
-    */
+    /* La règle conflictuelle (V25) est supprimée. */
+    /* Le 'body' scrolle par défaut, et 'body.view-is-locked' le bloque */
 
     .main-nav-buttons-condensed {
         grid-template-columns: 1fr;
