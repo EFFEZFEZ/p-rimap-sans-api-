@@ -47,7 +47,9 @@
 html, body {
     height: 100%;
     width: 100%;
-    overflow: hidden; /* Empêche le scroll global */
+    /* *** CORRECTION V24 *** */
+    /* overflow: hidden; */ /* <- SUPPRIMÉ */
+    overflow-x: hidden; /* On empêche juste le scroll horizontal */
     -webkit-font-smoothing: antialiased;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
@@ -65,12 +67,18 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    /* *** CORRECTION V24 *** */
+    /* L'état par défaut est 'hidden' (pour la vue carte / résultats) */
+    /* La règle mobile ':not(.view-is-locked)' l'activera pour le dashboard */
+    overflow-y: hidden;
 }
 
 /* Conteneurs de vue principaux */
 #dashboard-container {
     flex: 1 0 auto;
-    overflow-y: auto; /* Seul le dashboard-container peut scroller */
+    /* *** CORRECTION V24 *** */
+    /* overflow-y: auto; */ /* <- SUPPRIMÉ */
+    overflow-y: visible; /* On laisse le BODY gérer le scroll */
     overflow-x: hidden;
 }
 #map-container, #itinerary-results-container {
@@ -1241,14 +1249,11 @@ details[open] .accordion-content {
  * STYLES LEAFLET
  * ========================================= */
 
-/* * *** V23 - SOLUTION CSS TRANSITION ***
- * Anime la propriété 'transform' (utilisée by setLatLng)
- * sur les marqueurs ET les popups pour un suivi fluide.
- * 1000ms (1s) correspond au tick du timeManager.
- */
+/* *** V23 - SOLUTION CSS TRANSITION *** */
+/* (Valeur de 1000ms (1s) pour correspondre au tick) */
 .leaflet-marker-pane > *,
 .leaflet-popup-pane > * {
-    transition: transform 1000ms linear;
+    transition: transform 1000ms linear !important;
 }
 
 
