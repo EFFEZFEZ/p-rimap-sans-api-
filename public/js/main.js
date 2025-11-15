@@ -873,7 +873,7 @@ function renderItineraryResults(itineraries) {
                 `;
             } else { // BUS
                 return `
-                    <div class="summary-segment segment-bus">
+                    <div class.summary-segment segment-bus">
                         <div class="route-line-badge" style="background-color: ${segment.color}; color: ${segment.textColor};">${segment.name}</div>
                         <span class="segment-duration">${segment.duration}</span>
                     </div>
@@ -898,7 +898,7 @@ function renderItineraryResults(itineraries) {
             if (step.type === 'WALK') {
                 const hasSubSteps = step.subSteps && step.subSteps.length > 0;
                 return `
-                    <div class="step-detail walk">
+                    <div class_detail walk">
                         <div class="step-icon">
                             ${ICONS.WALK}
                         </div>
@@ -969,7 +969,7 @@ function renderItineraryResults(itineraries) {
         }).join('');
 
         
-        // *** CORRECTION V31 (Scroll to top) ***
+        // *** CORRECTION V32 (Logique V31 + V32) ***
         card.addEventListener('click', () => {
             // 1. Vérifier si celui sur lequel on clique est déjà actif
             const isAlreadyActive = card.classList.contains('is-active');
@@ -988,12 +988,13 @@ function renderItineraryResults(itineraries) {
                 details.classList.remove('hidden');
                 
                 // 4. Scroller le conteneur pour amener le 'wrapper' en haut
-                const scrollContainer = resultsListContainer.parentElement; // C'est .results-list-wrapper
+                const scrollContainer = resultsListContainer.parentElement; // .results-list-wrapper
                 if (scrollContainer) {
-                    // .offsetTop se réfère au parent 'resultsListContainer'
-                    // On doit utiliser wrapper.offsetTop
-                    scrollContainer.scroll({
-                        top: wrapper.offsetTop - scrollContainer.offsetTop - 16, // 16px padding
+                    // V32 : wrapper.offsetTop est la bonne valeur
+                    const targetScrollTop = wrapper.offsetTop;
+                    
+                    scrollContainer.scrollTo({
+                        top: targetScrollTop,
                         behavior: 'smooth'
                     });
                 }
@@ -1184,7 +1185,7 @@ function buildFicheHoraireList() {
         
         if (groupName === 'Lignes R') {
             linksHtml = `
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3 La Feuilleraie &lt;&gt; ESAT / Les Gourdoux &lt;&gt; Trélissac Les Garennes / Les Pinots &lt;&> P+R Aquacap</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3 La Feuilleraie &lt;&gt; ESAT / Les Gourdoux &lt;&gt; Trélissac Les Garennes / Les Pinots &lt;&gt; P+R Aquacap</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R4_R5_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R4, R5 Route de Payenché &lt;&gt; Collège Jean Moulin / Les Mondines / Clément Laval &lt;&gt; Collège Jean Moulin</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R6_R7_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R6, R7 Maison des Compagnons &lt;&gt; Gour de l’Arche poste / Le Charpe &lt;&gt; Gour de l’Arche poste</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R8_R9_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R8, R9 Jaunour &lt;&gt; Boulazac centre commercial / Stèle de Lesparat &lt;&gt; Place du 8 mai</a>
