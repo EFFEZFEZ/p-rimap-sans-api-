@@ -44,11 +44,10 @@
     box-sizing: border-box;
 }
 
-/* *** CORRECTION V27 *** */
+/* *** CORRECTION V26/V27 *** */
 html, body {
     height: 100%;
     width: 100%;
-    /* On empêche SEULEMENT le scroll horizontal */
     overflow-x: hidden; 
     -webkit-font-smoothing: antialiased;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -61,7 +60,6 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    /* *** CORRECTION V27 *** */
     /* L'état par défaut est 'auto' (pour le dashboard) */
     overflow-y: auto;
 }
@@ -76,7 +74,6 @@ body.view-is-locked {
 /* Conteneurs de vue principaux */
 #dashboard-container {
     flex: 1 0 auto;
-    /* *** CORRECTION V27 *** */
     /* Le dashboard ne scrolle plus ; c'est le body qui s'en charge */
     overflow-y: visible;
     overflow-x: hidden;
@@ -875,9 +872,7 @@ details[open] .accordion-content {
  * ========================================= */
 @media (max-width: 768px) {
     
-    /* *** CORRECTION V26 *** */
-    /* La règle conflictuelle (V25) est supprimée. */
-    /* Le 'body' scrolle par défaut, et 'body.view-is-locked' le bloque */
+    /* V27 - La règle de scroll mobile conflictuelle est supprimée */
 
     .main-nav-buttons-condensed {
         grid-template-columns: 1fr;
@@ -930,7 +925,8 @@ details[open] .accordion-content {
     }
     
     #map-container #map-view #top-bar > #btn-back-to-dashboard-from-map {
-        top: 15px;
+        /* *** CORRECTION V27 *** */
+        top: calc(15px + env(safe-area-inset-top));
         left: 15px;
         padding: 0.5rem 0.75rem;
         color: var(--primary); 
@@ -940,7 +936,8 @@ details[open] .accordion-content {
     
     #map-container #map-view #top-bar > #clock {
         display: flex !important; 
-        top: 15px; 
+        /* *** CORRECTION V27 *** */
+        top: calc(15px + env(safe-area-inset-top));
         left: 50%;
         transform: translateX(-50%);
         padding: 6px 10px;
@@ -951,7 +948,8 @@ details[open] .accordion-content {
     
     #map-container #map-view #top-bar > #status-info {
         display: flex !important; 
-        top: 15px;
+        /* *** CORRECTION V27 *** */
+        top: calc(15px + env(safe-area-inset-top));
         right: 15px;
         margin-left: 0;
         padding: 6px 10px;
@@ -963,7 +961,8 @@ details[open] .accordion-content {
     #map-container #map-view #top-bar > #btn-toggle-filter {
         top: auto;
         left: auto;
-        bottom: 30px;
+        /* V27 - Respecte la zone de sécurité en bas */
+        bottom: calc(30px + env(safe-area-inset-bottom));
         right: 20px;
         width: 56px;
         height: 56px;
@@ -986,6 +985,8 @@ details[open] .accordion-content {
         border-left: none;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transform: translateY(0); 
+        /* V27 - Ajoute un padding pour la barre d'accueil iOS */
+        padding-bottom: env(safe-area-inset-bottom);
     }
     #route-filter-panel.hidden { transform: translateY(100%); }
     .panel-handle {
@@ -1249,8 +1250,6 @@ details[open] .accordion-content {
  * ========================================= */
 
 /* *** V23 - SOLUTION CSS TRANSITION *** */
-/* (On conserve cette transition, car elle est utile */
-/* pour le 'double-clic' ou le zoom/dezoom) */
 .leaflet-marker-pane > *,
 .leaflet-popup-pane > * {
     transition: transform 1000ms linear !important;
