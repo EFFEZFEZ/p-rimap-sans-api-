@@ -990,8 +990,10 @@ function renderItineraryResults(itineraries) {
                 // 4. Scroller le conteneur pour amener le 'wrapper' en haut
                 const scrollContainer = resultsListContainer.parentElement; // C'est .results-list-wrapper
                 if (scrollContainer) {
+                    // .offsetTop se réfère au parent 'resultsListContainer'
+                    // On doit utiliser wrapper.offsetTop
                     scrollContainer.scroll({
-                        top: wrapper.offsetTop - 16, // -16 pour un peu de padding
+                        top: wrapper.offsetTop - scrollContainer.offsetTop - 16, // 16px padding
                         behavior: 'smooth'
                     });
                 }
@@ -1182,7 +1184,7 @@ function buildFicheHoraireList() {
         
         if (groupName === 'Lignes R') {
             linksHtml = `
-                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3 La Feuilleraie &lt;&gt; ESAT / Les Gourdoux &lt;&gt; Trélissac Les Garennes / Les Pinots &lt;&gt; P+R Aquacap</a>
+                <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R1_R2_R3_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R1, R2, R3 La Feuilleraie &lt;&gt; ESAT / Les Gourdoux &lt;&gt; Trélissac Les Garennes / Les Pinots &lt;&> P+R Aquacap</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R4_R5_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R4, R5 Route de Payenché &lt;&gt; Collège Jean Moulin / Les Mondines / Clément Laval &lt;&gt; Collège Jean Moulin</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R6_R7_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R6, R7 Maison des Compagnons &lt;&gt; Gour de l’Arche poste / Le Charpe &lt;&gt; Gour de l’Arche poste</a>
                 <a href="/data/fichehoraire/grandperigueux_fiche_horaires_ligne_R8_R9_sept_2025.pdf" target="_blank" rel="noopener noreferrer">Lignes R8, R9 Jaunour &lt;&gt; Boulazac centre commercial / Stèle de Lesparat &lt;&gt; Place du 8 mai</a>
