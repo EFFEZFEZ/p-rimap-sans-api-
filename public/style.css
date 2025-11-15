@@ -2092,4 +2092,26 @@ details[open] .accordion-content {
         width: 18px;
         height: 18px;
     }
+    /* V18 - Styles pour popup stable */
+.bus-popup-stable {
+    pointer-events: auto !important;
+}
+
+.bus-popup-stable .leaflet-popup-content-wrapper {
+    transition: none !important;
+}
+
+.info-popup-content {
+    min-height: 120px; /* Évite les changements de hauteur brutaux */
+}
+
+/* Transitions douces pour les mises à jour de contenu */
+[data-update] {
+    transition: opacity 0.2s ease;
+}
+
+.wait-time, .eta-value {
+    font-variant-numeric: tabular-nums !important;
+    display: inline-block !important;
+    min-width: 80px !important;
 }
