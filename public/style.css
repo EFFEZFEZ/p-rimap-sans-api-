@@ -44,7 +44,7 @@
     box-sizing: border-box;
 }
 
-/* *** CORRECTION V28 FINALE *** */
+/* *** CORRECTION V29 (V28 + V27) *** */
 html, body {
     height: 100%;
     width: 100%;
@@ -869,8 +869,6 @@ details[open] .accordion-content {
  * ========================================= */
 @media (max-width: 768px) {
     
-    /* V27 - La règle de scroll mobile conflictuelle est supprimée */
-
     .main-nav-buttons-condensed {
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -922,7 +920,7 @@ details[open] .accordion-content {
     }
     
     #map-container #map-view #top-bar > #btn-back-to-dashboard-from-map {
-        /* *** CORRECTION V27 *** */
+        /* *** CORRECTION V29 (V27) *** */
         top: calc(15px + env(safe-area-inset-top));
         left: 15px;
         padding: 0.5rem 0.75rem;
@@ -933,7 +931,7 @@ details[open] .accordion-content {
     
     #map-container #map-view #top-bar > #clock {
         display: flex !important; 
-        /* *** CORRECTION V27 *** */
+        /* *** CORRECTION V29 (V27) *** */
         top: calc(15px + env(safe-area-inset-top));
         left: 50%;
         transform: translateX(-50%);
@@ -945,7 +943,7 @@ details[open] .accordion-content {
     
     #map-container #map-view #top-bar > #status-info {
         display: flex !important; 
-        /* *** CORRECTION V27 *** */
+        /* *** CORRECTION V29 (V27) *** */
         top: calc(15px + env(safe-area-inset-top));
         right: 15px;
         margin-left: 0;
@@ -958,7 +956,7 @@ details[open] .accordion-content {
     #map-container #map-view #top-bar > #btn-toggle-filter {
         top: auto;
         left: auto;
-        /* V27 - Respecte la zone de sécurité en bas */
+        /* *** CORRECTION V29 (V27) *** */
         bottom: calc(30px + env(safe-area-inset-bottom));
         right: 20px;
         width: 56px;
@@ -982,7 +980,7 @@ details[open] .accordion-content {
         border-left: none;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transform: translateY(0); 
-        /* V27 - Ajoute un padding pour la barre d'accueil iOS */
+        /* *** CORRECTION V29 (V27) *** */
         padding-bottom: env(safe-area-inset-bottom);
     }
     #route-filter-panel.hidden { transform: translateY(100%); }
