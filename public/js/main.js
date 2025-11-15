@@ -1368,8 +1368,13 @@ function initializeRouteFilter() {
         routes.forEach(route => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'route-checkbox-item';
-            const routeColor = route.route_color ? `#${route.route_color}` : '3388ff';
-            const textColor = route.route_text_color ? `#${route.route_text_color}` : 'ffffff';
+            
+            // *** CORRECTION V30 (BUG ##) ***
+            // Le '#' est retiré des variables. Il est appliqué
+            // directement et uniquement dans la chaîne innerHTML.
+            const routeColor = route.route_color ? route.route_color : '3388ff';
+            const textColor = route.route_text_color ? route.route_text_color : 'ffffff';
+            
             itemDiv.innerHTML = `
                 <input type="checkbox" id="route-${route.route_id}" data-category="${categoryId}" checked>
                 <div class="route-badge" style="background-color: #${routeColor}; color: #${textColor};">
@@ -1410,7 +1415,7 @@ function handleRouteFilterChange() {
     visibleRoutes.clear();
     dataManager.routes.forEach(route => {
         const checkbox = document.getElementById(`route-${route.route_id}`);
-        if (checkbox && checkbox.checked) { visibleRoutes.add(route.route_id); }
+        if (checkbox && checkbox.checked) { visibleRoutes.add(bus.route.route_id); }
     });
     if (dataManager.geoJson) {
         mapRenderer.displayMultiColorRoutes(dataManager.geoJson, dataManager, visibleRoutes);
