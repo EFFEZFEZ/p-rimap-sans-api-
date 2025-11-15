@@ -1702,7 +1702,9 @@ details[open] .accordion-content {
 .results-list-wrapper {
     flex: 1;
     overflow-y: auto;
+    /* *** CORRECTION V34 *** */
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .results-list {
@@ -1764,6 +1766,8 @@ details[open] .accordion-content {
     flex: 1; /* Prend le reste de la hauteur */
     overflow-y: auto;
     position: relative;
+    /* *** CORRECTION V34 *** */
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
 }
 #detail-panel-content {
