@@ -399,10 +399,8 @@ function setupStaticEventListeners() {
     document.getElementById('btn-horaires-search-focus').addEventListener('click', () => {
         const horairesCard = document.getElementById('horaires');
         if (horairesCard) {
-            const mainDashboard = document.getElementById('dashboard-main');
-            if (mainDashboard) {
-                 mainDashboard.scrollTo({ top: horairesCard.offsetTop - 80, behavior: 'smooth' });
-            }
+            // V28 - On scrolle 'window' (le body)
+            window.scrollTo({ top: horairesCard.offsetTop - 80, behavior: 'smooth' });
         }
         searchBar.focus();
     });
@@ -971,7 +969,7 @@ function renderItineraryResults(itineraries) {
         }).join('');
 
         
-        // *** CORRECTION V30 (LOGIQUE ACCORDÉON) ***
+        // *** CORRECTION V31 (Scroll to top) ***
         card.addEventListener('click', () => {
             // 1. Vérifier si celui sur lequel on clique est déjà actif
             const isAlreadyActive = card.classList.contains('is-active');
@@ -988,6 +986,15 @@ function renderItineraryResults(itineraries) {
             if (!isAlreadyActive) {
                 card.classList.add('is-active');
                 details.classList.remove('hidden');
+                
+                // 4. Scroller le conteneur pour amener le 'wrapper' en haut
+                const scrollContainer = resultsListContainer.parentElement; // C'est .results-list-wrapper
+                if (scrollContainer) {
+                    scrollContainer.scroll({
+                        top: wrapper.offsetTop - 16, // -16 pour un peu de padding
+                        behavior: 'smooth'
+                    });
+                }
             }
         });
         // *** FIN CORRECTION ***
