@@ -1240,6 +1240,18 @@ details[open] .accordion-content {
 /* =========================================
  * STYLES LEAFLET
  * ========================================= */
+
+/* * *** V23 - SOLUTION CSS TRANSITION ***
+ * Anime la propriété 'transform' (utilisée by setLatLng)
+ * sur les marqueurs ET les popups pour un suivi fluide.
+ * 1000ms (1s) correspond au tick du timeManager.
+ */
+.leaflet-marker-pane > *,
+.leaflet-popup-pane > * {
+    transition: transform 1000ms linear;
+}
+
+
 .leaflet-popup-content-wrapper {
     border-radius: var(--radius-lg); 
     box-shadow: var(--shadow-md);
@@ -2092,26 +2104,4 @@ details[open] .accordion-content {
         width: 18px;
         height: 18px;
     }
-    /* V18 - Styles pour popup stable */
-.bus-popup-stable {
-    pointer-events: auto !important;
-}
-
-.bus-popup-stable .leaflet-popup-content-wrapper {
-    transition: none !important;
-}
-
-.info-popup-content {
-    min-height: 120px; /* Évite les changements de hauteur brutaux */
-}
-
-/* Transitions douces pour les mises à jour de contenu */
-[data-update] {
-    transition: opacity 0.2s ease;
-}
-
-.wait-time, .eta-value {
-    font-variant-numeric: tabular-nums !important;
-    display: inline-block !important;
-    min-width: 80px !important;
 }
