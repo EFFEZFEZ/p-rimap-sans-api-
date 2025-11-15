@@ -1,23 +1,18 @@
 /**
- * mapRenderer.js - VERSION V21 (Solution Cluster Ejection)
+ * mapRenderer.js - VERSION V22 (Retour à la V20 + V18)
  *
- * *** SOLUTION V21 - BUG DU CLUSTER CONTOURNÉ ***
- * - Le bug V20 est confirmé : setLatLng() sur un marqueur
- * dans un MarkerClusterGroup ferme son popup.
+ * *** SOLUTION DÉFINITIVE STABLE ***
+ * - Le bug V21 (éjection du cluster) est abandonné (il cause des freezes).
  *
- * - NOUVELLE SOLUTION :
- * 1. Quand un popup s'OUVRE ('popupopen') :
- * - Le marqueur est RETIRÉ du clusterGroup.
- * - Le marqueur est AJOUTÉ à la carte (this.map).
- * 2. Quand un popup se FERME ('popupclose') :
- * - Le marqueur est RETIRÉ de la carte.
- * - Le marqueur est RÉ-AJOUTÉ au clusterGroup.
+ * - RETOUR à la logique V20 (la plus stable) :
+ * 1. Quand un popup est OUVERT, on n'appelle PAS setLatLng().
+ * (le marqueur gèle, mais le popup ne clignote plus).
+ * 2. On utilise la logique V18 (bindPopup(DOMElement)) pour
+ * permettre la mise à jour de l'ETA sans clignotement.
  *
  * - RÉSULTAT :
- * Un marqueur avec un popup ouvert est un marqueur "normal".
- * setLatLng() fonctionne, le bus bouge.
- * updateBusPopupContent() fonctionne, l'ETA se met à jour.
- * Plus aucun clignotement.
+ * Le bus gèle quand on le clique, mais le popup est 100% stable
+ * et l'ETA se met à jour fluidement.
  */
 
 export class MapRenderer {
@@ -219,8 +214,8 @@ export class MapRenderer {
     }
 
     /**
-     * V21 - setLatLng() est maintenant TOUJOURS appelé
-     * La logique 'popupopen'/'popupclose' (V21) gère le bug du cluster
+     * V22 - Retour à la logique V20 (la plus stable)
+     * Ne pas appeler setLatLng() si le popup est ouvert
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -250,13 +245,18 @@ export class MapRenderer {
                 const markerData = this.busMarkers[busId];
                 markerData.bus = bus;
                 
-                // *** V21 - On appelle TOUJOURS setLatLng() ***
-                // La logique 'popupopen' gère le bug du cluster
-                markerData.marker.setLatLng([lat, lon]);
-
-                // On met à jour le contenu (si ouvert)
-                if (markerData.marker.isPopupOpen() && markerData.popupDomElement) {
-                    this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
+                // *** V22 - LOGIQUE V20 RÉTABLIE ***
+                const isPopupOpen = markerData.marker.isPopupOpen();
+                
+                if (!isPopupOpen) {
+                    // Popup fermé : on peut déplacer le marqueur normalement
+                    markerData.marker.setLatLng([lat, lon]);
+                } else {
+                    // Popup ouvert : on ne touche PAS au marqueur (il gèle)
+                    // On met UNIQUEMENT à jour le contenu du popup
+                    if (markerData.popupDomElement) {
+                        this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
+                    }
                 }
 
             } else {
@@ -287,7 +287,7 @@ export class MapRenderer {
     }
 
     /**
-     * V21 - Mise à jour silencieuse du contenu
+     * V22 - Mise à jour silencieuse du contenu (Logique V18)
      */
     updateBusPopupContent(domElement, bus, tripScheduler) {
         try {
@@ -325,7 +325,7 @@ export class MapRenderer {
     }
 
     /**
-     * V21 - Crée un élément DOM pour le popup
+     * V22 - Crée un élément DOM pour le popup (Logique V18)
      */
     createBusPopupDomElement(bus, tripScheduler) {
         const route = bus.route;
@@ -388,7 +388,7 @@ export class MapRenderer {
         const etaValue = document.createElement('span');
         etaValue.setAttribute('data-update', 'eta-value');
         etaValue.textContent = etaText;
-        etaValue.style.fontVariantNumeric = 'tabular-nums'; 
+        etaValue.style.fontVariantNumeric = 'tabular-nums'; // Anti-layout shift (V17)
         etaValue.style.display = 'inline-block';
         etaValue.style.minWidth = '80px';
         etaP.appendChild(etaLabel);
@@ -409,7 +409,7 @@ export class MapRenderer {
     }
 
     /**
-     * V21 - Ajout des écouteurs 'popupopen' et 'popupclose'
+     * V22 - Création d'un marqueur (Logique V18)
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -441,23 +441,6 @@ export class MapRenderer {
         
         // Bind le popup avec l'élément DOM stable
         marker.bindPopup(popupDomElement);
-
-        // *** V21 - LOGIQUE D'ÉJECTION DU CLUSTER ***
-        marker.on('popupopen', () => {
-            if (this.clusterGroup.hasLayer(marker)) {
-                this.clusterGroup.removeLayer(marker);
-                marker.addTo(this.map);
-            }
-        });
-
-        marker.on('popupclose', () => {
-            // Remet le marqueur dans le cluster SEULEMENT s'il n'est pas
-            // sur le point d'être supprimé (ce qui causerait une erreur)
-            if (this.busMarkers[busId]) { 
-                marker.removeFrom(this.map);
-                this.clusterGroup.addLayer(marker);
-            }
-        });
 
         return markerData;
     }
@@ -594,7 +577,7 @@ export class MapRenderer {
                 html += `
                     <div class="departure-item">
                         <div class="departure-info">
-                            <span class.departure-badge" style="background-color: #${dep.routeColor}; color: #${dep.routeTextColor};">
+                            <span class="departure-badge" style="background-color: #${dep.routeColor}; color: #${dep.routeTextColor};">
                                 ${dep.routeShortName}
                             </span>
                             <span class="departure-dest">${dep.destination}</span>
