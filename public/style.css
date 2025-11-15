@@ -44,7 +44,7 @@
     box-sizing: border-box;
 }
 
-/* *** CORRECTION V26/V27 *** */
+/* *** CORRECTION V28 FINALE *** */
 html, body {
     height: 100%;
     width: 100%;
@@ -60,34 +60,31 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    /* L'état par défaut est 'auto' (pour le dashboard) */
+    /* Par défaut, le body scrolle (pour le dashboard) */
     overflow-y: auto;
 }
 
-/* V27 - Verrouille le scroll (pour la carte/résultats) */
+/* Verrouille le scroll UNIQUEMENT pour les vues plein écran */
 body.view-is-locked {
-    overflow-y: hidden;
+    overflow: hidden;
     overscroll-behavior: none; 
 }
-
 
 /* Conteneurs de vue principaux */
 #dashboard-container {
     flex: 1 0 auto;
-    /* Le dashboard ne scrolle plus ; c'est le body qui s'en charge */
-    overflow-y: visible;
-    overflow-x: hidden;
-}
-#map-container, #itinerary-results-container {
-    flex: 1 0 auto; 
-    display: flex; /* S'assure qu'ils remplissent l'espace */
+    /* Le dashboard utilise le scroll naturel du body - AUCUNE règle overflow */
 }
 
+#map-container, #itinerary-results-container {
+    flex: 1 0 auto; 
+    display: flex;
+    overflow: hidden; /* Ces vues plein écran ne scrollent pas */
+}
 
 .hidden {
     display: none !important;
 }
-
 /* =========================================
  * NOUVELLE EN-TÊTE (Effet "Liquid Glass")
  * ========================================= */
