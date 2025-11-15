@@ -44,12 +44,12 @@
     box-sizing: border-box;
 }
 
+/* *** CORRECTION V25 *** */
+/* Le body/html est TOUJOURS caché (c'est la coquille de l'app) */
 html, body {
     height: 100%;
     width: 100%;
-    /* *** CORRECTION V24 *** */
-    /* overflow: hidden; */ /* <- SUPPRIMÉ */
-    overflow-x: hidden; /* On empêche juste le scroll horizontal */
+    overflow: hidden; /* <- RÉTABLI */
     -webkit-font-smoothing: antialiased;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
@@ -67,18 +67,15 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    /* *** CORRECTION V24 *** */
-    /* L'état par défaut est 'hidden' (pour la vue carte / résultats) */
-    /* La règle mobile ':not(.view-is-locked)' l'activera pour le dashboard */
-    overflow-y: hidden;
+    /* overflow-y: hidden; <- Supprimé (géré par html, body) */
 }
 
 /* Conteneurs de vue principaux */
 #dashboard-container {
     flex: 1 0 auto;
-    /* *** CORRECTION V24 *** */
-    /* overflow-y: auto; */ /* <- SUPPRIMÉ */
-    overflow-y: visible; /* On laisse le BODY gérer le scroll */
+    /* *** CORRECTION V25 *** */
+    /* C'est le dashboard qui scrolle, pas le body */
+    overflow-y: auto; /* <- RÉTABLI */
     overflow-x: hidden;
 }
 #map-container, #itinerary-results-container {
@@ -875,10 +872,11 @@ details[open] .accordion-content {
  * ========================================= */
 @media (max-width: 768px) {
     
-    /* Gère le scroll du body pour le dashboard */
-    body:not(.view-is-locked) {
+    /* *** CORRECTION V25 *** */
+    /* Cette règle était la cause du bug de scroll imbriqué */
+    /* body:not(.view-is-locked) {
         overflow-y: auto;
-    }
+    } */
 
     .main-nav-buttons-condensed {
         grid-template-columns: 1fr;
@@ -1251,10 +1249,13 @@ details[open] .accordion-content {
 
 /* *** V23 - SOLUTION CSS TRANSITION *** */
 /* (Valeur de 1000ms (1s) pour correspondre au tick) */
+/* (Supprimé car le bug V24 (popup indépendant) est meilleur) */
+/*
 .leaflet-marker-pane > *,
 .leaflet-popup-pane > * {
     transition: transform 1000ms linear !important;
 }
+*/
 
 
 .leaflet-popup-content-wrapper {
