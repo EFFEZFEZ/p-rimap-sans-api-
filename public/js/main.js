@@ -21,7 +21,8 @@ let timeManager;
 let tripScheduler;
 let busPositionCalculator;
 let mapRenderer;
-let resultsMapRenderer; 
+// *** V33 - Renommé pour plus de clarté ***
+let detailMapRenderer; 
 let visibleRoutes = new Set();
 let apiManager; 
 
@@ -106,12 +107,17 @@ let searchBar, searchResultsContainer;
 // ÉLÉMENTS DOM (VUE 2: CARTE)
 let mapContainer, btnShowMap, btnBackToDashboardFromMap;
 
-// ÉLÉMENTS DOM (VUE 3: RÉSULTATS)
+// ÉLÉMENTS DOM (VUE 3: RÉSULTATS - ECRAN 1 LISTE)
 let itineraryResultsContainer, btnBackToDashboardFromResults, resultsListContainer;
 // PLANIFICATEUR (RÉSULTATS)
 let resultsFromInput, resultsToInput, resultsFromSuggestions, resultsToSuggestions;
 let resultsSwapBtn, resultsWhenBtn, resultsPopover, resultsDate, resultsHour, resultsMinute;
 let resultsPopoverSubmitBtn, resultsPlannerSubmitBtn;
+
+// *** V33 - NOUVEAUX ÉLÉMENTS DOM (VUE 3: RÉSULTATS - ECRAN 2 DÉTAIL) ***
+let itineraryDetailContainer, btnBackToResults, detailMapHeader, detailMapSummary;
+let detailPanelWrapper, detailPanelContent;
+let currentDetailRouteLayer = null; // Garde la trace du tracé sur la carte
 
 // --- ÉLÉMENTS DOM (PLANIFICATEUR DU HALL) ---
 let hallPlannerSubmitBtn, hallFromInput, hallToInput, hallFromSuggestions, hallToSuggestions;
@@ -162,7 +168,7 @@ async function initializeApp() {
     btnShowMap = document.getElementById('btn-show-map');
     btnBackToDashboardFromMap = document.getElementById('btn-back-to-dashboard-from-map');
     
-    // VUE 3: RÉSULTATS (Général)
+    // VUE 3: RÉSULTATS (ECRAN 1 - LISTE)
     itineraryResultsContainer = document.getElementById('itinerary-results-container');
     btnBackToDashboardFromResults = document.getElementById('btn-back-to-dashboard-from-results');
     resultsListContainer = document.querySelector('#itinerary-results-container .results-list');
@@ -180,6 +186,15 @@ async function initializeApp() {
     resultsMinute = document.getElementById('results-popover-minute');
     resultsPopoverSubmitBtn = document.getElementById('results-popover-submit-btn');
     resultsPlannerSubmitBtn = document.getElementById('results-planner-submit-btn');
+
+    // *** V33 - NOUVEAUX SÉLECTEURS (ECRAN 2 - DÉTAIL) ***
+    itineraryDetailContainer = document.getElementById('itinerary-detail-container');
+    btnBackToResults = document.getElementById('btn-back-to-results');
+    detailMapHeader = document.getElementById('detail-map-header');
+    detailMapSummary = document.getElementById('detail-map-summary');
+    detailPanelWrapper = document.getElementById('detail-panel-wrapper');
+    detailPanelContent = document.getElementById('detail-panel-content');
+
 
     // VUE 1: PLANIFICATEUR (HALL)
     hallPlannerSubmitBtn = document.getElementById('planner-submit-btn');
@@ -212,8 +227,9 @@ async function initializeApp() {
         mapRenderer = new MapRenderer('map', dataManager, timeManager);
         mapRenderer.initializeMap();
 
-        resultsMapRenderer = new MapRenderer('results-map', dataManager, timeManager);
-        resultsMapRenderer.initializeMap(false); 
+        // *** V33 - Initialise la NOUVELLE carte des détails ***
+        detailMapRenderer = new MapRenderer('detail-map', dataManager, timeManager);
+        detailMapRenderer.initializeMap(false); // false = pas de clusters
         
         tripScheduler = new TripScheduler(dataManager);
         busPositionCalculator = new BusPositionCalculator(dataManager);
@@ -230,7 +246,7 @@ async function initializeApp() {
         setupDataDependentEventListeners();
 
         if (localStorage.getItem('gtfsInstructionsShown') !== 'true') {
-            document.getElementById('instructions').classList.remove('hidden');
+            document.getElementById('instructions').classList.add('hidden');
         }
         
         updateDataStatus('Données chargées', 'loaded');
@@ -345,6 +361,18 @@ function setupStaticEventListeners() {
     btnBackToDashboardFromResults.addEventListener('click', showDashboardHall); // Bouton "Retour" dans le panneau d'édition
     btnBackToHall.addEventListener('click', showDashboardHall);
     
+    // *** V33 - NOUVEAUX ÉCOUTEURS ***
+    btnBackToResults.addEventListener('click', hideDetailView);
+
+    // Écouteur de scroll pour la réduction de la carte
+    detailPanelWrapper.addEventListener('scroll', () => {
+        if (detailPanelWrapper.scrollTop > 10) {
+            itineraryDetailContainer.classList.add('is-scrolled');
+        } else {
+            itineraryDetailContainer.classList.remove('is-scrolled');
+        }
+    });
+    // *** FIN V33 ***
 
     alertBannerClose.addEventListener('click', () => alertBanner.classList.add('hidden'));
     
@@ -720,7 +748,8 @@ function renderSuggestions(suggestions, container, onSelect) {
     container.style.display = 'block';
 }
 
-// *** FONCTION ENTIÈREMENT REMPLACÉE PAR VOTRE CORRECTIF ***
+// *** MODIFIÉ V33 ***
+// Ajout de 'polyline: route.polyline' à l'objet itinéraire
 function processGoogleRoutesResponse(data) {
     if (!data || !data.routes || data.routes.length === 0) {
         console.warn("Réponse de l'API Routes vide ou invalide.");
@@ -728,7 +757,6 @@ function processGoogleRoutesResponse(data) {
     }
     return data.routes.map(route => {
         const leg = route.legs[0];                 
-        // *** CORRECTION : Utiliser localizedValues pour les heures ***
         const departureTime = leg.localizedValues?.departureTime?.time?.text || "--:--";
         const arrivalTime = leg.localizedValues?.arrivalTime?.time?.text || "--:--";
                 
@@ -736,6 +764,7 @@ function processGoogleRoutesResponse(data) {
             departureTime: departureTime,
             arrivalTime: arrivalTime,
             duration: formatGoogleDuration(route.duration),
+            polyline: route.polyline, // <-- AJOUTÉ V33
             summarySegments: [], 
             steps: []
         };
@@ -784,7 +813,6 @@ function processGoogleRoutesResponse(data) {
                     const arrivalStop = stopDetails.arrivalStop || {};
                                         
                     const intermediateStops = (stopDetails.intermediateStops || []).map(stop => stop.name || 'Arrêt inconnu');
-                    // *** CORRECTION : Utiliser localizedValues pour les heures des arrêts ***
                     const depTime = transit.localizedValues?.departureTime?.time?.text ||
                                     formatGoogleTime(stopDetails.departureTime);
                     const arrTime = transit.localizedValues?.arrivalTime?.time?.text ||
@@ -841,6 +869,9 @@ function processGoogleRoutesResponse(data) {
 
 /**
  * Affiche les itinéraires formatés dans la liste des résultats
+ * *** MODIFIÉ V33 ***
+ * - N'affiche plus les détails
+ * - Le clic appelle 'renderItineraryDetail' et 'showDetailView'
  */
 function renderItineraryResults(itineraries) {
     if (!resultsListContainer) return;
@@ -873,7 +904,7 @@ function renderItineraryResults(itineraries) {
                 `;
             } else { // BUS
                 return `
-                    <div class.summary-segment segment-bus">
+                    <div class="summary-segment segment-bus">
                         <div class="route-line-badge" style="background-color: ${segment.color}; color: ${segment.textColor};">${segment.name}</div>
                         <span class="segment-duration">${segment.duration}</span>
                     </div>
@@ -891,123 +922,137 @@ function renderItineraryResults(itineraries) {
             </div>
         `;
         
-        const details = document.createElement('div');
-        details.className = 'route-details hidden'; 
-
-        details.innerHTML = itinerary.steps.map(step => {
-            if (step.type === 'WALK') {
-                const hasSubSteps = step.subSteps && step.subSteps.length > 0;
-                return `
-                    <div class_detail walk">
-                        <div class="step-icon">
-                            ${ICONS.WALK}
-                        </div>
-                        <div class="step-info">
-                            <span class="step-instruction">Marche <span class="step-duration-inline">(${step.duration})</span></span>
-                            
-                            ${hasSubSteps ? `
-                            <details class="intermediate-stops">
-                                <summary>
-                                    <span>Environ ${step.duration}, ${step.distance}</span>
-                                    <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                                </summary>
-                                <ul class="intermediate-stops-list walk-steps">
-                                    ${step.subSteps.map(subStep => `<li>${subStep.instruction} ${subStep.distance ? `(${subStep.distance})` : ''}</li>`).join('')}
-                                </ul>
-                            </details>
-                            ` : `<span class="step-sub-instruction">${step.instruction}</span>`}
-                        </div>
-                    </div>
-                `;
-            } else { // BUS
-                const hasIntermediateStops = step.intermediateStops && step.intermediateStops.length > 0;
-                // Calcule le nombre d'arrêts intermédiaires
-                const intermediateStopCount = hasIntermediateStops ? step.intermediateStops.length : (step.numStops > 1 ? step.numStops - 1 : 0);
-                
-                let stopCountLabel = 'Direct';
-                if (intermediateStopCount > 1) {
-                    stopCountLabel = `${intermediateStopCount} arrêts`;
-                } else if (intermediateStopCount === 1) {
-                    stopCountLabel = `1 arrêt`;
-                }
-
-                return `
-                    <div class="step-detail bus">
-                        <div class="step-icon">
-                            <div class="route-line-badge" style="background-color: ${step.routeColor}; color: ${step.routeTextColor};">${step.routeShortName}</div>
-                        </div>
-                        <div class="step-info">
-                            <span class="step-instruction">${step.instruction} <span class="step-duration-inline">(${step.duration})</span></span>
-                            
-                            <div class="step-stop-point">
-                                <span class="step-time">Montée à <strong>${step.departureStop}</strong></span>
-                                <span class="step-time-detail">(${step.departureTime})</span>
-                            </div>
-                            
-                            ${(intermediateStopCount > 0) ? `
-                            <details class="intermediate-stops">
-                                <summary>
-                                    <span>${stopCountLabel}</span>
-                                    <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                                </summary>
-                                ${hasIntermediateStops ? `
-                                <ul class="intermediate-stops-list">
-                                    ${step.intermediateStops.map(stopName => `<li>${stopName}</li>`).join('')}
-                                </ul>
-                                ` : `<ul class="intermediate-stops-list"><li>(La liste détaillée des arrêts n'est pas disponible)</li></ul>`}
-                            </details>
-                            ` : ''}
-                            
-                            <div class="step-stop-point">
-                                <span class="step-time">Descente à <strong>${step.arrivalStop}</strong></span>
-                                <span class="step-time-detail">(${step.arrivalTime})</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        }).join('');
+        // *** V33 - Le 'details' div n'est plus créé ici ***
 
         
-        // *** CORRECTION V32 (Logique V31 + V32) ***
+        // *** V33 - Le Clic gère la navigation ***
         card.addEventListener('click', () => {
-            // 1. Vérifier si celui sur lequel on clique est déjà actif
-            const isAlreadyActive = card.classList.contains('is-active');
-            
-            // 2. Fermer tous les autres
-            resultsListContainer.querySelectorAll('.route-option.is-active').forEach(c => {
-                c.classList.remove('is-active');
-            });
-            resultsListContainer.querySelectorAll('.route-details:not(.hidden)').forEach(d => {
-                d.classList.add('hidden');
-            });
-            
-            // 3. Si celui-ci n'était pas actif, on l'ouvre
-            if (!isAlreadyActive) {
-                card.classList.add('is-active');
-                details.classList.remove('hidden');
-                
-                // 4. Scroller le conteneur pour amener le 'wrapper' en haut
-                const scrollContainer = resultsListContainer.parentElement; // .results-list-wrapper
-                if (scrollContainer) {
-                    // V32 : wrapper.offsetTop est la bonne valeur
-                    const targetScrollTop = wrapper.offsetTop;
-                    
-                    scrollContainer.scrollTo({
-                        top: targetScrollTop,
-                        behavior: 'smooth'
-                    });
-                }
-            }
+            renderItineraryDetail(itinerary);
+            showDetailView();
         });
-        // *** FIN CORRECTION ***
 
 
         wrapper.appendChild(card);
-        wrapper.appendChild(details);
+        // Le 'details' div n'est plus ajouté ici
         resultsListContainer.appendChild(wrapper);
     });
 }
+
+/**
+ * *** NOUVELLE FONCTION V33 ***
+ * Remplit l'écran 2 (Détail) avec les infos du trajet
+ */
+function renderItineraryDetail(itinerary) {
+    if (!detailPanelContent || !detailMapRenderer) return;
+
+    // 1. Remplir le panneau de détails
+    const stepsHtml = itinerary.steps.map(step => {
+        if (step.type === 'WALK') {
+            const hasSubSteps = step.subSteps && step.subSteps.length > 0;
+            return `
+                <div class="step-detail walk">
+                    <div class="step-icon">
+                        ${ICONS.WALK}
+                    </div>
+                    <div class="step-info">
+                        <span class="step-instruction">Marche <span class="step-duration-inline">(${step.duration})</span></span>
+                        
+                        ${hasSubSteps ? `
+                        <details class="intermediate-stops">
+                            <summary>
+                                <span>Environ ${step.duration}, ${step.distance}</span>
+                                <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                            </summary>
+                            <ul class="intermediate-stops-list walk-steps">
+                                ${step.subSteps.map(subStep => `<li>${subStep.instruction} ${subStep.distance ? `(${subStep.distance})` : ''}</li>`).join('')}
+                            </ul>
+                        </details>
+                        ` : `<span class="step-sub-instruction">${step.instruction}</span>`}
+                    </div>
+                </div>
+            `;
+        } else { // BUS
+            const hasIntermediateStops = step.intermediateStops && step.intermediateStops.length > 0;
+            const intermediateStopCount = hasIntermediateStops ? step.intermediateStops.length : (step.numStops > 1 ? step.numStops - 1 : 0);
+            
+            let stopCountLabel = 'Direct';
+            if (intermediateStopCount > 1) {
+                stopCountLabel = `${intermediateStopCount} arrêts`;
+            } else if (intermediateStopCount === 1) {
+                stopCountLabel = `1 arrêt`;
+            }
+
+            return `
+                <div class="step-detail bus">
+                    <div class="step-icon">
+                        <div class="route-line-badge" style="background-color: ${step.routeColor}; color: ${step.routeTextColor};">${step.routeShortName}</div>
+                    </div>
+                    <div class="step-info">
+                        <span class="step-instruction">${step.instruction} <span class="step-duration-inline">(${step.duration})</span></span>
+                        
+                        <div class="step-stop-point">
+                            <span class="step-time">Montée à <strong>${step.departureStop}</strong></span>
+                            <span class="step-time-detail">(${step.departureTime})</span>
+                        </div>
+                        
+                        ${(intermediateStopCount > 0) ? `
+                        <details class="intermediate-stops">
+                            <summary>
+                                <span>${stopCountLabel}</span>
+                                <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                            </summary>
+                            ${hasIntermediateStops ? `
+                            <ul class="intermediate-stops-list">
+                                ${step.intermediateStops.map(stopName => `<li>${stopName}</li>`).join('')}
+                            </ul>
+                            ` : `<ul class="intermediate-stops-list"><li>(La liste détaillée des arrêts n'est pas disponible)</li></ul>`}
+                        </details>
+                        ` : ''}
+                        
+                        <div class="step-stop-point">
+                            <span class="step-time">Descente à <strong>${step.arrivalStop}</strong></span>
+                            <span class="step-time-detail">(${step.arrivalTime})</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }).join('');
+
+    detailPanelContent.innerHTML = stepsHtml;
+
+    // 2. Mettre à jour le résumé
+    if(detailMapSummary) {
+        detailMapSummary.innerHTML = `
+            <span class="route-time">${itinerary.departureTime} &gt; ${itinerary.arrivalTime}</span>
+            <span class="route-duration">${itinerary.duration}</span>
+        `;
+    }
+
+    // 3. Dessiner le tracé sur la carte
+    if (detailMapRenderer.map && itinerary.polyline) {
+        // Supprimer l'ancien tracé s'il existe
+        if (currentDetailRouteLayer) {
+            detailMapRenderer.map.removeLayer(currentDetailRouteLayer);
+        }
+        
+        // Google envoie un GeoJSON LineString
+        const geometry = itinerary.polyline.geoJsonLinestring;
+        if (geometry) {
+            currentDetailRouteLayer = L.geoJSON(geometry, {
+                style: {
+                    color: 'var(--primary)',
+                    weight: 5,
+                    opacity: 0.8
+                }
+            }).addTo(detailMapRenderer.map);
+            
+            // Centrer la carte sur le tracé
+            detailMapRenderer.map.fitBounds(currentDetailRouteLayer.getBounds(), { padding: [20, 20] });
+        }
+    }
+}
+
 
 /**
  * Helper pour formater le temps ISO de Google en HH:MM
@@ -1281,6 +1326,7 @@ function renderAlertBanner() {
 function showMapView() {
     dashboardContainer.classList.add('hidden');
     itineraryResultsContainer.classList.add('hidden');
+    itineraryDetailContainer.classList.add('hidden'); // V33
     mapContainer.classList.remove('hidden');
     document.body.classList.add('view-is-locked'); 
     if (mapRenderer && mapRenderer.map) {
@@ -1291,6 +1337,7 @@ function showMapView() {
 function showDashboardHall() {
     dashboardContainer.classList.remove('hidden');
     itineraryResultsContainer.classList.add('hidden');
+    itineraryDetailContainer.classList.add('hidden'); // V33
     mapContainer.classList.add('hidden');
     document.body.classList.remove('view-is-locked'); 
     
@@ -1307,21 +1354,45 @@ function showDashboardHall() {
 function showResultsView() {
     dashboardContainer.classList.add('hidden');
     itineraryResultsContainer.classList.remove('hidden');
+    itineraryDetailContainer.classList.add('hidden'); // V33
     mapContainer.classList.add('hidden');
     document.body.classList.add('view-is-locked'); // Verrouille le scroll
 
-    // Doit invalider la taille DES DEUX cartes
-    if (mapRenderer && mapRenderer.map) {
-        mapRenderer.map.invalidateSize();
-    }
-    if (resultsMapRenderer && resultsMapRenderer.map) {
-        resultsMapRenderer.map.invalidateSize();
-    }
-
+    // V33 - N'invalide plus les cartes ici
     if (resultsListContainer) {
         resultsListContainer.innerHTML = '<p class="results-message">Recherche d\'itinéraire en cours...</p>';
     }
 }
+
+// *** NOUVELLE FONCTION V33 ***
+function showDetailView() {
+    itineraryDetailContainer.classList.remove('hidden');
+    // Force l'animation
+    setTimeout(() => {
+        itineraryDetailContainer.classList.add('is-active');
+    }, 10); // 10ms
+    
+    // Invalide la carte des détails MAINTENANT
+    if (detailMapRenderer && detailMapRenderer.map) {
+        detailMapRenderer.map.invalidateSize();
+    }
+}
+
+// *** NOUVELLE FONCTION V33 ***
+function hideDetailView() {
+    itineraryDetailContainer.classList.remove('is-active');
+    // Cache après la fin de la transition
+    setTimeout(() => {
+        itineraryDetailContainer.classList.add('hidden');
+        // Vider le contenu pour la prochaine fois
+        detailPanelContent.innerHTML = '';
+        if (currentDetailRouteLayer) {
+            detailMapRenderer.map.removeLayer(currentDetailRouteLayer);
+            currentDetailRouteLayer = null;
+        }
+    }, 300); // 300ms (correspond au CSS)
+}
+
 
 function showDashboardView(viewName) {
     dashboardHall.classList.remove('view-is-active');
