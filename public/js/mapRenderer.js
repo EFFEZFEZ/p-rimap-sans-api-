@@ -241,8 +241,8 @@ export class MapRenderer {
                 markerData.marker.setLatLng([lat, lon]);
                 
                 // *** V17 - Mise à jour dynamique du popup s'il est ouvert ***
-                if (markerData.marker.isPopupOpen()) {
-                    this.updateMovingBusPopupSmoothly(markerData.marker.getPopup().getElement(), bus, tripScheduler);
+                if (markerData.marker.isPopupOpen() && markerData.popupContentElement) {
+                    this.updateMovingBusPopupSmoothly(markerData.popupContentElement, bus, tripScheduler);
                 }
 
             } else {
@@ -381,26 +381,38 @@ export class MapRenderer {
 
         const marker = L.marker([lat, lon], { icon });
         
+        // Créer l'objet markerData qui sera retourné
+        const markerData = {
+            marker: marker,
+            bus: bus,
+            popupContentElement: null
+        };
+        
         // Popup est vide au début
         marker.bindPopup("");
 
         // Le contenu est généré UNIQUEMENT à l'ouverture
         marker.on('popupopen', (e) => {
-            const markerData = this.busMarkers[busId];
-            if (!markerData || !markerData.bus) {
-                e.popup.setContent("Informations non disponibles.");
-                return;
-            }
-
             const freshBus = markerData.bus;
             const freshPopupContent = this.createBusPopupContent(freshBus, tripScheduler);
             e.popup.setContent(freshPopupContent);
+            
+            // Stocker la référence à l'élément de contenu du popup
+            // On attend un tick pour que le DOM soit mis à jour
+            setTimeout(() => {
+                const popupElement = e.popup.getElement();
+                if (popupElement) {
+                    markerData.popupContentElement = popupElement.querySelector('.info-popup-content');
+                }
+            }, 0);
         });
 
-        return {
-            marker: marker,
-            bus: bus
-        };
+        // Nettoyer la référence quand le popup se ferme
+        marker.on('popupclose', () => {
+            markerData.popupContentElement = null;
+        });
+
+        return markerData;
     }
 
     /**
