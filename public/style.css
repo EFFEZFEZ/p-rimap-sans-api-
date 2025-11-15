@@ -82,6 +82,10 @@ body.view-is-locked {
     overflow: hidden; /* Ces vues plein écran ne scrollent pas */
 }
 
+/* *** NOUVEAU V33 *** */
+/* #itinerary-detail-container est géré plus bas */
+
+
 .hidden {
     display: none !important;
 }
@@ -1671,96 +1675,104 @@ details[open] .accordion-content {
 
 
 /* =========================================
- * NOUVELLE VUE : RÉSULTATS D'ITINÉRAIRE
+ * NOUVELLE VUE : RÉSULTATS D'ITINÉRAIRE (V33)
  * ========================================= */
 
-/* Le conteneur principal est maintenant un flex en LIGNE */
+/* Écran 1: Liste des résultats */
 #itinerary-results-container {
-    display: flex;
-    flex-direction: row; /* Panneau à gauche, carte à droite */
-    flex: 1; /* Prend toute la hauteur restante sous le header */
-    background: var(--bg-light);
-    /* Assure que le conteneur ne dépasse pas la hauteur de la vue */
-    height: calc(100vh - 65px); /* Hauteur de la vue - hauteur du header */
-}
-
-/* NOUVEAU : Panneau latéral (colonne) */
-#results-side-panel {
-    width: 400px; /* Largeur fixe type IDFM */
-    flex-shrink: 0;
+    /* V33: Il s'agit maintenant d'une simple page de liste, centrée */
     display: flex;
     flex-direction: column;
-    height: 100%; /* Prend toute la hauteur du conteneur */
-    background: var(--bg-main);
-    border-right: 1px solid var(--border);
-    z-index: 10;
+    flex: 1;
+    background: var(--bg-light);
 }
 
-/* NOUVEAU : Panneau d'édition IDFM */
-#itinerary-edit-panel {
-    background: var(--bg-main);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-}
-.itinerary-edit-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1.5rem;
-}
-.itinerary-edit-header h2 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    margin: 0;
-}
-.itinerary-edit-form {
-    padding: 0 1.5rem 1rem;
-    position: relative;
-}
-.itinerary-edit-form .form-group {
-    margin-bottom: 0.75rem;
-}
-.itinerary-edit-form .form-group:last-of-type {
-    margin-bottom: 1rem;
-}
-/* Bouton swap vertical */
-.btn-swap-vertical {
-    position: absolute;
-    top: 50px; /* Ajustement manuel pour le placer entre les deux */
-    right: 1rem;
-    z-index: 2;
-    transform: rotate(90deg); /* Pivoter l'icône */
-}
-.btn-swap-vertical:hover {
-    transform: rotate(270deg); /* 90 + 180 */
-}
-/* Bouton "Lancer la recherche" pleine largeur */
-.btn-full-width {
+#results-side-panel {
+    /* V33: Prend toute la largeur et se centre */
     width: 100%;
-    justify-content: center;
-    padding: 0.75rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: var(--radius-md);
+    max-width: 900px; /* Cohérent avec le dashboard */
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Prend toute la hauteur */
+    background: var(--bg-main);
 }
 
-/* NOUVEAU : Conteneur pour la liste des résultats */
+/* Le wrapper de la liste DOIT scroller */
 .results-list-wrapper {
-    flex: 1; /* Prend tout l'espace restant dans le panneau latéral */
-    overflow-y: auto; /* C'est LUI qui scrolle */
+    flex: 1;
+    overflow-y: auto;
     overscroll-behavior: contain;
 }
 
-/* La liste elle-même n'a besoin que de padding */
 .results-list {
     padding: 1rem;
 }
 
-/* La CARTE prend le reste de l'espace */
+/* L'ancienne carte est supprimée */
 #results-map {
-    flex: 1; /* Prend tout l'espace restant à droite */
-    height: 100%;
-    background: #e5e5e5;
+    display: none;
+}
+
+
+/* Écran 2: Détail du trajet (nouveau) */
+#itinerary-detail-container {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    background: var(--bg-main);
+    /* Commence en dehors de l'écran et glisse */
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+}
+#itinerary-detail-container.is-active {
+    transform: translateX(0);
+}
+
+#detail-map-header {
+    position: relative;
+    padding: 1rem;
+    /* Respecte l'encoche */
+    padding-top: calc(1rem + env(safe-area-inset-top));
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+}
+#btn-back-to-results {
+    position: absolute;
+    top: calc(0.75rem + env(safe-area-inset-top));
+    left: 1rem;
+}
+
+#detail-map {
+    height: 40vh; /* 40% de la hauteur de l'écran */
+    width: 100%;
+    background: #eee;
+    flex-shrink: 0;
+    transition: height 0.3s ease-in-out;
+}
+
+#detail-panel-wrapper {
+    flex: 1; /* Prend le reste de la hauteur */
+    overflow-y: auto;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+}
+#detail-panel-content {
+    padding: 1rem;
+}
+
+/* V33 - Animation de la carte au scroll */
+#itinerary-detail-container.is-scrolled #detail-map {
+    height: 15vh; /* La carte se réduit */
 }
 
 
@@ -2048,36 +2060,16 @@ details[open] .accordion-content {
 
 /* Styles mobiles pour la vue résultats */
 @media (max-width: 768px) {
-    /* Rétablit la direction en colonne, avec la carte en HAUT */
-    #itinerary-results-container {
-        /* *** CORRECTION V32 *** */
-        flex-direction: column; /* PAS column-reverse */
-    }
-    
-    /* La carte a une hauteur fixe */
-    #results-map {
-        width: 100%;
-        height: 250px;
-        flex: none; /* Désactive le flex: 1 */
-    }
+    /* V33 : Les styles PC sont maintenant mobile-first */
+    /* Nous n'avons plus besoin de la plupart des hacks mobiles */
 
-    /* Le panneau latéral prend tout le reste */
+    /* Le panneau latéral (maintenant le conteneur principal) */
     #results-side-panel {
-        width: 100%;
-        flex: 1; /* Prend l'espace restant */
+        max-width: 100%;
         border-right: none;
-        height: auto; /* Hauteur auto pour s'adapter au flex: 1 */
-        /* *** CORRECTION V32 *** */
-        overflow-y: hidden; /* Le panneau ne scrolle PAS */
     }
     
-    /* Le wrapper de la liste DOIT scroller */
-    .results-list-wrapper {
-        /* *** CORRECTION V32 *** */
-        flex: 1;
-        overflow-y: auto;
-    }
-    
+    /* Le header du panneau d'édition */
     .itinerary-edit-header {
         padding: 0.5rem 0.75rem;
         gap: 0.75rem;
