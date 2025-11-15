@@ -1,16 +1,23 @@
 /**
- * mapRenderer.js - VERSION V20 (Solution définitive anti-clignotement)
+ * mapRenderer.js - VERSION V21 (Solution Cluster Ejection)
  *
- * *** SOLUTION V20 - BUG IDENTIFIÉ ***
- * - Problème : Appeler setLatLng() sur un marqueur dans un MarkerClusterGroup
- * ferme automatiquement son popup (bug connu de Leaflet.markercluster)
+ * *** SOLUTION V21 - BUG DU CLUSTER CONTOURNÉ ***
+ * - Le bug V20 est confirmé : setLatLng() sur un marqueur
+ * dans un MarkerClusterGroup ferme son popup.
  *
- * - Solution : NE PAS appeler setLatLng() si le popup est ouvert
- * → Le marqueur reste immobile pendant que son popup est affiché
- * → Le contenu du popup se met à jour en temps réel
- * → Quand le popup se ferme, le marqueur reprend sa mise à jour normale
+ * - NOUVELLE SOLUTION :
+ * 1. Quand un popup s'OUVRE ('popupopen') :
+ * - Le marqueur est RETIRÉ du clusterGroup.
+ * - Le marqueur est AJOUTÉ à la carte (this.map).
+ * 2. Quand un popup se FERME ('popupclose') :
+ * - Le marqueur est RETIRÉ de la carte.
+ * - Le marqueur est RÉ-AJOUTÉ au clusterGroup.
  *
- * - Résultat : Plus aucun clignotement ! Le popup reste stable et fluide.
+ * - RÉSULTAT :
+ * Un marqueur avec un popup ouvert est un marqueur "normal".
+ * setLatLng() fonctionne, le bus bouge.
+ * updateBusPopupContent() fonctionne, l'ETA se met à jour.
+ * Plus aucun clignotement.
  */
 
 export class MapRenderer {
@@ -212,8 +219,8 @@ export class MapRenderer {
     }
 
     /**
-     * V20 - SOLUTION DÉFINITIVE : Ne pas mettre à jour la position si le popup est ouvert
-     * Bug connu de Leaflet.markercluster : setLatLng ferme le popup
+     * V21 - setLatLng() est maintenant TOUJOURS appelé
+     * La logique 'popupopen'/'popupclose' (V21) gère le bug du cluster
      */
     updateBusMarkers(busesWithPositions, tripScheduler, currentSeconds) {
         const markersToAdd = [];
@@ -243,18 +250,13 @@ export class MapRenderer {
                 const markerData = this.busMarkers[busId];
                 markerData.bus = bus;
                 
-                // *** V20 - CRITIQUE : NE PAS déplacer le marqueur si son popup est ouvert ***
-                const isPopupOpen = markerData.marker.isPopupOpen();
-                
-                if (!isPopupOpen) {
-                    // Popup fermé : on peut déplacer le marqueur normalement
-                    markerData.marker.setLatLng([lat, lon]);
-                } else {
-                    // Popup ouvert : on ne touche PAS au marqueur
-                    // On met UNIQUEMENT à jour le contenu du popup
-                    if (markerData.popupDomElement) {
-                        this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
-                    }
+                // *** V21 - On appelle TOUJOURS setLatLng() ***
+                // La logique 'popupopen' gère le bug du cluster
+                markerData.marker.setLatLng([lat, lon]);
+
+                // On met à jour le contenu (si ouvert)
+                if (markerData.marker.isPopupOpen() && markerData.popupDomElement) {
+                    this.updateBusPopupContent(markerData.popupDomElement, bus, tripScheduler);
                 }
 
             } else {
@@ -285,8 +287,7 @@ export class MapRenderer {
     }
 
     /**
-     * V20 - Mise à jour silencieuse du contenu
-     * Modifie uniquement le texte dans le DOM, sans toucher au popup
+     * V21 - Mise à jour silencieuse du contenu
      */
     updateBusPopupContent(domElement, bus, tripScheduler) {
         try {
@@ -299,17 +300,14 @@ export class MapRenderer {
             const nextStopText = nextStopName;
             const etaText = nextStopETA ? nextStopETA.formatted : '...';
 
-            // Sélectionne les éléments à mettre à jour
             const stateEl = domElement.querySelector('[data-update="state"]');
             const nextStopEl = domElement.querySelector('[data-update="next-stop-value"]');
             const etaEl = domElement.querySelector('[data-update="eta-value"]');
 
-            // Met à jour uniquement si le contenu a changé (optimisation)
             if (stateEl && stateEl.textContent !== stateText) {
                 stateEl.textContent = stateText;
             }
             if (nextStopEl && nextStopEl.textContent !== nextStopText) {
-                // Animation douce lors du changement d'arrêt
                 nextStopEl.style.transition = 'opacity 0.3s';
                 nextStopEl.style.opacity = '0.5';
                 setTimeout(() => {
@@ -327,8 +325,7 @@ export class MapRenderer {
     }
 
     /**
-     * V20 - Crée un élément DOM pour le popup (pas une string HTML)
-     * L'élément créé reste stable et est mis à jour en place
+     * V21 - Crée un élément DOM pour le popup
      */
     createBusPopupDomElement(bus, tripScheduler) {
         const route = bus.route;
@@ -345,7 +342,6 @@ export class MapRenderer {
         const nextStopText = nextStopName;
         const etaText = nextStopETA ? nextStopETA.formatted : '...';
 
-        // Créer l'élément DOM au lieu d'une chaîne HTML
         const container = document.createElement('div');
         container.className = 'info-popup-content';
 
@@ -392,7 +388,7 @@ export class MapRenderer {
         const etaValue = document.createElement('span');
         etaValue.setAttribute('data-update', 'eta-value');
         etaValue.textContent = etaText;
-        etaValue.style.fontVariantNumeric = 'tabular-nums'; // Anti-layout shift
+        etaValue.style.fontVariantNumeric = 'tabular-nums'; 
         etaValue.style.display = 'inline-block';
         etaValue.style.minWidth = '80px';
         etaP.appendChild(etaLabel);
@@ -413,8 +409,7 @@ export class MapRenderer {
     }
 
     /**
-     * V20 - Création d'un marqueur avec popup stable
-     * Le popup est configuré pour ne pas se fermer au clic
+     * V21 - Ajout des écouteurs 'popupopen' et 'popupclose'
      */
     createBusMarker(bus, tripScheduler, busId) {
         const { lat, lon } = bus.position;
@@ -436,22 +431,32 @@ export class MapRenderer {
 
         const marker = L.marker([lat, lon], { icon });
         
-        // *** V20 - CRÉER UN ÉLÉMENT DOM + OPTIONS ANTI-CLIGNOTEMENT ***
         const popupDomElement = this.createBusPopupDomElement(bus, tripScheduler);
         
-        // Créer l'objet markerData
         const markerData = {
             marker: marker,
             bus: bus,
             popupDomElement: popupDomElement
         };
         
-        // Bind le popup avec options anti-clignotement
-        marker.bindPopup(popupDomElement, {
-            autoClose: false,     // Ne pas fermer si un autre popup s'ouvre
-            closeOnClick: false,  // Ne pas fermer au clic sur la carte
-            closeButton: true,    // Garder le bouton de fermeture
-            autoPan: false        // Ne pas recentrer la carte (évite les sauts)
+        // Bind le popup avec l'élément DOM stable
+        marker.bindPopup(popupDomElement);
+
+        // *** V21 - LOGIQUE D'ÉJECTION DU CLUSTER ***
+        marker.on('popupopen', () => {
+            if (this.clusterGroup.hasLayer(marker)) {
+                this.clusterGroup.removeLayer(marker);
+                marker.addTo(this.map);
+            }
+        });
+
+        marker.on('popupclose', () => {
+            // Remet le marqueur dans le cluster SEULEMENT s'il n'est pas
+            // sur le point d'être supprimé (ce qui causerait une erreur)
+            if (this.busMarkers[busId]) { 
+                marker.removeFrom(this.map);
+                this.clusterGroup.addLayer(marker);
+            }
         });
 
         return markerData;
