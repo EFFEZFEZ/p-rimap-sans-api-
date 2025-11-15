@@ -44,22 +44,16 @@
     box-sizing: border-box;
 }
 
-/* *** CORRECTION V25 *** */
-/* Le body/html est TOUJOURS caché (c'est la coquille de l'app) */
+/* *** CORRECTION V26 *** */
 html, body {
     height: 100%;
     width: 100%;
-    overflow: hidden; /* <- RÉTABLI */
+    /* On empêche SEULEMENT le scroll horizontal */
+    overflow-x: hidden; 
     -webkit-font-smoothing: antialiased;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
     background-color: var(--bg-light); 
-}
-
-/* Verrouille le scroll quand une vue plein écran est active (toujours vrai pour la carte/résultats) */
-body.view-is-locked {
-    overflow: hidden;
-    overscroll-behavior: none; 
 }
 
 /* Le body est le conteneur flex principal */
@@ -67,15 +61,31 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    /* overflow-y: hidden; <- Supprimé (géré par html, body) */
+    /* L'état par défaut est 'hidden' (pour la carte/résultats) */
+    overflow-y: hidden;
 }
+
+/* * V26 - Règle de scroll principale :
+ * Le BODY scrolle si on n'est PAS en vue 'locked' (carte/résultats)
+ */
+body:not(.view-is-locked) {
+    overflow-y: auto;
+    overscroll-behavior: auto;
+}
+
+/* (V1) Verrouille le scroll (confirmé) */
+body.view-is-locked {
+    overflow: hidden;
+    overscroll-behavior: none; 
+}
+
 
 /* Conteneurs de vue principaux */
 #dashboard-container {
     flex: 1 0 auto;
-    /* *** CORRECTION V25 *** */
-    /* C'est le dashboard qui scrolle, pas le body */
-    overflow-y: auto; /* <- RÉTABLI */
+    /* *** CORRECTION V26 *** */
+    /* Le dashboard ne scrolle plus ; c'est le body qui s'en charge */
+    overflow-y: visible;
     overflow-x: hidden;
 }
 #map-container, #itinerary-results-container {
@@ -872,11 +882,14 @@ details[open] .accordion-content {
  * ========================================= */
 @media (max-width: 768px) {
     
-    /* *** CORRECTION V25 *** */
+    /* *** CORRECTION V26 *** */
     /* Cette règle était la cause du bug de scroll imbriqué */
-    /* body:not(.view-is-locked) {
+    /* Elle est maintenant gérée par la règle globale body:not(.view-is-locked) */
+    /*
+    body:not(.view-is-locked) {
         overflow-y: auto;
-    } */
+    }
+    */
 
     .main-nav-buttons-condensed {
         grid-template-columns: 1fr;
@@ -1248,14 +1261,12 @@ details[open] .accordion-content {
  * ========================================= */
 
 /* *** V23 - SOLUTION CSS TRANSITION *** */
-/* (Valeur de 1000ms (1s) pour correspondre au tick) */
-/* (Supprimé car le bug V24 (popup indépendant) est meilleur) */
-/*
+/* (On conserve cette transition, car elle est utile */
+/* pour le 'double-clic' ou le zoom/dezoom) */
 .leaflet-marker-pane > *,
 .leaflet-popup-pane > * {
     transition: transform 1000ms linear !important;
 }
-*/
 
 
 .leaflet-popup-content-wrapper {
